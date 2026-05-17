@@ -2,7 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mi Territorio">
+<meta name="theme-color" content="#1a1c24">
+<link rel="manifest" href="manifest-visor.json">
+<link rel="apple-touch-icon" href="icons/icon-152x152.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
 <title>Mi Territorio</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -657,6 +665,11 @@ const _devCheck = setInterval(() => {
     _devToolsOpen = false;
   }
 }, 1000);
+
+// ══ SERVICE WORKER ══
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 
 init();
 </script>
