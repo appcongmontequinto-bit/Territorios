@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mi Territorio</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#1a1c24;--ink2:#3d4259;--ink3:#7a8099;--ink4:#b0b7cc;
+  --paper:#f5f3ee;--paper2:#eceae3;--paper3:#e2dfd6;
+  --gold:#c9973a;--gold-dim:rgba(201,151,58,.13);
+  --red:#c94040;--red-dim:rgba(201,64,64,.1);
+  --green:#2d8a55;--green-dim:rgba(45,138,85,.1);
+  --blue:#2d5fa8;--blue-dim:rgba(45,95,168,.1);
+  --r:12px;--r2:18px;--sh:0 4px 24px rgba(26,28,36,.1);
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.5}
+
+/* LOADER */
+#loadingState{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.spin{width:36px;height:36px;border:3px solid var(--paper3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin-label{font-size:13px;color:var(--ink3)}
+
+/* ERROR */
+#errorState{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center}
+.err-icon{font-size:52px;opacity:.5}
+.err-title{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--ink)}
+.err-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:300px}
+
+/* HEADER */
+header{background:var(--ink);padding:13px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-shrink:0}
+.hlogo{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--paper);letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
+.hpulse{width:7px;height:7px;background:var(--gold);border-radius:50%;animation:pulse 2s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+.hter-num{margin-left:auto;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink4);letter-spacing:.06em}
+
+/* HERO */
+.hero{background:var(--ink);padding:0 20px 24px;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;top:-80px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(201,151,58,.15) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+.hero-name{font-family:'Fraunces',serif;font-size:28px;font-weight:600;color:#fff;letter-spacing:-.3px;line-height:1.15;margin-bottom:4px}
+.hero-tipo{font-size:13px;color:var(--ink4);margin-bottom:22px}
+
+/* COUNTDOWN */
+.cdown-wrap{display:flex;align-items:center;gap:18px;margin-bottom:18px}
+.ring-container{position:relative;width:88px;height:88px;flex-shrink:0}
+.ring-svg{width:88px;height:88px;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:7}
+.ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1),stroke .4s}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.ring-days{font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:#fff;line-height:1}
+.ring-unit{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.cdown-info{flex:1;min-width:0}
+.cdown-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px}
+.cdown-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.cdown-row span:first-child{color:var(--ink3)}
+.cdown-row span:last-child{color:#fff;font-weight:500}
+.cdown-bar{height:4px;background:rgba(255,255,255,.08);border-radius:99px;margin-top:10px;overflow:hidden}
+.cdown-fill{height:100%;border-radius:99px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.status-banner{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:var(--r);font-size:13px;font-weight:500}
+.sb-ok{background:rgba(45,138,85,.15);color:#5fd68a;border:1px solid rgba(45,138,85,.25)}
+.sb-warn{background:rgba(201,151,58,.15);color:#e8c06a;border:1px solid rgba(201,151,58,.25)}
+.sb-bad{background:rgba(201,64,64,.15);color:#f08080;border:1px solid rgba(201,64,64,.25)}
+
+/* INFO STRIP */
+.info-strip{display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper3);gap:1px;border-bottom:1px solid var(--paper3)}
+.info-cell{background:var(--paper);padding:14px 10px;text-align:center}
+.info-val{font-family:'Fraunces',serif;font-size:21px;font-weight:700;color:var(--ink);line-height:1}
+.info-lbl{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-top:4px}
+
+/* SECTIONS */
+.sections{padding:18px;display:flex;flex-direction:column;gap:16px;max-width:620px;margin:0 auto;width:100%;padding-bottom:32px}
+.sec{background:#fff;border:1.5px solid var(--paper3);border-radius:var(--r2);overflow:hidden;box-shadow:var(--sh)}
+.sec-head{padding:13px 16px;border-bottom:1.5px solid var(--paper2);display:flex;align-items:center;gap:10px}
+.sec-ico{width:28px;height:28px;border-radius:7px;background:var(--paper);border:1px solid var(--paper3);display:flex;align-items:center;justify-content:center;font-size:13px}
+.sec-title{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--ink)}
+.sec-body{padding:16px}
+
+/* MAP IMAGE */
+.map-img-wrap{background:var(--paper);border-radius:var(--r);overflow:hidden;min-height:180px;display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--paper3)}
+.map-img-wrap img{width:100%;max-height:380px;object-fit:contain;display:block;cursor:zoom-in}
+.no-map{text-align:center;padding:36px 20px;color:var(--ink3);font-size:13px;line-height:1.6}
+.no-map span{font-size:32px;display:block;margin-bottom:10px;opacity:.5}
+.thumb-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid var(--paper3);transition:all .15s}
+.thumb:hover,.thumb.on{border-color:var(--gold);transform:scale(1.06)}
+.pdf-thumb{width:64px;height:64px;border-radius:8px;border:2px solid var(--paper3);display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--paper);cursor:pointer;transition:all .15s}
+.pdf-thumb:hover{border-color:var(--blue)}
+
+/* LEAFLET */
+#leafletMap{height:270px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--paper3)}
+.tile-row{display:flex;gap:7px;margin-bottom:10px}
+.tile-btn{flex:1;padding:7px 8px;background:var(--paper);border:1.5px solid var(--paper3);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--ink2);cursor:pointer;transition:all .15s;text-align:center}
+.tile-btn:hover,.tile-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.addr-row{display:flex;gap:7px;margin-bottom:10px}
+.addr-input{flex:1;background:var(--paper);border:1.5px solid var(--paper3);border-radius:var(--r);padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;transition:border-color .15s}
+.addr-input:focus{border-color:var(--gold)}
+.addr-btn{padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer}
+.loc-btn{width:100%;margin-top:10px;padding:10px;background:var(--blue-dim);border:1.5px solid rgba(45,95,168,.2);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
+.loc-btn:hover{background:rgba(45,95,168,.18)}
+
+/* DETAILS */
+.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.det-field{background:var(--paper);border-radius:var(--r);padding:10px 13px;border:1px solid var(--paper3)}
+.det-key{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.det-val{font-size:13px;color:var(--ink);font-weight:500;word-break:break-word}
+.det-full{grid-column:1/-1}
+.notes-box{background:var(--gold-dim);border:1px solid rgba(201,151,58,.22);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--ink2);line-height:1.6;display:flex;gap:10px;align-items:flex-start;margin-top:12px}
+
+/* LIGHTBOX */
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;align-items:center;justify-content:center;padding:16px}
+#lb.on{display:flex}
+#lb img{max-width:100%;max-height:90vh;border-radius:var(--r);object-fit:contain}
+#lbClose{position:absolute;top:14px;right:14px;width:36px;height:36px;background:rgba(255,255,255,.12);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.fade-in{animation:fadeIn .35s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:400px){.det-grid{grid-template-columns:1fr}.cdown-wrap{flex-direction:column;align-items:flex-start;gap:12px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hlogo"><div class="hpulse"></div>Territorios</div>
+  <div class="hter-num" id="hNum"></div>
+</header>
+
+<div id="loadingState">
+  <div class="spin"></div>
+  <div class="spin-label">Cargando territorio…</div>
+</div>
+
+<div id="errorState">
+  <div class="err-icon">🔗</div>
+  <div class="err-title">Enlace no válido</div>
+  <div class="err-sub">Este enlace no contiene un territorio. Pide al responsable que genere un enlace desde la app principal.</div>
+</div>
+
+<div id="terContent" style="display:none;flex-direction:column;flex:1" class="fade-in">
+  <div class="hero">
+    <div class="hero-name" id="heroName"></div>
+    <div class="hero-tipo" id="heroTipo"></div>
+    <div class="cdown-wrap">
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 88 88">
+          <circle class="ring-bg" cx="44" cy="44" r="37"/>
+          <circle class="ring-fill" id="ringFill" cx="44" cy="44" r="37" stroke-dasharray="233" stroke-dashoffset="233"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-days" id="ringDays">—</div>
+          <div class="ring-unit" id="ringUnit">días</div>
+        </div>
+      </div>
+      <div class="cdown-info">
+        <div class="cdown-lbl">Período de trabajo</div>
+        <div class="cdown-row"><span>Asignado</span><span id="cdDesde">—</span></div>
+        <div class="cdown-row"><span>Vence</span><span id="cdHasta">—</span></div>
+        <div class="cdown-bar"><div class="cdown-fill" id="cdFill"></div></div>
+      </div>
+    </div>
+    <div class="status-banner" id="statusBanner"></div>
+  </div>
+
+  <div class="info-strip">
+    <div class="info-cell"><div class="info-val" id="iDirs">—</div><div class="info-lbl">Puertas</div></div>
+    <div class="info-cell"><div class="info-val" id="iGrupo">—</div><div class="info-lbl">Grupo</div></div>
+    <div class="info-cell"><div class="info-val" id="iPub">—</div><div class="info-lbl">Publicador</div></div>
+  </div>
+
+  <div class="sections">
+    <div class="sec fade-in" style="animation-delay:.04s">
+      <div class="sec-head"><div class="sec-ico">🗺</div><div class="sec-title">Mapa del territorio</div></div>
+      <div class="sec-body">
+        <div class="map-img-wrap" id="mapImgWrap">
+          <div class="no-map"><span>📂</span>No hay mapa cargado aún.</div>
+        </div>
+        <div class="thumb-row" id="thumbRow"></div>
+      </div>
+    </div>
+
+    <div class="sec fade-in" style="animation-delay:.08s">
+      <div class="sec-head"><div class="sec-ico">📍</div><div class="sec-title">Localización</div></div>
+      <div class="sec-body">
+        <div class="tile-row">
+          <div class="tile-btn on" onclick="setTile('street',this)">🗺 Calles</div>
+          <div class="tile-btn" onclick="setTile('satellite',this)">🛰 Satélite</div>
+          <div class="tile-btn" onclick="setTile('topo',this)">⛰ Topo</div>
+        </div>
+        <div class="addr-row">
+          <input class="addr-input" id="addrInput" placeholder="Buscar dirección…" onkeydown="if(event.key==='Enter')searchAddr()">
+          <button class="addr-btn" onclick="searchAddr()">Ir</button>
+        </div>
+        <div id="leafletMap"></div>
+        <button class="loc-btn" onclick="goToMyLocation()">📍 Mi ubicación actual</button>
+      </div>
+    </div>
+
+    <div class="sec fade-in" style="animation-delay:.12s">
+      <div class="sec-head"><div class="sec-ico">ℹ</div><div class="sec-title">Detalles</div></div>
+      <div class="sec-body">
+        <div class="det-grid" id="detGrid"></div>
+        <div class="notes-box" id="notesBox" style="display:none">
+          <span style="font-size:18px;flex-shrink:0">⚠️</span>
+          <span id="notesText"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="lb" onclick="closeLb()">
+  <button id="lbClose" onclick="closeLb()">✕</button>
+  <img id="lbImg" src="" alt="">
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ══ SUPABASE CONFIG ══
+const SB_URL = 'https://iycqizsxmbaboaxveaeb.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5Y3FpenN4bWJhYm9heHZlYWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTM3MzQsImV4cCI6MjA5NDU4OTczNH0.-5jCFsD2WWEity7UDuEmpDqZvXrGLEiCg8fQWPZkOXE';
+const BUCKET = 'mapas-territorios';
+const EXPIRY_DAYS = 120;
+const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+async function sbGet(table, params = {}) {
+  const url = new URL(`${SB_URL}/rest/v1/${table}`);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const r = await fetch(url, { headers: H });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+function sbStorageUrl(path) { return `${SB_URL}/storage/v1/object/public/${BUCKET}/${path}`; }
+
+// ══ UTILS ══
+function today() { return new Date().toISOString().split('T')[0]; }
+function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+function daysUntil(d) { return d ? daysBetween(today(), d) : null; }
+function fmtDate(s) { if (!s) return '—'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; }
+
+// ══ INIT ══
+const params = new URLSearchParams(location.search);
+const TID = parseInt(params.get('t') || '0');
+
+async function init() {
+  if (!TID) { showError('Enlace sin territorio. Pide al responsable que genere el enlace desde la app.'); return; }
+  try {
+    // Load territory, publicadores, grupos, archivos in parallel
+    const [ters, pubs, grps, archs] = await Promise.all([
+      sbGet('territorios', { select: '*', id: `eq.${TID}` }),
+      sbGet('publicadores', { select: 'id,nombre,grupo_id' }),
+      sbGet('grupos', { select: 'id,num,nombre,siervo_id' }),
+      sbGet('archivos', { select: '*', territorio_id: `eq.${TID}`, order: 'created_at.asc' }),
+    ]);
+
+    document.getElementById('loadingState').style.display = 'none';
+
+    if (!ters.length) { showError(`Territorio #${TID} no encontrado. Puede haber sido eliminado o el enlace estar desactualizado.`); return; }
+
+    render(ters[0], pubs, grps, archs);
+  } catch (e) {
+    document.getElementById('loadingState').style.display = 'none';
+    showError('Error al conectar con el servidor: ' + e.message);
+  }
+}
+
+function showError(msg) {
+  document.getElementById('errorState').style.display = 'flex';
+  document.getElementById('errorState').querySelector('.err-sub').textContent = msg;
+}
+
+function render(t, pubs, grps, archs) {
+  const pub = pubs.find(p => p.id === t.pub_id);
+  const grp = grps.find(g => g.id === t.grupo_id);
+  const siervo = grp ? pubs.find(p => p.id === grp.siervo_id) : null;
+
+  document.title = `${t.num} — ${t.nombre}`;
+  document.getElementById('hNum').textContent = t.num;
+  document.getElementById('heroName').textContent = t.nombre;
+  document.getElementById('heroTipo').textContent = `${t.tipo}${t.es_grupo ? ' · Territorio de grupo' : ''}`;
+
+  renderCountdown(t);
+  document.getElementById('iDirs').textContent = t.num_dirs || '—';
+  document.getElementById('iGrupo').textContent = grp ? `G${grp.num}` : '—';
+  document.getElementById('iPub').textContent = pub ? pub.nombre.split(' ')[0] : '—';
+
+  renderMapImages(archs);
+  renderDetails(t, pub, grp, siervo);
+
+  document.getElementById('terContent').style.display = 'flex';
+  document.getElementById('terContent').style.flexDirection = 'column';
+
+  setTimeout(() => initMap(t), 80);
+}
+
+function renderCountdown(t) {
+  const TOTAL = EXPIRY_DAYS, CIRC = 232;
+  const d = daysUntil(t.fecha_vence);
+  const elapsed = t.fecha_asig ? daysBetween(t.fecha_asig, today()) : 0;
+  const elapsedPct = Math.max(0, Math.min(1, elapsed / TOTAL));
+
+  const ring = document.getElementById('ringFill');
+  const ringDays = document.getElementById('ringDays');
+  const ringUnit = document.getElementById('ringUnit');
+  let ringColor, barColor, bannerCls, bannerIcon, bannerMsg, ringOffset, displayDays;
+
+  if (d === null) {
+    ringColor = '#4a6fa5'; barColor = '#4a6fa5'; ringOffset = CIRC; displayDays = '—';
+    bannerCls = 'sb-ok'; bannerIcon = '📋'; bannerMsg = 'Sin fecha de vencimiento asignada'; ringUnit.textContent = '';
+  } else if (d < 0) {
+    ringColor = '#f08080'; barColor = '#c94040'; ringOffset = 0; displayDays = Math.abs(d);
+    bannerCls = 'sb-bad'; bannerIcon = '⚠️'; bannerMsg = `Venció hace ${Math.abs(d)} días — contacta con el responsable`; ringUnit.textContent = 'días';
+  } else if (d === 0) {
+    ringColor = '#f08080'; barColor = '#c94040'; ringOffset = 0; displayDays = 'Hoy';
+    bannerCls = 'sb-bad'; bannerIcon = '🔴'; bannerMsg = '¡Vence hoy!'; ringUnit.textContent = '';
+  } else if (d <= 14) {
+    ringColor = '#e8c06a'; barColor = '#c9973a'; ringOffset = CIRC - (CIRC * d / TOTAL); displayDays = d;
+    bannerCls = 'sb-warn'; bannerIcon = '⏳'; bannerMsg = `Solo quedan ${d} días`; ringUnit.textContent = 'días';
+  } else if (d <= 30) {
+    ringColor = '#e8c06a'; barColor = '#c9973a'; ringOffset = CIRC - (CIRC * d / TOTAL); displayDays = d;
+    bannerCls = 'sb-warn'; bannerIcon = '📅'; bannerMsg = `${d} días restantes — en el tramo final`; ringUnit.textContent = 'días';
+  } else {
+    ringColor = '#5fd68a'; barColor = '#2d8a55'; ringOffset = CIRC - (CIRC * d / TOTAL); displayDays = d;
+    bannerCls = 'sb-ok'; bannerIcon = '✅'; bannerMsg = `${d} días disponibles`; ringUnit.textContent = 'días';
+  }
+
+  requestAnimationFrame(() => setTimeout(() => { ring.style.stroke = ringColor; ring.style.strokeDashoffset = ringOffset; }, 50));
+  ringDays.textContent = displayDays;
+  setTimeout(() => { document.getElementById('cdFill').style.width = (elapsedPct * 100) + '%'; document.getElementById('cdFill').style.background = `linear-gradient(90deg,${barColor}77,${barColor})`; }, 100);
+  document.getElementById('cdDesde').textContent = fmtDate(t.fecha_asig);
+  document.getElementById('cdHasta').textContent = fmtDate(t.fecha_vence);
+  const banner = document.getElementById('statusBanner');
+  banner.className = `status-banner ${bannerCls}`;
+  banner.innerHTML = `<span style="font-size:17px">${bannerIcon}</span><span>${bannerMsg}</span>`;
+}
+
+function renderMapImages(archs) {
+  const wrap = document.getElementById('mapImgWrap');
+  const thumbRow = document.getElementById('thumbRow');
+  const imgs = archs.filter(f => !f.tipo_mime?.includes('pdf'));
+  const pdfs = archs.filter(f => f.tipo_mime?.includes('pdf'));
+
+  if (!archs.length) return;
+
+  if (imgs.length) {
+    const url = sbStorageUrl(imgs[0].storage_path);
+    wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
+  } else if (pdfs.length) {
+    const url = sbStorageUrl(pdfs[0].storage_path);
+    wrap.innerHTML = `<div class="no-map" style="cursor:pointer" onclick="window.open('${url}','_blank')"><span>📄</span>PDF disponible — toca para abrir</div>`;
+  }
+
+  thumbRow.innerHTML = '';
+  imgs.forEach((f, i) => {
+    const url = sbStorageUrl(f.storage_path);
+    const el = document.createElement('img');
+    el.className = 'thumb' + (i === 0 ? ' on' : '');
+    el.src = url; el.alt = f.nombre;
+    el.onclick = () => {
+      wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
+      document.querySelectorAll('.thumb').forEach(x => x.classList.remove('on')); el.classList.add('on');
+    };
+    thumbRow.appendChild(el);
+  });
+  pdfs.forEach(f => {
+    const url = sbStorageUrl(f.storage_path);
+    const el = document.createElement('div');
+    el.className = 'pdf-thumb'; el.textContent = '📄'; el.title = f.nombre;
+    el.onclick = () => window.open(url, '_blank');
+    thumbRow.appendChild(el);
+  });
+}
+
+function renderDetails(t, pub, grp, siervo) {
+  document.getElementById('detGrid').innerHTML = `
+    <div class="det-field"><div class="det-key">Tipo</div><div class="det-val">${t.tipo}</div></div>
+    <div class="det-field"><div class="det-key">Grupo</div><div class="det-val">${grp ? `Grupo ${grp.num}` : '—'}</div></div>
+    <div class="det-field"><div class="det-key">Publicador</div><div class="det-val">${pub?.nombre || '—'}</div></div>
+    <div class="det-field"><div class="det-key">Siervo</div><div class="det-val">${siervo?.nombre || '—'}</div></div>
+    <div class="det-field"><div class="det-key">Puertas</div><div class="det-val">${t.num_dirs || '—'}</div></div>
+    <div class="det-field"><div class="det-key">Modalidad</div><div class="det-val">${t.es_grupo ? 'Territorio de grupo' : 'Individual'}</div></div>
+    ${t.descripcion ? `<div class="det-field det-full"><div class="det-key">Descripción / Límites</div><div class="det-val">${t.descripcion}</div></div>` : ''}`;
+
+  const nb = document.getElementById('notesBox');
+  if (t.notas) { nb.style.display = 'flex'; document.getElementById('notesText').textContent = t.notas; }
+  else nb.style.display = 'none';
+}
+
+// ══ LEAFLET ══
+let map = null, tileLayer = null, userMarker = null;
+const TILES = {
+  street: ['https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', '© OpenStreetMap contributors'],
+  satellite: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', '© Esri'],
+  topo: ['https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap'],
+};
+
+function initMap(t) {
+  if (map) { map.remove(); map = null; }
+  map = L.map('leafletMap', { zoomControl: true }).setView([37.3828, -5.9732], 13); // Sevilla default
+  applyTile('street');
+  geocode(t);
+}
+
+function applyTile(type) {
+  if (tileLayer) tileLayer.remove();
+  const [url, attr] = TILES[type];
+  tileLayer = L.tileLayer(url, { attribution: attr, maxZoom: 19 }).addTo(map);
+}
+
+function setTile(type, el) {
+  applyTile(type);
+  document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('on')); el.classList.add('on');
+}
+
+function icon(e) { return L.divIcon({ html: `<div style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">${e}</div>`, iconSize: [32, 32], iconAnchor: [16, 28], className: '' }); }
+
+async function geocode(t) {
+  const q = t.descripcion || t.nombre;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+    const data = await r.json();
+    if (data.length) {
+      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+      map.setView([lat, lng], 15);
+      L.marker([lat, lng], { icon: icon('📍') }).addTo(map).bindPopup(`<b>${t.num} — ${t.nombre}</b><br><small>${t.descripcion || ''}</small>`).openPopup();
+    }
+  } catch {}
+}
+
+async function searchAddr() {
+  const q = document.getElementById('addrInput').value.trim(); if (!q) return;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+    const data = await r.json();
+    if (data.length) { const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon); map.setView([lat, lng], 16); L.marker([lat, lng], { icon: icon('📌') }).addTo(map).bindPopup(data[0].display_name.split(',')[0]).openPopup(); }
+    else alert('Dirección no encontrada');
+  } catch { alert('Error de conexión'); }
+}
+
+function goToMyLocation() {
+  if (!navigator.geolocation) { alert('Sin soporte de geolocalización'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    if (userMarker) userMarker.remove();
+    userMarker = L.marker([lat, lng], { icon: icon('🔵') }).addTo(map).bindPopup('Tu ubicación').openPopup();
+    map.setView([lat, lng], 15);
+  }, () => alert('No se pudo obtener la ubicación'));
+}
+
+// ══ LIGHTBOX ══
+function openLb(src) { document.getElementById('lbImg').src = src; document.getElementById('lb').classList.add('on'); }
+function closeLb() { document.getElementById('lb').classList.remove('on'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+
+init();
+</script>
+</body>
+</html>
