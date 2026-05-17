@@ -415,9 +415,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #leafletMapMain{position:absolute;inset:0}
 .map-legend{
   position:absolute;bottom:16px;left:16px;z-index:400;
-  background:rgba(28,28,30,.92);backdrop-filter:blur(12px);
-  border:1px solid var(--border2);border-radius:var(--r2);padding:12px 16px;
-  font-size:12px;font-weight:500;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+  border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:12px 16px;
+  font-size:12px;font-weight:500;color:#1c1c1e;box-shadow:0 2px 12px rgba(0,0,0,.15);
 }
 .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .legend-item:last-child{margin-bottom:0}
@@ -650,7 +650,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
   <div class="view-scroll">
     <div class="tbl-wrap">
-      <div class="tbl-head" style="grid-template-columns:1fr 80px 80px 110px 80px;display:grid;padding:0 10px">
+      <div class="tbl-head" style="grid-template-columns:1fr 130px 80px 110px 80px;display:grid;padding:0 10px">
         <span>Nombre</span><span>Grupo</span><span>Activos</span><span>Completados</span><span></span>
       </div>
       <div id="pubTable" class="tbl-body" style="max-height:calc(100vh - 200px)"></div>
@@ -671,13 +671,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <!-- VIEW: HISTORIAL -->
 <div id="view-historial" class="view">
-  <div class="view-head"><div class="view-title">Historial global</div><div class="view-sub">Todas las asignaciones completadas</div></div>
-  <div class="view-scroll">
-    <div class="tbl-wrap">
-      <div class="tbl-head" style="grid-template-columns:80px 1fr 150px 100px 100px 70px;display:grid;padding:0 10px">
-        <span>Nº</span><span>Territorio</span><span>Publicador</span><span>Desde</span><span>Hasta</span><span>Días</span>
+  <div class="view-head">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div class="view-title">Historial</div><div class="view-sub">Haz clic en un territorio para ver sus asignaciones</div></div>
+      <div style="display:flex;gap:6px">
+        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:200px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
       </div>
-      <div id="histTable" class="tbl-body" style="max-height:calc(100vh - 200px)"></div>
+    </div>
+  </div>
+  <div class="view-scroll" style="display:flex;gap:14px;padding-top:14px">
+    <!-- Territory list -->
+    <div style="flex:1;min-width:0">
+      <div class="tbl-wrap">
+        <div class="tbl-head" style="grid-template-columns:72px 1fr 110px 90px 70px;display:grid;padding:0 10px">
+          <span>Nº</span><span>Territorio</span><span>Último publicador</span><span>Último trabajo</span><span>Veces</span>
+        </div>
+        <div id="histTable" class="tbl-body" style="max-height:calc(100vh - 220px)"></div>
+      </div>
+    </div>
+    <!-- Assignment detail panel -->
+    <div id="histDetail" style="width:320px;flex-shrink:0;display:none">
+      <div class="tbl-wrap" style="padding:16px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px;letter-spacing:-.2px" id="histDetailTitle">Asignaciones</div>
+        <div id="histDetailList"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1168,7 +1185,7 @@ async function initMapView(){
     leafletMap=L.map('leafletMapMain').setView(MAP_CENTER,MAP_ZOOM);
     setTimeout(()=>leafletMap.invalidateSize(),300);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
       maxZoom:19,attribution:'© OpenStreetMap · © CARTO'
     }).addTo(leafletMap);
 
@@ -1369,9 +1386,10 @@ function renderPublicadores(){
     const g=S.grupos.find(x=>x.id===p.grupo_id);
     const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')).length;
     const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
-    return`<div class="tbl-row" style="grid-template-columns:1fr 80px 80px 110px 80px">
+    const grpLabel=g?`G${g.num} — ${g.nombre||`Grupo ${g.num}`}`:'—';
+    return`<div class="tbl-row" style="grid-template-columns:1fr 130px 80px 110px 80px">
       <span style="font-weight:600">${p.nombre}</span>
-      <span style="color:var(--t2);font-size:12px">${g?`G${g.num}`:'—'}</span>
+      <span style="color:var(--t2);font-size:12px">${grpLabel}</span>
       <span><span class="nav-badge ${act?'a':''}">${act}</span></span>
       <span><span class="nav-badge">${comp}</span></span>
       <span><button class="btn btn-danger btn-xs" onclick="event.stopPropagation();elimPub(${p.id})">✕</button></span>
@@ -1409,19 +1427,74 @@ function renderGrupos(){
 // ══ HISTORIAL ══
 function renderHistorial(){
   const el=document.getElementById('histTable');
-  if(!S.historial.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin historial</div>`;return;}
-  el.innerHTML=S.historial.slice(0,500).map(h=>{
-    const t=S.territorios.find(x=>x.id===h.territorio_id);
-    const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
-    return`<div class="tbl-row" style="grid-template-columns:80px 1fr 150px 100px 100px 70px">
-      <span style="font-family:var(--font-mono);font-size:11px;color:var(--t2)">${t?.num||'—'}</span>
-      <span style="font-size:13px">${t?.nombre||'—'}</span>
-      <span style="font-size:12px;color:var(--t2)">${pubName(h.pub_id)}</span>
-      <span style="font-size:12px;color:var(--t2)">${fmtDate(h.fecha_asig)}</span>
-      <span style="font-size:12px;color:var(--t2)">${fmtDate(h.fecha_dev)}</span>
-      <span><span class="nav-badge">${dias}d</span></span>
+  const q=(document.getElementById('histSearch')?.value||'').toLowerCase();
+  // Group by territory, show territories that have history
+  let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  if(q) ters=ters.filter(t=>t.num.toLowerCase().includes(q)||t.nombre.toLowerCase().includes(q));
+  // Only show territories with at least one historial entry
+  const tersWithHist=ters.filter(t=>S.historial.some(h=>h.territorio_id===t.id));
+  if(!tersWithHist.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin historial</div>`;return;}
+  el.innerHTML=tersWithHist.map(t=>{
+    const hist=S.historial.filter(h=>h.territorio_id===t.id);
+    const last=hist[0];
+    return`<div class="tbl-row" style="grid-template-columns:72px 1fr 110px 90px 70px;cursor:pointer" onclick="openHistDetail(${t.id})">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--t2)">${t.num}</span>
+      <span style="font-weight:600;font-size:13px">${t.nombre}</span>
+      <span style="font-size:12px;color:var(--t2)">${last?pubName(last.pub_id):'—'}</span>
+      <span style="font-size:12px;color:var(--t2)">${last?fmtDate(last.fecha_dev||last.fecha_asig):'—'}</span>
+      <span><span class="nav-badge">${hist.length}</span></span>
     </div>`;
   }).join('');
+}
+
+function openHistDetail(terId){
+  const t=S.territorios.find(x=>x.id===terId);
+  const hist=S.historial.filter(h=>h.territorio_id===terId);
+  const panel=document.getElementById('histDetail');
+  panel.style.display='';
+  document.getElementById('histDetailTitle').textContent=`${t.num} — ${t.nombre}`;
+  if(!hist.length){document.getElementById('histDetailList').innerHTML='<div style="color:var(--t3);font-size:13px">Sin asignaciones</div>';return;}
+  document.getElementById('histDetailList').innerHTML=hist.map(h=>{
+    const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
+    return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">${pubName(h.pub_id)}</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Entrega</div>
+          <input type="date" value="${h.fecha_asig||''}" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:var(--font);font-size:13px;color:var(--text);outline:none" onchange="editHistDate(${h.id},'fecha_asig',this.value,${terId})">
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Devolución</div>
+          <input type="date" value="${h.fecha_dev||''}" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:var(--font);font-size:13px;color:var(--text);outline:none" onchange="editHistDate(${h.id},'fecha_dev',this.value,${terId})">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--t3)">${dias}d trabajado</span>
+        <button class="btn btn-danger btn-xs" onclick="eliminarHistEntry(${h.id},${terId})">🗑 Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function editHistDate(histId, campo, valor, terId){
+  setSyncStatus('syncing');
+  try{
+    const body={};body[campo]=valor||null;
+    const rows=await sbPatch('historial',{id:histId},body);
+    const idx=S.historial.findIndex(x=>x.id===histId);
+    if(idx>=0) S.historial[idx]={...S.historial[idx],...rows[0]};
+    setSyncStatus('ok');toast('✓ Fecha actualizada','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function eliminarHistEntry(histId,terId){
+  if(!confirm('¿Eliminar esta asignación del historial?')) return;
+  setSyncStatus('syncing');
+  try{
+    await sbDelete('historial',{id:histId});
+    S.historial=S.historial.filter(x=>x.id!==histId);
+    setSyncStatus('ok');openHistDetail(terId);renderHistorial();toast('🗑 Eliminado');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
 // ══ TERRITORY MODAL ══
