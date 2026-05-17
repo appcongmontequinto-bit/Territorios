@@ -501,100 +501,205 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 @media(max-width:900px){.tcols{grid-template-columns:60px 1fr 80px 110px 100px}.tbl-head span:nth-child(n+4),.tbl-row span:nth-child(n+4){display:none}}
 
-/* ── MOBILE UI ── */
+/* ══════════════════════════════════════
+   MOBILE UI — completo rediseño
+   ══════════════════════════════════════ */
 @media(max-width:700px){
+  /* Hide desktop sidebar */
   #sidebar{display:none}
-  #main{padding-bottom:0}
-  .stats-strip{flex-wrap:wrap}
+  #main{padding-bottom:68px} /* space for bottom tab bar */
   .frow,.frow3{grid-template-columns:1fr}
 
-  /* TOPBAR mobile — show hamburger */
-  #topbar{padding:0 12px;gap:8px;height:52px}
-  .topbar-search{flex:1;min-width:0}
+  /* ── TOPBAR ── */
+  #topbar{padding:0 10px;gap:8px;height:54px;position:sticky;top:0;z-index:50}
+  .logo{font-size:16px}
+  .logo-mark{width:30px;height:30px;border-radius:8px}
+  .topbar-search{flex:1;min-width:0;height:36px}
+  .topbar-search input{font-size:14px}
   .sync-pill{display:none}
   .topbar-right .btn{display:none}
   #menuBtn{display:flex!important}
   #addTerBtn{display:flex!important}
 
-  /* MOBILE DRAWER */
-  #mobileDrawer{
-    position:fixed;inset:0;z-index:900;display:flex;pointer-events:none;
+  /* ── MOBILE BOTTOM TAB BAR ── */
+  #mobileTabBar{
+    display:flex!important;
+    position:fixed;bottom:0;left:0;right:0;z-index:300;
+    height:68px;padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(20,20,22,.97);
+    border-top:1px solid rgba(255,255,255,.1);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   }
+  .mtab{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;cursor:pointer;
+    color:rgba(255,255,255,.45);font-size:10px;font-weight:600;
+    letter-spacing:.01em;transition:color .12s;position:relative;
+    padding-top:6px;
+  }
+  .mtab-icon{font-size:20px;line-height:1;margin-bottom:1px}
+  .mtab.on{color:var(--blue)}
+  .mtab-badge{
+    position:absolute;top:2px;right:calc(50% - 18px);
+    background:var(--red);color:#fff;
+    font-size:9px;font-weight:700;
+    min-width:16px;height:16px;border-radius:99px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px;border:2px solid rgba(20,20,22,.97);
+  }
+
+  /* ── DRAWER ── */
+  #mobileDrawer{position:fixed;inset:0;z-index:900;display:flex;pointer-events:none}
   #mobileDrawer.open{pointer-events:all}
-  #drawerOverlay{
-    position:absolute;inset:0;background:rgba(0,0,0,.6);
-    opacity:0;transition:opacity .25s;backdrop-filter:blur(4px);
-  }
+  #drawerOverlay{position:absolute;inset:0;background:rgba(0,0,0,.6);opacity:0;transition:opacity .25s;backdrop-filter:blur(4px)}
   #mobileDrawer.open #drawerOverlay{opacity:1}
   #drawerPanel{
-    position:absolute;left:0;top:0;bottom:0;width:280px;
+    position:absolute;left:0;top:0;bottom:0;width:76%;max-width:300px;
     background:var(--s1);border-right:1px solid var(--border2);
     display:flex;flex-direction:column;
     transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
     overflow-y:auto;
   }
   #mobileDrawer.open #drawerPanel{transform:translateX(0)}
-  .drawer-head{
-    padding:20px 16px 16px;border-bottom:1px solid var(--border);
-    display:flex;align-items:center;gap:10px;
-  }
-  .drawer-logo{font-size:17px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+  .drawer-head{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .drawer-logo{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
   .drawer-close{margin-left:auto;width:28px;height:28px;background:var(--s3);border:none;border-radius:8px;color:var(--t2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .drawer-nav{padding:8px}
 
-  /* MAP PANEL mobile */
+  /* ── MAP PANEL ── */
   #mapPanel{
-    width:100%;height:65%;top:auto;bottom:0;right:0;
-    transform:translateY(100%);border-left:none;
-    border-top:1px solid var(--border2);border-radius:20px 20px 0 0;
+    width:100%;height:62%;top:auto;bottom:68px;right:0;
+    transform:translateY(110%);border-left:none;
+    border-top:1px solid var(--border2);border-radius:18px 18px 0 0;
   }
   #mapPanel.open{transform:translateY(0)}
 
-  /* Modal full screen */
+  /* ── MODAL ── */
   .overlay{z-index:1000;align-items:flex-end}
   .modal,.modal-lg{
-    width:100%!important;max-width:100%!important;max-height:95vh;
-    border-radius:20px 20px 0 0;position:relative;bottom:0;
+    width:100%!important;max-width:100%!important;max-height:92vh;
+    border-radius:20px 20px 0 0;margin:0;
   }
 
-  /* Stats 2x2 grid */
-  .stats-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .stat-box{min-width:0}
+  /* ── VIEW HEAD — compact ── */
+  .view-head{padding:10px 14px 0}
+  .view-title{font-size:20px;letter-spacing:-.4px}
+  .view-sub{font-size:12px;margin-top:1px}
+  .view-scroll{padding:8px 12px 12px;overflow-y:auto}
 
-  /* Table simplified */
-  .tcols{grid-template-columns:55px 1fr 95px}
-  .tbl-head span:nth-child(n+3),.tbl-row span:nth-child(n+3){display:none}
+  /* ── STATS STRIP — horizontal scroll, compact pills ── */
+  .stats-strip{
+    display:flex!important;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    gap:8px;
+    padding:8px 0 4px;
+    margin:0 -12px;
+    padding-left:12px;
+    padding-right:12px;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+    flex:none;
+  }
+  .stats-strip::-webkit-scrollbar{display:none}
+  .stat-box{
+    flex:none;
+    min-width:110px;
+    padding:10px 12px;
+    border-radius:12px;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+  }
+  .stat-ico{width:24px;height:24px;font-size:13px;border-radius:6px;margin-bottom:2px}
+  .stat-val{font-size:20px;letter-spacing:-.4px}
+  .stat-lbl{font-size:10px}
 
-  /* View head */
-  .view-head{padding:12px 14px 0}
-  .view-scroll{padding:10px 14px 14px}
-  .view-title{font-size:19px}
+  /* ── FILTER BAR — horizontal scroll ── */
+  .filter-bar{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto;
+    gap:6px;
+    margin:6px -12px 8px;
+    padding:0 12px;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+  .filter-bar::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:6px 13px;font-size:13px;white-space:nowrap}
+  .filter-bar select{
+    flex:none;min-width:120px;padding:6px 10px;font-size:13px;
+    border-radius:99px;background:var(--s2);border:1px solid var(--border);
+    color:var(--text);font-family:var(--font);
+  }
 
-  /* Card grid */
+  /* ── SORT SELECT — inline with filters ── */
+  #fSort{min-width:140px!important}
+  #fGrupo{min-width:130px!important}
+
+  /* ── TABLE — 3 cols: num, nombre+estado, publicador ── */
+  .tcols{grid-template-columns:48px 1fr auto}
+  .tbl-head{padding:0 8px}
+  .tbl-head span{padding:8px 5px;font-size:10px}
+  .tbl-row{padding:0 8px}
+  .tbl-row span{padding:11px 5px;font-size:13px}
+  /* Show: num(1), nombre(2), estado(8) — hide rest */
+  .tbl-head span:nth-child(n+3):not(:last-child),
+  .tbl-row span:nth-child(n+3):not(:last-child){display:none}
+  /* Estado pill column */
+  .tbl-head span:last-child,.tbl-row span:last-child{display:flex;align-items:center}
+  /* Nombre with last-worked date inline */
+  .tbl-row span:nth-child(2){flex-direction:column;align-items:flex-start;gap:1px}
+
+  /* Hide table header on mobile — info is inline in rows */
+  #tblHead{display:none}
+  .tbl-body{max-height:calc(100dvh - 240px)!important}
+
+  /* ── CARD GRID ── */
   .card-grid{grid-template-columns:1fr}
+  .tcard{padding:12px}
+  .tcard-name{font-size:14px}
 
-  /* Charts */
+  /* ── PRIO LIST ── */
+  .prio-item{padding:10px 12px;gap:8px}
+  .prio-name{font-size:13px}
+  .prio-sub{font-size:11px}
+  .prio-last{font-size:11px}
+  .prio-rank{width:24px;font-size:10px}
+
+  /* ── CHARTS ── */
   #statGrid{grid-template-columns:1fr!important}
 
-  /* Historial */
+  /* ── HISTORIAL ── */
   #view-historial .view-scroll{flex-direction:column!important}
   #histDetail{width:100%!important}
 
-  /* Filter bar wraps better */
-  .filter-bar{gap:5px}
-  .chip{padding:5px 10px;font-size:12px}
+  /* ── GRUPOS grid ── */
+  #gruposGrid{grid-template-columns:1fr!important}
 
-  /* Map legend */
-  .map-legend{font-size:11px;padding:8px 12px;bottom:16px}
+  /* ── MAP LEGEND ── */
+  .map-legend{font-size:11px;padding:8px 10px;bottom:76px;left:10px}
 
-  /* Prio item */
-  .prio-item{flex-wrap:wrap;gap:8px}
+  /* ── TOAST ── */
+  #toast-wrap{bottom:76px;right:12px}
+
+  /* ── TOGGLE BUTTONS ── */
+  .tgl-btn{width:34px;height:34px}
+
+  /* ── PRIORIDAD sort ── */
+  #prioSort{font-size:13px!important;padding:6px 10px!important;border-radius:99px!important}
 }
+
+/* Always hidden on mobile unless activated */
 #menuBtn{display:none}
 #addTerBtn{display:none}
+#mobileTabBar{display:none}
 
-/* Always hide mobile drawer on desktop */
-@media(min-width:701px){#mobileDrawer{display:none!important}}
+@media(min-width:701px){
+  #mobileDrawer{display:none!important}
+  #mobileTabBar{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -640,29 +745,54 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <div id="app" style="display:none">
 
+<!-- MOBILE BOTTOM TAB BAR -->
+<nav id="mobileTabBar">
+  <div class="mtab on" data-v="territorios" onclick="navTab(this)">
+    <div class="mtab-icon">📋</div>
+    <span>Territorios</span>
+    <span class="mtab-badge" id="mtb-venc" style="display:none">0</span>
+  </div>
+  <div class="mtab" data-v="mapa" onclick="navTab(this)">
+    <div class="mtab-icon">🗺</div>
+    <span>Mapa</span>
+  </div>
+  <div class="mtab" data-v="prioridad" onclick="navTab(this)">
+    <div class="mtab-icon">⏳</div>
+    <span>Pendiente</span>
+    <span class="mtab-badge" id="mtb-old" style="display:none">0</span>
+  </div>
+  <div class="mtab" data-v="publicadores" onclick="navTab(this)">
+    <div class="mtab-icon">👥</div>
+    <span>Hermanos</span>
+  </div>
+  <div class="mtab" data-v="__menu" onclick="toggleDrawer()">
+    <div class="mtab-icon">☰</div>
+    <span>Más</span>
+  </div>
+</nav>
+
 <!-- MOBILE DRAWER -->
 <div id="mobileDrawer">
   <div id="drawerOverlay" onclick="toggleDrawer()"></div>
   <div id="drawerPanel">
     <div class="drawer-head">
-      <div class="drawer-logo"><div class="logo-mark">🗺</div>Territorios</div>
+      <div class="drawer-logo"><div class="logo-mark" style="width:26px;height:26px;font-size:12px">🗺</div>Territorios</div>
       <button class="drawer-close" onclick="toggleDrawer()">✕</button>
     </div>
     <div class="drawer-nav">
-      <div class="nav-sect">Principal</div>
-      <div class="nav-item on" data-v="territorios" onclick="navDrawer(this)"><span class="nav-icon">📋</span>Territorios<span class="nav-badge a" id="dnb-tot">0</span></div>
-      <div class="nav-item" data-v="mapa" onclick="navDrawer(this)"><span class="nav-icon">🗺</span>Mapa</div>
-      <div class="nav-item" data-v="prioridad" onclick="navDrawer(this)"><span class="nav-icon">⏳</span>Sin trabajar<span class="nav-badge am" id="dnb-old">0</span></div>
+      <div class="nav-sect">Vistas</div>
+      <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="dnb-grp">0</span></div>
+      <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📖</span>Historial</div>
       <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
-      <div class="nav-sect">Gestión</div>
-      <div class="nav-item" data-v="publicadores" onclick="navDrawer(this)"><span class="nav-icon">👥</span>Publicadores<span class="nav-badge" id="dnb-pub">0</span></div>
-      <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos</div>
-      <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📋</span>Historial</div>
       <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
       <div class="nav-sect">Filtros rápidos</div>
       <div class="nav-item" data-filter="disponible" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="dnb-disp">0</span></div>
       <div class="nav-item" data-filter="asignado" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="dnb-asig">0</span></div>
       <div class="nav-item" data-filter="vencido" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="dnb-venc">0</span></div>
+      <div class="nav-item" data-filter="proximo" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--amber)">●</span>Próx. vencer<span class="nav-badge am" id="dnb-prox">0</span></div>
+      <div class="nav-sect">Acciones</div>
+      <div class="nav-item" onclick="toggleDrawer();openTerModal()"><span class="nav-icon">➕</span>Nuevo territorio</div>
+      <div class="nav-item" onclick="toggleDrawer();openModal('mPub')"><span class="nav-icon">👤</span>Nuevo publicador</div>
       <div class="nav-sect">Cuenta</div>
       <div class="nav-item" onclick="doLogout()"><span class="nav-icon">⎋</span>Cerrar sesión</div>
     </div>
@@ -723,11 +853,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div class="stats-strip" id="statStrip"></div>
     <div id="list-view">
       <div class="tbl-wrap">
-        <div class="tbl-head tcols">
+        <div class="tbl-head tcols" id="tblHead">
           <span>Nº</span><span>Nombre</span><span>Tipo</span><span>Grupo</span>
           <span>Publicador</span><span>Asignado</span><span>Vence</span><span>Estado</span>
         </div>
-        <div class="tbl-body" id="tbl-body" style="max-height:calc(100vh - 285px)"></div>
+        <div class="tbl-body" id="tbl-body" style="max-height:calc(100dvh - 280px)"></div>
       </div>
     </div>
     <div id="card-view" style="display:none" class="card-grid"></div>
@@ -1282,7 +1412,15 @@ function renderView(v){
 }
 
 // ══ FILTERS ══
-function setFilter(el){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');currentFilter=el.dataset.f;renderTerritorios();}
+function setFilter(elOrStr){
+  let f,el;
+  if(typeof elOrStr==='string'){f=elOrStr;el=document.querySelector(`.chip[data-f="${f}"]`);}
+  else{el=elOrStr;f=el?.dataset?.f||'todos';}
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  if(el) el.classList.add('on');
+  currentFilter=f;
+  renderTerritorios();
+}
 function onSearch(){searchQ=document.getElementById('gSearch').value.toLowerCase();if(currentView==='territorios') renderTerritorios();}
 function setViewMode(m){
   viewMode=m;
@@ -1320,7 +1458,38 @@ function renderTerritorios(){
 }
 
 function renderStatsStrip(list){
-  const d=list.filter(t=>t.estado==='disponible').length,a=list.filter(t=>t.estado==='asignado').length,v=list.filter(t=>t.estado==='vencido').length,p=list.filter(t=>statusOf(t)==='proximo').length;
+  const d=list.filter(t=>t.estado==='disponible').length;
+  const a=list.filter(t=>t.estado==='asignado').length;
+  const v=list.filter(t=>t.estado==='vencido').length;
+  const p=list.filter(t=>statusOf(t)==='proximo').length;
+  const mob=window.innerWidth<=700;
+
+  if(mob){
+    // Compact scrollable pills on mobile
+    document.getElementById('statStrip').innerHTML=`
+      <div class="stat-box" onclick="setFilter('todos')">
+        <div class="stat-ico" style="background:var(--blue-dim)">🗺</div>
+        <div><div class="stat-val">${list.length}</div><div class="stat-lbl">Total</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('disponible')">
+        <div class="stat-ico" style="background:var(--green-dim)">✓</div>
+        <div><div class="stat-val" style="color:var(--green)">${d}</div><div class="stat-lbl">Disponibles</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('asignado')">
+        <div class="stat-ico" style="background:var(--blue-dim)">📌</div>
+        <div><div class="stat-val" style="color:var(--blue)">${a}</div><div class="stat-lbl">Asignados</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('proximo')">
+        <div class="stat-ico" style="background:var(--amber-dim)">⚠</div>
+        <div><div class="stat-val" style="color:var(--amber)">${p}</div><div class="stat-lbl">Próx. vencer</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('vencido')">
+        <div class="stat-ico" style="background:var(--red-dim)">🔴</div>
+        <div><div class="stat-val" style="color:var(--red)">${v}</div><div class="stat-lbl">Vencidos</div></div>
+      </div>`;
+    return;
+  }
+
   document.getElementById('statStrip').innerHTML=`
     <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">🗺</div><div><div class="stat-val">${list.length}</div><div class="stat-lbl">Filtrados</div></div></div>
     <div class="stat-box"><div class="stat-ico" style="background:var(--green-dim)">✓</div><div><div class="stat-val" style="color:var(--green)">${d}</div><div class="stat-lbl">Disponibles</div></div></div>
@@ -1332,11 +1501,23 @@ function renderStatsStrip(list){
 function renderListView(list){
   const body=document.getElementById('tbl-body');
   if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
+  const mob=window.innerWidth<=700;
   body.innerHTML=list.map(t=>{
     const st=statusOf(t);const g=grupoOf(t);
     const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const col=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${col}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
-    // Show last worked date for disponibles
-    const lastWorked = t.estado==='disponible' && t.ultimo_trabajado ? `<span style="color:var(--t3);font-size:11px"> · ult. ${fmtDate(t.ultimo_trabajado)}</span>` : '';
+    const lastWorked=t.estado==='disponible'&&t.ultimo_trabajado?`<span style="color:var(--t3);font-size:11px"> · ult. ${fmtDate(t.ultimo_trabajado)}</span>`:'';
+    if(mob){
+      const sub=t.pub_id?pubName(t.pub_id):(t.ultimo_trabajado?`Ult: ${fmtDate(t.ultimo_trabajado)}`:'Sin asignar nunca');
+      const extra=t.fecha_vence&&st!=='disponible'?` · ${daysUntil(t.fecha_vence)<0?'Vencido hace '+(-daysUntil(t.fecha_vence))+'d':daysUntil(t.fecha_vence)+'d'}` :'';
+      return`<div class="tbl-row" style="grid-template-columns:44px 1fr auto;gap:0;min-height:54px" onclick="openTerDetail(${t.id})">
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--t3);padding-top:12px">${t.num}</span>
+        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 6px">
+          <span style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.nombre}</span>
+          <span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}${extra}</span>
+        </span>
+        <span style="padding:10px 0 10px 6px;flex-shrink:0">${pillHtml(st,t.es_grupo)}</span>
+      </div>`;
+    }
     return`<div class="tbl-row tcols" onclick="openTerDetail(${t.id})">
       <span style="font-family:var(--font-mono);font-size:11px;color:var(--t2)">${t.num}</span>
       <span style="font-weight:600">${t.nombre}${lastWorked}</span>
@@ -1379,24 +1560,33 @@ function updateBadges(){
   const asig=t.filter(x=>x.estado==='asignado').length;
   const venc=t.filter(x=>x.estado==='vencido').length;
   const prox=t.filter(x=>statusOf(x)==='proximo').length;
+  const dispCount=disp;
+
   // Sidebar badges
-  document.getElementById('nb-tot').textContent=t.length;
-  document.getElementById('nb-pub').textContent=S.publicadores.length;
-  document.getElementById('nb-grp').textContent=S.grupos.length;
-  document.getElementById('nb-disp').textContent=disp;
-  document.getElementById('nb-asig').textContent=asig;
-  document.getElementById('nb-venc').textContent=venc;
-  document.getElementById('nb-prox').textContent=prox;
-  document.getElementById('nb-grup').textContent=t.filter(x=>x.es_grupo).length;
-  document.getElementById('nb-old').textContent=disp;
-  // Drawer badges (mobile)
-  const d=id=>document.getElementById(id);
-  if(d('dnb-tot')) d('dnb-tot').textContent=t.length;
-  if(d('dnb-pub')) d('dnb-pub').textContent=S.publicadores.length;
-  if(d('dnb-old')) d('dnb-old').textContent=disp;
-  if(d('dnb-disp')) d('dnb-disp').textContent=disp;
-  if(d('dnb-asig')) d('dnb-asig').textContent=asig;
-  if(d('dnb-venc')) d('dnb-venc').textContent=venc;
+  const sb=id=>document.getElementById(id);
+  if(sb('nb-tot')) sb('nb-tot').textContent=t.length;
+  if(sb('nb-pub')) sb('nb-pub').textContent=S.publicadores.length;
+  if(sb('nb-grp')) sb('nb-grp').textContent=S.grupos.length;
+  if(sb('nb-disp')) sb('nb-disp').textContent=disp;
+  if(sb('nb-asig')) sb('nb-asig').textContent=asig;
+  if(sb('nb-venc')) sb('nb-venc').textContent=venc;
+  if(sb('nb-prox')) sb('nb-prox').textContent=prox;
+  if(sb('nb-grup')) sb('nb-grup').textContent=t.filter(x=>x.es_grupo).length;
+  if(sb('nb-old')) sb('nb-old').textContent=disp;
+
+  // Drawer badges
+  if(sb('dnb-grp')) sb('dnb-grp').textContent=S.grupos.length;
+  if(sb('dnb-disp')) sb('dnb-disp').textContent=disp;
+  if(sb('dnb-asig')) sb('dnb-asig').textContent=asig;
+  if(sb('dnb-venc')) sb('dnb-venc').textContent=venc;
+  if(sb('dnb-prox')) sb('dnb-prox').textContent=prox;
+
+  // Tab bar badges — show vencidos count on Territorios tab
+  const vencBadge=sb('mtb-venc');
+  if(vencBadge){ vencBadge.textContent=venc; vencBadge.style.display=venc>0?'flex':'none'; }
+  const oldBadge=sb('mtb-old');
+  if(oldBadge){ oldBadge.textContent=disp; oldBadge.style.display=disp>0?'flex':'none'; }
+
   if(leafletMap) updateMapColors();
 }
 
@@ -2243,6 +2433,17 @@ function fillGroupFilter(){
   fg.innerHTML='<option value="">Todos los grupos</option>'+S.grupos.sort((a,b)=>a.num-b.num).map(g=>`<option value="${g.id}"${String(g.id)===prev?' selected':''}>Grupo ${g.num}</option>`).join('');
 }
 function fillAllSels(){fillGrupoSel('p-grupo');fillGrupoSel('t-grupo');fillGroupFilter();}
+
+// ══ MOBILE TAB BAR ══
+function navTab(el) {
+  const v = el.dataset.v;
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  // Sync sidebar
+  document.querySelectorAll('#sidebar .nav-item[data-v]').forEach(n =>
+    n.classList.toggle('on', n.dataset.v === v));
+  showView(v);
+}
 
 // ══ MOBILE DRAWER ══
 let drawerOpen = false;
