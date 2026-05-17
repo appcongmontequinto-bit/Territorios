@@ -2,7 +2,34 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Territorios">
+<meta name="application-name" content="Territorios">
+<meta name="theme-color" content="#0a84ff">
+<meta name="description" content="Gestión de territorios de predicación">
+<meta name="msapplication-TileColor" content="#000000">
+<meta name="msapplication-TileImage" content="icons/icon-144x144.png">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple touch icons — prevents browser badge overlay -->
+<link rel="apple-touch-icon" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="72x72" href="icons/icon-72x72.png">
+<link rel="apple-touch-icon" sizes="96x96" href="icons/icon-96x96.png">
+<link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="shortcut icon" href="icons/icon-96x96.png">
+
 <title>Territorios · Congregación</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
@@ -32,7 +59,10 @@
 }
 
 html,body{height:100%;overflow:hidden}
-body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+  /* Safe area for notch/home bar */
+  padding-top:env(safe-area-inset-top);
+}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--s4);border-radius:99px}
@@ -603,6 +633,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <button class="btn btn-ghost btn-sm" onclick="openTerModal()">＋ Territorio</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Publicador</button>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="Salir">⎋</button>
+    <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.25);border-radius:9px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:5px" title="Instalar app">⬇ Instalar</button>
     <button id="addTerBtn" onclick="openTerModal()" style="width:36px;height:36px;background:var(--blue);border:none;border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff;flex-shrink:0">＋</button>
   </div>
 </div>
@@ -2275,6 +2306,56 @@ function toast(msg,type=''){
   el.innerHTML=`<span style="color:${col}">●</span> ${msg}`;
   c.appendChild(el);setTimeout(()=>el.remove(),3500);
 }
+
+// ══ SERVICE WORKER REGISTRATION ══
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('[PWA] Service Worker registered:', reg.scope);
+        // Check for updates every 30 minutes
+        setInterval(() => reg.update(), 30 * 60 * 1000);
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing;
+          newSW.addEventListener('statechange', () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available — show update toast
+              toast('🔄 Nueva versión disponible — recarga para actualizar', 'a');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
+  });
+}
+
+// ══ PWA INSTALL PROMPT ══
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  // Show install button in topbar if available
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.style.display = 'flex';
+});
+
+function installPWA() {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(result => {
+    if (result.outcome === 'accepted') {
+      toast('✓ App instalada', 'g');
+      const btn = document.getElementById('installBtn');
+      if (btn) btn.style.display = 'none';
+    }
+    _installPrompt = null;
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  toast('✓ Territorios instalado como app', 'g');
+  _installPrompt = null;
+});
 
 // ══ INIT ══
 if(sessionStorage.getItem('ter_auth')==='1') initApp();
