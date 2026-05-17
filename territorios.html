@@ -470,7 +470,86 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 #lbClose{position:absolute;top:14px;right:14px;width:36px;height:36px;background:rgba(255,255,255,.12);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
 @media(max-width:900px){.tcols{grid-template-columns:60px 1fr 80px 110px 100px}.tbl-head span:nth-child(n+4),.tbl-row span:nth-child(n+4){display:none}}
-@media(max-width:700px){#sidebar{display:none}.stats-strip{flex-wrap:wrap}.frow,.frow3{grid-template-columns:1fr}#mapPanel{width:100%;height:50%;top:auto;bottom:0;transform:translateY(100%);border-left:none;border-top:1px solid var(--border2)}#mapPanel.open{transform:translateY(0)}}
+
+/* ── MOBILE UI ── */
+@media(max-width:700px){
+  /* Hide desktop sidebar */
+  #sidebar{display:none}
+  /* Push content above bottom nav */
+  #main{padding-bottom:64px}
+  .stats-strip{flex-wrap:wrap}
+  .frow,.frow3{grid-template-columns:1fr}
+
+  /* BOTTOM NAV */
+  #bottomNav{
+    display:flex!important;position:fixed;bottom:0;left:0;right:0;
+    height:64px;background:rgba(28,28,30,.97);
+    border-top:1px solid var(--border2);z-index:300;
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .bn-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;cursor:pointer;color:var(--t2);font-size:10px;font-weight:600;
+    transition:color .12s;padding:8px 4px;letter-spacing:.01em;
+  }
+  .bn-item .bn-icon{font-size:22px;line-height:1}
+  .bn-item.on{color:var(--blue)}
+  .bn-item.on .bn-icon{filter:drop-shadow(0 0 6px rgba(10,132,255,.5))}
+
+  /* TOPBAR mobile */
+  #topbar{padding:0 12px;gap:8px}
+  .topbar-search{max-width:none;flex:1}
+  .sync-pill{display:none}
+  .topbar-right .btn:not(:last-child){display:none}
+
+  /* MAP PANEL mobile — slide up from bottom */
+  #mapPanel{
+    width:100%;height:65%;top:auto;bottom:0;right:0;
+    transform:translateY(100%);
+    border-left:none;border-top:1px solid var(--border2);
+    border-radius:20px 20px 0 0;
+  }
+  #mapPanel.open{transform:translateY(0)}
+
+  /* Modal must be above everything on mobile */
+  .overlay{z-index:1000}
+
+  /* View head padding */
+  .view-head{padding:12px 14px 0}
+  .view-scroll{padding:10px 14px 14px}
+
+  /* Stats strip 2 columns */
+  .stats-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  /* Table — only 2 cols on mobile */
+  .tcols{grid-template-columns:60px 1fr 100px}
+  .tbl-head span:nth-child(n+3),.tbl-row span:nth-child(n+3){display:none}
+
+  /* Card grid single col */
+  .card-grid{grid-template-columns:1fr}
+
+  /* Historial detail panel full width */
+  #view-historial .view-scroll{flex-direction:column!important}
+  #histDetail{width:100%!important}
+
+  /* Charts 1 col */
+  #statGrid{grid-template-columns:1fr!important}
+
+  /* Modal full screen on mobile */
+  .modal,.modal-lg{
+    width:100%!important;max-width:100%!important;
+    max-height:95vh;border-radius:20px 20px 0 0;
+    position:fixed;bottom:0;left:0;right:0;margin:0;
+  }
+  .overlay{align-items:flex-end}
+
+  /* Map legend smaller */
+  .map-legend{font-size:11px;padding:8px 12px;bottom:72px}
+}
+
+/* Hide bottom nav on desktop */
+#bottomNav{display:none}
 </style>
 </head>
 <body>
@@ -512,6 +591,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 </div>
 
 <div id="app" style="display:none">
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="bottomNav">
+  <div class="bn-item on" data-v="territorios" onclick="navMobile(this)"><span class="bn-icon">📋</span>Territorios</div>
+  <div class="bn-item" data-v="mapa" onclick="navMobile(this)"><span class="bn-icon">🗺</span>Mapa</div>
+  <div class="bn-item" data-v="prioridad" onclick="navMobile(this)"><span class="bn-icon">⏳</span>Pendiente</div>
+  <div class="bn-item" data-v="publicadores" onclick="navMobile(this)"><span class="bn-icon">👥</span>Hermanos</div>
+  <div class="bn-item" data-v="historial" onclick="navMobile(this)"><span class="bn-icon">📖</span>Historial</div>
+</nav>
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="nav-sect">Principal</div>
@@ -1911,8 +1999,21 @@ function fillGroupFilter(){
 }
 function fillAllSels(){fillGrupoSel('p-grupo');fillGrupoSel('t-grupo');fillGroupFilter();}
 
+// ══ MOBILE NAV ══
+function navMobile(el) {
+  document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('on'));
+  el.classList.add('on');
+  const v = el.dataset.v;
+  document.querySelectorAll('.nav-item[data-v]').forEach(n => n.classList.toggle('on', n.dataset.v === v));
+  showView(v);
+}
+
 // ══ MODAL HELPERS ══
-function openModal(id){document.getElementById(id).classList.add('on');}
+function openModal(id){
+  // Close map panel first so modal appears on top on mobile
+  if (document.getElementById('mapPanel')?.classList.contains('open')) closeMapPanel();
+  document.getElementById(id).classList.add('on');
+}
 function closeModal(id){
   document.getElementById(id).classList.remove('on');
   if(id==='mPub'){['p-nombre','p-tel'].forEach(x=>document.getElementById(x).value='');document.getElementById('p-grupo').value='';}
