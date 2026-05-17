@@ -122,9 +122,48 @@ header{background:var(--ink);padding:13px 20px;display:flex;align-items:center;g
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 @media(max-width:400px){.det-grid{grid-template-columns:1fr}.cdown-wrap{flex-direction:column;align-items:flex-start;gap:12px}}
+
+/* ── SCREENSHOT PROTECTION ── */
+/* 1. Print media: hide everything */
+@media print{
+  body *{visibility:hidden!important}
+  body::after{
+    visibility:visible!important;position:fixed;inset:0;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    background:var(--paper);color:var(--ink);font-family:sans-serif;
+    content:"Este contenido no está disponible fuera del enlace original.";
+    font-size:20px;text-align:center;padding:40px;
+  }
+}
+/* 2. Screenshot overlay — shown on key combos and visibility change */
+#screenshotOverlay{
+  display:none;position:fixed;inset:0;z-index:99999;
+  background:var(--paper);
+  align-items:center;justify-content:center;flex-direction:column;
+  gap:16px;text-align:center;padding:32px;
+  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+}
+#screenshotOverlay.show{display:flex}
+.sc-icon{font-size:52px;margin-bottom:4px}
+.sc-title{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
+.sc-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:300px}
+.sc-btn{margin-top:8px;padding:11px 24px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+/* 3. CSS user-select — prevent text selection */
+body{-webkit-user-select:none;user-select:none}
+/* 4. CSS for dragging prevention */
+img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
+img.map-img-wrap img,.thumb,.pdf-thumb{pointer-events:auto}
 </style>
 </head>
 <body>
+
+<!-- SCREENSHOT PROTECTION OVERLAY -->
+<div id="screenshotOverlay">
+  <div class="sc-icon">🔒</div>
+  <div class="sc-title">Contenido protegido</div>
+  <div class="sc-sub">Este territorio solo puede consultarse a través del enlace que te ha enviado el responsable.</div>
+  <button class="sc-btn" onclick="hideScreenshotOverlay()">Volver a mi territorio</button>
+</div>
 
 <header>
   <div class="hlogo"><div class="hpulse"></div>Territorios</div>
@@ -276,7 +315,8 @@ function showError(msg) {
 
 function render(t, pubs, grps, archs) {
   const pub = pubs.find(p => p.id === t.pub_id);
-  const grp = grps.find(g => g.id === t.grupo_id);
+  // Compare as numbers since grupo_id from Supabase is integer
+  const grp = t.grupo_id ? grps.find(g => Number(g.id) === Number(t.grupo_id)) : null;
 
   document.title = `${t.num} — ${t.nombre}`;
   document.getElementById('hNum').textContent = t.num;
@@ -285,7 +325,7 @@ function render(t, pubs, grps, archs) {
 
   renderCountdown(t);
   document.getElementById('iDirs').textContent = t.num_dirs || '—';
-  document.getElementById('iGrupo').textContent = grp ? `G${grp.num}` : '—';
+  document.getElementById('iGrupo').textContent = grp ? `G${grp.num} · ${grp.nombre || ''}`.trim().replace(/·\s*$/, '') : '—';
   document.getElementById('iPub').textContent = pub ? pub.nombre.split(' ')[0] : '—';
 
   renderMapImages(archs);
@@ -478,6 +518,68 @@ function goToMyLocation() {
 function openLb(src) { document.getElementById('lbImg').src = src; document.getElementById('lb').classList.add('on'); }
 function closeLb() { document.getElementById('lb').classList.remove('on'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
+
+// ══ SCREENSHOT PROTECTION ══
+let _scTimer = null;
+
+function showScreenshotOverlay() {
+  document.getElementById('screenshotOverlay').classList.add('show');
+}
+function hideScreenshotOverlay() {
+  document.getElementById('screenshotOverlay').classList.remove('show');
+}
+
+// Block PrintScreen key and common screenshot combos
+document.addEventListener('keydown', e => {
+  const blockedKeys = [
+    'PrintScreen',
+    'F12',  // DevTools (can inspect DOM)
+  ];
+  // Cmd/Ctrl + Shift + S, Cmd/Ctrl + Shift + 4/5 (Mac screenshot), Ctrl+P (print)
+  const isScreenshotCombo =
+    (e.key === 'PrintScreen') ||
+    (e.ctrlKey && e.key === 'p') ||
+    (e.metaKey && e.key === 'p') ||
+    (e.ctrlKey && e.shiftKey && ['s','S','x','X','4','5'].includes(e.key)) ||
+    (e.metaKey && e.shiftKey && ['4','5','6','s','S'].includes(e.key));
+
+  if (isScreenshotCombo) {
+    e.preventDefault();
+    e.stopPropagation();
+    showScreenshotOverlay();
+    if (_scTimer) clearTimeout(_scTimer);
+    _scTimer = setTimeout(hideScreenshotOverlay, 3500);
+    return false;
+  }
+}, true);
+
+// Hide content when tab becomes invisible (switching apps to screenshot)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Blur sensitive content briefly
+    document.getElementById('terContent') &&
+      (document.getElementById('terContent').style.filter = 'blur(12px)');
+  } else {
+    setTimeout(() => {
+      document.getElementById('terContent') &&
+        (document.getElementById('terContent').style.filter = '');
+    }, 800);
+  }
+});
+
+// Prevent right-click context menu (which has "Save image as")
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Detect if DevTools is open (basic heuristic)
+let _devToolsOpen = false;
+const _devCheck = setInterval(() => {
+  const threshold = 160;
+  if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+    if (!_devToolsOpen) { _devToolsOpen = true; }
+  } else {
+    _devToolsOpen = false;
+  }
+}, 1000);
 
 init();
 </script>
