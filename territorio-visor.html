@@ -254,7 +254,7 @@ async function init() {
     const [ters, pubs, grps, archs] = await Promise.all([
       sbGet('territorios', { select: '*', id: `eq.${TID}` }),
       sbGet('publicadores', { select: 'id,nombre,grupo_id' }),
-      sbGet('grupos', { select: 'id,num,nombre,siervo_id' }),
+      sbGet('grupos', { select: 'id,num,nombre' }),
       sbGet('archivos', { select: '*', territorio_id: `eq.${TID}`, order: 'created_at.asc' }),
     ]);
 
@@ -277,7 +277,6 @@ function showError(msg) {
 function render(t, pubs, grps, archs) {
   const pub = pubs.find(p => p.id === t.pub_id);
   const grp = grps.find(g => g.id === t.grupo_id);
-  const siervo = grp ? pubs.find(p => p.id === grp.siervo_id) : null;
 
   document.title = `${t.num} — ${t.nombre}`;
   document.getElementById('hNum').textContent = t.num;
@@ -290,7 +289,7 @@ function render(t, pubs, grps, archs) {
   document.getElementById('iPub').textContent = pub ? pub.nombre.split(' ')[0] : '—';
 
   renderMapImages(archs);
-  renderDetails(t, pub, grp, siervo);
+  renderDetails(t, pub, grp);
 
   document.getElementById('terContent').style.display = 'flex';
   document.getElementById('terContent').style.flexDirection = 'column';
@@ -376,13 +375,13 @@ function renderMapImages(archs) {
   });
 }
 
-function renderDetails(t, pub, grp, siervo) {
+function renderDetails(t, pub, grp) {
   document.getElementById('detGrid').innerHTML = `
     <div class="det-field"><div class="det-key">Tipo</div><div class="det-val">${t.tipo}</div></div>
     <div class="det-field"><div class="det-key">Grupo</div><div class="det-val">${grp ? `Grupo ${grp.num}` : '—'}</div></div>
     <div class="det-field"><div class="det-key">Publicador</div><div class="det-val">${pub?.nombre || '—'}</div></div>
-    <div class="det-field"><div class="det-key">Siervo</div><div class="det-val">${siervo?.nombre || '—'}</div></div>
     <div class="det-field"><div class="det-key">Puertas</div><div class="det-val">${t.num_dirs || '—'}</div></div>
+    <div class="det-field"><div class="det-key">Vence</div><div class="det-val">${fmtDate(t.fecha_vence)}</div></div>
     <div class="det-field"><div class="det-key">Modalidad</div><div class="det-val">${t.es_grupo ? 'Territorio de grupo' : 'Individual'}</div></div>
     ${t.descripcion ? `<div class="det-field det-full"><div class="det-key">Descripción / Límites</div><div class="det-val">${t.descripcion}</div></div>` : ''}`;
 
@@ -394,16 +393,52 @@ function renderDetails(t, pub, grp, siervo) {
 // ══ LEAFLET ══
 let map = null, tileLayer = null, userMarker = null;
 const TILES = {
-  street: ['https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', '© OpenStreetMap contributors'],
+  street: ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', '© OpenStreetMap · © CARTO'],
   satellite: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', '© Esri'],
   topo: ['https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap'],
 };
+const GEOJSON_URL = 'zonas.geojson';
 
 function initMap(t) {
   if (map) { map.remove(); map = null; }
-  map = L.map('leafletMap', { zoomControl: true }).setView([37.3828, -5.9732], 13); // Sevilla default
+  map = L.map('leafletMap', { zoomControl: true }).setView([37.3355, -5.9282], 15);
   applyTile('street');
-  geocode(t);
+  loadGeoJsonAndHighlight(t);
+}
+
+async function loadGeoJsonAndHighlight(t) {
+  try {
+    const r = await fetch(GEOJSON_URL);
+    const data = await r.json();
+    const targetNum = t.num;
+    let targetBounds = null;
+
+    L.geoJson(data, {
+      style: (feature) => {
+        const isTarget = String(feature.properties.Name).trim() === targetNum;
+        return {
+          fillColor: isTarget ? '#c9973a' : '#94a3b8',
+          weight: isTarget ? 3 : 0.5,
+          opacity: isTarget ? 1 : 0.35,
+          color: isTarget ? '#7c5e1e' : '#64748b',
+          fillOpacity: isTarget ? 0.55 : 0.1,
+        };
+      },
+      onEachFeature: (feature, layer) => {
+        if (String(feature.properties.Name).trim() === targetNum) {
+          targetBounds = layer.getBounds();
+          layer.bindPopup(`<b>Territorio ${targetNum}</b><br>${t.nombre}`).openPopup();
+        }
+      }
+    }).addTo(map);
+
+    if (targetBounds) {
+      map.fitBounds(targetBounds, { padding: [50, 50], maxZoom: 17 });
+    }
+  } catch (e) {
+    // GeoJSON not available — fallback
+    console.warn('zonas.geojson no encontrado');
+  }
 }
 
 function applyTile(type) {
@@ -418,19 +453,6 @@ function setTile(type, el) {
 }
 
 function icon(e) { return L.divIcon({ html: `<div style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">${e}</div>`, iconSize: [32, 32], iconAnchor: [16, 28], className: '' }); }
-
-async function geocode(t) {
-  const q = t.descripcion || t.nombre;
-  try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
-    const data = await r.json();
-    if (data.length) {
-      const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
-      map.setView([lat, lng], 15);
-      L.marker([lat, lng], { icon: icon('📍') }).addTo(map).bindPopup(`<b>${t.num} — ${t.nombre}</b><br><small>${t.descripcion || ''}</small>`).openPopup();
-    }
-  } catch {}
-}
 
 async function searchAddr() {
   const q = document.getElementById('addrInput').value.trim(); if (!q) return;
