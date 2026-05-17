@@ -93,7 +93,23 @@ header{background:var(--ink);padding:13px 20px;display:flex;align-items:center;g
 .pdf-thumb:hover{border-color:var(--blue)}
 
 /* LEAFLET */
-#leafletMap{height:270px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--paper3)}
+/* ── MAP FULLSCREEN ── */
+#leafletMap{height:270px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--paper3);transition:height .3s ease}
+#leafletMap.fullscreen{
+  position:fixed!important;inset:0!important;z-index:800!important;
+  border-radius:0!important;height:100vh!important;border:none!important;
+}
+.map-fs-close{
+  position:fixed;top:16px;right:16px;z-index:801;
+  width:40px;height:40px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
+  border:none;border-radius:50%;color:#fff;font-size:20px;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+}
+.map-fs-close.show{display:flex}
+
+/* ── IMAGE ENLARGE ── */
+.map-img-wrap img{cursor:zoom-in}
+.map-img-wrap img:active{opacity:.9}
 .tile-row{display:flex;gap:7px;margin-bottom:10px}
 .tile-btn{flex:1;padding:7px 8px;background:var(--paper);border:1.5px solid var(--paper3);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--ink2);cursor:pointer;transition:all .15s;text-align:center}
 .tile-btn:hover,.tile-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -150,9 +166,9 @@ header{background:var(--ink);padding:13px 20px;display:flex;align-items:center;g
 .sc-btn{margin-top:8px;padding:11px 24px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
 /* 3. CSS user-select — prevent text selection */
 body{-webkit-user-select:none;user-select:none}
-/* 4. CSS for dragging prevention */
-img{-webkit-user-drag:none;user-drag:none;pointer-events:none}
-img.map-img-wrap img,.thumb,.pdf-thumb{pointer-events:auto}
+/* 4. Only block dragging, NOT clicking on images */
+img{-webkit-user-drag:none;user-drag:none}
+#mapImgWrap img,.thumb,.pdf-thumb,.map-img-wrap img{pointer-events:auto;cursor:zoom-in}
 </style>
 </head>
 <body>
@@ -175,10 +191,17 @@ img.map-img-wrap img,.thumb,.pdf-thumb{pointer-events:auto}
   <div class="spin-label">Cargando territorio…</div>
 </div>
 
-<div id="errorState">
+<div id="errorState" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center">
   <div class="err-icon">🔗</div>
   <div class="err-title">Enlace no válido</div>
   <div class="err-sub">Este enlace no contiene un territorio. Pide al responsable que genere un enlace desde la app principal.</div>
+</div>
+
+<!-- EXPIRED STATE -->
+<div id="expiredState" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center">
+  <div style="font-size:56px;margin-bottom:4px">⏰</div>
+  <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:700;color:var(--ink)">Territorio devuelto</div>
+  <div style="font-size:15px;color:var(--ink3);line-height:1.6;max-width:300px">Este territorio ya ha sido devuelto al responsable. El enlace ha caducado.<br><br>Si tienes un nuevo territorio asignado, pide el enlace actualizado al responsable.</div>
 </div>
 
 <div id="terContent" style="display:none;flex-direction:column;flex:1" class="fade-in">
@@ -224,7 +247,11 @@ img.map-img-wrap img,.thumb,.pdf-thumb{pointer-events:auto}
     </div>
 
     <div class="sec fade-in" style="animation-delay:.08s">
-      <div class="sec-head"><div class="sec-ico">📍</div><div class="sec-title">Localización</div></div>
+      <div class="sec-head">
+        <div class="sec-ico">📍</div>
+        <div class="sec-title">Localización</div>
+        <button onclick="toggleMapFullscreen()" id="mapFsBtn" style="margin-left:auto;background:var(--paper);border:1.5px solid var(--paper3);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;display:flex;align-items:center;gap:5px">⛶ Ampliar</button>
+      </div>
       <div class="sec-body">
         <div class="tile-row">
           <div class="tile-btn on" onclick="setTile('street',this)">🗺 Calles</div>
@@ -258,6 +285,9 @@ img.map-img-wrap img,.thumb,.pdf-thumb{pointer-events:auto}
   <img id="lbImg" src="" alt="">
 </div>
 
+<!-- MAP FULLSCREEN CLOSE BUTTON -->
+<button class="map-fs-close" id="mapFsClose" onclick="toggleMapFullscreen()">✕</button>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ══ SUPABASE CONFIG ══
@@ -289,34 +319,56 @@ const TID = parseInt(params.get('t') || '0');
 async function init() {
   if (!TID) { showError('Enlace sin territorio. Pide al responsable que genere el enlace desde la app.'); return; }
   try {
-    // Load territory, publicadores, grupos, archivos in parallel
-    const [ters, pubs, grps, archs] = await Promise.all([
-      sbGet('territorios', { select: '*', id: `eq.${TID}` }),
-      sbGet('publicadores', { select: 'id,nombre,grupo_id' }),
-      sbGet('grupos', { select: 'id,num,nombre' }),
-      sbGet('archivos', { select: '*', territorio_id: `eq.${TID}`, order: 'created_at.asc' }),
-    ]);
-
+    // First load territory to know its grupo_id
+    const ters = await sbGet('territorios', { select: '*', id: `eq.${TID}` });
     document.getElementById('loadingState').style.display = 'none';
+    if (!ters.length) { showError(`Territorio #${TID} no encontrado. Puede haber sido eliminado o el enlace desactualizado.`); return; }
 
-    if (!ters.length) { showError(`Territorio #${TID} no encontrado. Puede haber sido eliminado o el enlace estar desactualizado.`); return; }
+    const t = ters[0];
 
-    render(ters[0], pubs, grps, archs);
+    // Check expiry — if territory is no longer assigned to anyone, link is expired
+    if (t.estado === 'disponible') {
+      showExpired();
+      return;
+    }
+
+    // Load supporting data
+    const queries = [
+      sbGet('publicadores', { select: 'id,nombre,grupo_id' }),
+      sbGet('archivos', { select: '*', territorio_id: `eq.${TID}`, order: 'created_at.asc' }),
+    ];
+    // Only load grupo if territory has one
+    if (t.grupo_id) {
+      queries.push(sbGet('grupos', { select: 'id,num,nombre', id: `eq.${t.grupo_id}` }));
+    }
+
+    const results = await Promise.all(queries);
+    const pubs = results[0];
+    const archs = results[1];
+    const grps = results[2] || [];
+
+    render(t, pubs, grps, archs);
   } catch (e) {
     document.getElementById('loadingState').style.display = 'none';
-    showError('Error al conectar con el servidor: ' + e.message);
+    showError('Error al conectar: ' + e.message);
   }
 }
 
 function showError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
   document.getElementById('errorState').style.display = 'flex';
   document.getElementById('errorState').querySelector('.err-sub').textContent = msg;
 }
 
+function showExpired() {
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('expiredState').style.display = 'flex';
+}
+
 function render(t, pubs, grps, archs) {
   const pub = pubs.find(p => p.id === t.pub_id);
-  // Compare as numbers since grupo_id from Supabase is integer
-  const grp = t.grupo_id ? grps.find(g => Number(g.id) === Number(t.grupo_id)) : null;
+  // grps now contains only this territory's group (or empty)
+  const grp = grps.length ? grps[0] : null;
 
   document.title = `${t.num} — ${t.nombre}`;
   document.getElementById('hNum').textContent = t.num;
@@ -325,7 +377,7 @@ function render(t, pubs, grps, archs) {
 
   renderCountdown(t);
   document.getElementById('iDirs').textContent = t.num_dirs || '—';
-  document.getElementById('iGrupo').textContent = grp ? `G${grp.num} · ${grp.nombre || ''}`.trim().replace(/·\s*$/, '') : '—';
+  document.getElementById('iGrupo').textContent = grp ? `G${grp.num}` : '—';
   document.getElementById('iPub').textContent = pub ? pub.nombre.split(' ')[0] : '—';
 
   renderMapImages(archs);
@@ -388,20 +440,28 @@ function renderMapImages(archs) {
 
   if (imgs.length) {
     const url = sbStorageUrl(imgs[0].storage_path);
-    wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
+    wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')" style="cursor:zoom-in;pointer-events:auto">`;
+    wrap.style.cursor = 'zoom-in';
   } else if (pdfs.length) {
     const url = sbStorageUrl(pdfs[0].storage_path);
     wrap.innerHTML = `<div class="no-map" style="cursor:pointer" onclick="window.open('${url}','_blank')"><span>📄</span>PDF disponible — toca para abrir</div>`;
   }
 
   thumbRow.innerHTML = '';
+  if (imgs.length > 1) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:11px;color:var(--ink3);width:100%;margin-bottom:4px';
+    hint.textContent = 'Toca la imagen para ampliarla';
+    thumbRow.appendChild(hint);
+  }
   imgs.forEach((f, i) => {
     const url = sbStorageUrl(f.storage_path);
     const el = document.createElement('img');
     el.className = 'thumb' + (i === 0 ? ' on' : '');
     el.src = url; el.alt = f.nombre;
+    el.style.pointerEvents = 'auto';
     el.onclick = () => {
-      wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
+      wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')" style="cursor:zoom-in;pointer-events:auto">`;
       document.querySelectorAll('.thumb').forEach(x => x.classList.remove('on')); el.classList.add('on');
     };
     thumbRow.appendChild(el);
@@ -512,6 +572,20 @@ function goToMyLocation() {
     userMarker = L.marker([lat, lng], { icon: icon('🔵') }).addTo(map).bindPopup('Tu ubicación').openPopup();
     map.setView([lat, lng], 15);
   }, () => alert('No se pudo obtener la ubicación'));
+}
+
+// ══ MAP FULLSCREEN ══
+let mapIsFullscreen = false;
+function toggleMapFullscreen() {
+  const mapEl = document.getElementById('leafletMap');
+  const closeBtn = document.getElementById('mapFsClose');
+  const fsBtn = document.getElementById('mapFsBtn');
+  mapIsFullscreen = !mapIsFullscreen;
+  mapEl.classList.toggle('fullscreen', mapIsFullscreen);
+  closeBtn.classList.toggle('show', mapIsFullscreen);
+  document.body.style.overflow = mapIsFullscreen ? 'hidden' : '';
+  if (fsBtn) fsBtn.textContent = mapIsFullscreen ? '⛶ Reducir' : '⛶ Ampliar';
+  setTimeout(() => map && map.invalidateSize(), 320);
 }
 
 // ══ LIGHTBOX ══
