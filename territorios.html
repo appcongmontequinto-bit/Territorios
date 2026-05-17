@@ -473,83 +473,98 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 /* ── MOBILE UI ── */
 @media(max-width:700px){
-  /* Hide desktop sidebar */
   #sidebar{display:none}
-  /* Push content above bottom nav */
-  #main{padding-bottom:64px}
+  #main{padding-bottom:0}
   .stats-strip{flex-wrap:wrap}
   .frow,.frow3{grid-template-columns:1fr}
 
-  /* BOTTOM NAV */
-  #bottomNav{
-    display:flex!important;position:fixed;bottom:0;left:0;right:0;
-    height:64px;background:rgba(28,28,30,.97);
-    border-top:1px solid var(--border2);z-index:300;
-    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-    padding-bottom:env(safe-area-inset-bottom);
-  }
-  .bn-item{
-    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:3px;cursor:pointer;color:var(--t2);font-size:10px;font-weight:600;
-    transition:color .12s;padding:8px 4px;letter-spacing:.01em;
-  }
-  .bn-item .bn-icon{font-size:22px;line-height:1}
-  .bn-item.on{color:var(--blue)}
-  .bn-item.on .bn-icon{filter:drop-shadow(0 0 6px rgba(10,132,255,.5))}
-
-  /* TOPBAR mobile */
-  #topbar{padding:0 12px;gap:8px}
-  .topbar-search{max-width:none;flex:1}
+  /* TOPBAR mobile — show hamburger */
+  #topbar{padding:0 12px;gap:8px;height:52px}
+  .topbar-search{flex:1;min-width:0}
   .sync-pill{display:none}
-  .topbar-right .btn:not(:last-child){display:none}
+  .topbar-right .btn{display:none}
+  #menuBtn{display:flex!important}
+  #addTerBtn{display:flex!important}
 
-  /* MAP PANEL mobile — slide up from bottom */
+  /* MOBILE DRAWER */
+  #mobileDrawer{
+    position:fixed;inset:0;z-index:900;display:flex;pointer-events:none;
+  }
+  #mobileDrawer.open{pointer-events:all}
+  #drawerOverlay{
+    position:absolute;inset:0;background:rgba(0,0,0,.6);
+    opacity:0;transition:opacity .25s;backdrop-filter:blur(4px);
+  }
+  #mobileDrawer.open #drawerOverlay{opacity:1}
+  #drawerPanel{
+    position:absolute;left:0;top:0;bottom:0;width:280px;
+    background:var(--s1);border-right:1px solid var(--border2);
+    display:flex;flex-direction:column;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;
+  }
+  #mobileDrawer.open #drawerPanel{transform:translateX(0)}
+  .drawer-head{
+    padding:20px 16px 16px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;
+  }
+  .drawer-logo{font-size:17px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+  .drawer-close{margin-left:auto;width:28px;height:28px;background:var(--s3);border:none;border-radius:8px;color:var(--t2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .drawer-nav{padding:8px}
+
+  /* MAP PANEL mobile */
   #mapPanel{
     width:100%;height:65%;top:auto;bottom:0;right:0;
-    transform:translateY(100%);
-    border-left:none;border-top:1px solid var(--border2);
-    border-radius:20px 20px 0 0;
+    transform:translateY(100%);border-left:none;
+    border-top:1px solid var(--border2);border-radius:20px 20px 0 0;
   }
   #mapPanel.open{transform:translateY(0)}
 
-  /* Modal must be above everything on mobile */
-  .overlay{z-index:1000}
+  /* Modal full screen */
+  .overlay{z-index:1000;align-items:flex-end}
+  .modal,.modal-lg{
+    width:100%!important;max-width:100%!important;max-height:95vh;
+    border-radius:20px 20px 0 0;position:relative;bottom:0;
+  }
 
-  /* View head padding */
-  .view-head{padding:12px 14px 0}
-  .view-scroll{padding:10px 14px 14px}
-
-  /* Stats strip 2 columns */
+  /* Stats 2x2 grid */
   .stats-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat-box{min-width:0}
 
-  /* Table — only 2 cols on mobile */
-  .tcols{grid-template-columns:60px 1fr 100px}
+  /* Table simplified */
+  .tcols{grid-template-columns:55px 1fr 95px}
   .tbl-head span:nth-child(n+3),.tbl-row span:nth-child(n+3){display:none}
 
-  /* Card grid single col */
+  /* View head */
+  .view-head{padding:12px 14px 0}
+  .view-scroll{padding:10px 14px 14px}
+  .view-title{font-size:19px}
+
+  /* Card grid */
   .card-grid{grid-template-columns:1fr}
 
-  /* Historial detail panel full width */
+  /* Charts */
+  #statGrid{grid-template-columns:1fr!important}
+
+  /* Historial */
   #view-historial .view-scroll{flex-direction:column!important}
   #histDetail{width:100%!important}
 
-  /* Charts 1 col */
-  #statGrid{grid-template-columns:1fr!important}
+  /* Filter bar wraps better */
+  .filter-bar{gap:5px}
+  .chip{padding:5px 10px;font-size:12px}
 
-  /* Modal full screen on mobile */
-  .modal,.modal-lg{
-    width:100%!important;max-width:100%!important;
-    max-height:95vh;border-radius:20px 20px 0 0;
-    position:fixed;bottom:0;left:0;right:0;margin:0;
-  }
-  .overlay{align-items:flex-end}
+  /* Map legend */
+  .map-legend{font-size:11px;padding:8px 12px;bottom:16px}
 
-  /* Map legend smaller */
-  .map-legend{font-size:11px;padding:8px 12px;bottom:72px}
+  /* Prio item */
+  .prio-item{flex-wrap:wrap;gap:8px}
 }
+#menuBtn{display:none}
+#addTerBtn{display:none}
 
-/* Hide bottom nav on desktop */
-#bottomNav{display:none}
+/* Always hide mobile drawer on desktop */
+@media(min-width:701px){#mobileDrawer{display:none!important}}
 </style>
 </head>
 <body>
@@ -577,6 +592,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <!-- TOPBAR -->
 <div id="topbar" style="display:none">
+  <button id="menuBtn" onclick="toggleDrawer()" style="width:36px;height:36px;background:var(--s2);border:1px solid var(--border);border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0">☰</button>
   <div class="logo"><div class="logo-mark">🗺</div>Territorios</div>
   <div class="topbar-search">
     <span style="color:var(--t3);font-size:14px">⌕</span>
@@ -587,19 +603,40 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <button class="btn btn-ghost btn-sm" onclick="openTerModal()">＋ Territorio</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Publicador</button>
     <button class="btn btn-ghost btn-sm" onclick="doLogout()" title="Salir">⎋</button>
+    <button id="addTerBtn" onclick="openTerModal()" style="width:36px;height:36px;background:var(--blue);border:none;border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff;flex-shrink:0">＋</button>
   </div>
 </div>
 
 <div id="app" style="display:none">
 
-<!-- MOBILE BOTTOM NAV -->
-<nav id="bottomNav">
-  <div class="bn-item on" data-v="territorios" onclick="navMobile(this)"><span class="bn-icon">📋</span>Territorios</div>
-  <div class="bn-item" data-v="mapa" onclick="navMobile(this)"><span class="bn-icon">🗺</span>Mapa</div>
-  <div class="bn-item" data-v="prioridad" onclick="navMobile(this)"><span class="bn-icon">⏳</span>Pendiente</div>
-  <div class="bn-item" data-v="publicadores" onclick="navMobile(this)"><span class="bn-icon">👥</span>Hermanos</div>
-  <div class="bn-item" data-v="historial" onclick="navMobile(this)"><span class="bn-icon">📖</span>Historial</div>
-</nav>
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer">
+  <div id="drawerOverlay" onclick="toggleDrawer()"></div>
+  <div id="drawerPanel">
+    <div class="drawer-head">
+      <div class="drawer-logo"><div class="logo-mark">🗺</div>Territorios</div>
+      <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+    </div>
+    <div class="drawer-nav">
+      <div class="nav-sect">Principal</div>
+      <div class="nav-item on" data-v="territorios" onclick="navDrawer(this)"><span class="nav-icon">📋</span>Territorios<span class="nav-badge a" id="dnb-tot">0</span></div>
+      <div class="nav-item" data-v="mapa" onclick="navDrawer(this)"><span class="nav-icon">🗺</span>Mapa</div>
+      <div class="nav-item" data-v="prioridad" onclick="navDrawer(this)"><span class="nav-icon">⏳</span>Sin trabajar<span class="nav-badge am" id="dnb-old">0</span></div>
+      <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
+      <div class="nav-sect">Gestión</div>
+      <div class="nav-item" data-v="publicadores" onclick="navDrawer(this)"><span class="nav-icon">👥</span>Publicadores<span class="nav-badge" id="dnb-pub">0</span></div>
+      <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos</div>
+      <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📋</span>Historial</div>
+      <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
+      <div class="nav-sect">Filtros rápidos</div>
+      <div class="nav-item" data-filter="disponible" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="dnb-disp">0</span></div>
+      <div class="nav-item" data-filter="asignado" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="dnb-asig">0</span></div>
+      <div class="nav-item" data-filter="vencido" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="dnb-venc">0</span></div>
+      <div class="nav-sect">Cuenta</div>
+      <div class="nav-item" onclick="doLogout()"><span class="nav-icon">⎋</span>Cerrar sesión</div>
+    </div>
+  </div>
+</div>
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="nav-sect">Principal</div>
@@ -641,6 +678,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
       <div class="chip pu" data-f="grupo" onclick="setFilter(this)">De grupo</div>
       <select class="fi" id="fGrupo" style="width:auto;padding:5px 11px;font-size:13px" onchange="renderTerritorios()">
         <option value="">Todos los grupos</option>
+      </select>
+      <select class="fi" id="fSort" style="width:auto;padding:5px 11px;font-size:13px" onchange="renderTerritorios()">
+        <option value="num">Por número</option>
+        <option value="vence_asc">Vence antes</option>
+        <option value="vence_desc">Vence después</option>
+        <option value="asig_desc">Asignado reciente</option>
+        <option value="ultimo_asc">Sin trabajar más tiempo</option>
       </select>
     </div>
   </div>
@@ -700,7 +744,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 <!-- VIEW: PRIORIDAD -->
 <div id="view-prioridad" class="view">
-  <div class="view-head"><div class="view-title">Sin trabajar — Prioridad</div><div class="view-sub">Disponibles ordenados por tiempo desde el último trabajo. Última fecha entregado visible.</div></div>
+  <div class="view-head">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><div class="view-title">Sin trabajar</div><div class="view-sub">Disponibles ordenados por última fecha trabajada real (desde historial)</div></div>
+      <select class="fi" id="prioSort" style="width:auto;padding:6px 12px;font-size:13px" onchange="renderPrioridad()">
+        <option value="antiguo">Más antiguos primero</option>
+        <option value="reciente">Más recientes primero</option>
+        <option value="num">Por número</option>
+      </select>
+    </div>
+  </div>
   <div class="view-scroll"><div id="prioList"></div></div>
 </div>
 
@@ -967,21 +1020,54 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
 </div>
 
+<!-- ═══ MODAL: PUBLICADOR DETAIL ═══ -->
+<div class="overlay" id="mPubDet">
+  <div class="modal">
+    <div class="mhead"><div class="mtitle" id="mPubDetTitle">Publicador</div><button class="xbtn" onclick="closeModal('mPubDet')">✕</button></div>
+    <div class="mbody" id="mPubDetBody"></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL: GRUPO ═══ -->
 <div class="overlay" id="mGrupo">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="mhead"><div class="mtitle" id="mGrupoTitle">Nuevo grupo</div><button class="xbtn" onclick="closeModal('mGrupo')">✕</button></div>
     <div class="mbody">
-      <div class="frow">
-        <div class="fg"><label class="fl">Número de grupo</label><input class="fi" id="g-num" type="number" min="1" placeholder="1"></div>
-        <div class="fg"><label class="fl">Nombre opcional</label><input class="fi" id="g-nombre" placeholder="Grupo Sur"></div>
+      <div class="tabs" id="mGrupoTabs">
+        <div class="tab on" data-tp="gedit" onclick="switchTab('mGrupo',this)">Editar</div>
+        <div class="tab" data-tp="gters" onclick="switchTab('mGrupo',this)" id="tabGTers" style="display:none">Territorios</div>
+        <div class="tab" data-tp="gstats" onclick="switchTab('mGrupo',this)" id="tabGStats" style="display:none">Estadísticas</div>
       </div>
-      <div class="fg"><label class="fl">Siervo</label><select class="fs" id="g-siervo"><option value="">Sin asignar</option></select></div>
-      <div class="factions">
-        <button class="btn btn-danger btn-sm" id="btnElimGrupo" style="display:none" onclick="eliminarGrupo()">Eliminar</button>
-        <div style="flex:1"></div>
-        <button class="btn btn-ghost" onclick="closeModal('mGrupo')">Cancelar</button>
-        <button class="btn btn-primary" onclick="guardarGrupo()">Guardar</button>
+
+      <!-- TAB: EDITAR -->
+      <div class="tab-pane on" id="tp-gedit">
+        <div class="frow">
+          <div class="fg"><label class="fl">Número de grupo</label><input class="fi" id="g-num" type="number" min="1" placeholder="1"></div>
+          <div class="fg"><label class="fl">Nombre opcional</label><input class="fi" id="g-nombre" placeholder="Grupo Sur"></div>
+        </div>
+        <div class="fg"><label class="fl">Siervo / Capitán</label><select class="fs" id="g-siervo"><option value="">Sin asignar</option></select></div>
+        <div class="factions">
+          <button class="btn btn-danger btn-sm" id="btnElimGrupo" style="display:none" onclick="eliminarGrupo()">Eliminar</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost" onclick="closeModal('mGrupo')">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarGrupo()">Guardar</button>
+        </div>
+      </div>
+
+      <!-- TAB: TERRITORIOS DEL GRUPO -->
+      <div class="tab-pane" id="tp-gters">
+        <div class="filter-bar" style="margin-top:0">
+          <div class="chip on" data-gf="todos" onclick="setGrupoFilter(this)">Todos</div>
+          <div class="chip" data-gf="disponible" onclick="setGrupoFilter(this)">Disponible</div>
+          <div class="chip" data-gf="asignado" onclick="setGrupoFilter(this)">Asignado</div>
+          <div class="chip" data-gf="vencido" onclick="setGrupoFilter(this)">Vencido</div>
+        </div>
+        <div id="grupoTerList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+
+      <!-- TAB: ESTADÍSTICAS DEL GRUPO -->
+      <div class="tab-pane" id="tp-gstats">
+        <div id="grupoStats"></div>
       </div>
     </div>
   </div>
@@ -1179,13 +1265,20 @@ function setViewMode(m){
 // ══ RENDER TERRITORIOS ══
 function filteredList(){
   const gFil=document.getElementById('fGrupo').value;
-  return S.territorios.filter(t=>{
+  const sort=document.getElementById('fSort')?.value||'num';
+  let list=S.territorios.filter(t=>{
     const st=statusOf(t);
     const mF=currentFilter==='todos'||st===currentFilter||(currentFilter==='grupo'&&t.es_grupo)||(currentFilter==='disponible'&&t.estado==='disponible')||(currentFilter==='vencido'&&t.estado==='vencido')||(currentFilter==='asignado'&&t.estado==='asignado')||(currentFilter==='proximo'&&st==='proximo');
     const mG=!gFil||String(t.grupo_id)===gFil;
     const mS=!searchQ||t.num.toLowerCase().includes(searchQ)||t.nombre.toLowerCase().includes(searchQ)||pubName(t.pub_id).toLowerCase().includes(searchQ)||(t.descripcion||'').toLowerCase().includes(searchQ);
     return mF&&mG&&mS;
   });
+  if(sort==='vence_asc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return a.fecha_vence.localeCompare(b.fecha_vence);});
+  else if(sort==='vence_desc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return b.fecha_vence.localeCompare(a.fecha_vence);});
+  else if(sort==='asig_desc') list.sort((a,b)=>{if(!a.fecha_asig) return 1;if(!b.fecha_asig) return -1;return b.fecha_asig.localeCompare(a.fecha_asig);});
+  else if(sort==='ultimo_asc') list.sort((a,b)=>{if(!a.ultimo_trabajado) return -1;if(!b.ultimo_trabajado) return 1;return a.ultimo_trabajado.localeCompare(b.ultimo_trabajado);});
+  else list.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  return list;
 }
 
 function renderTerritorios(){
@@ -1251,15 +1344,28 @@ function pillHtml(st,esGrupo){
 // ══ BADGES ══
 function updateBadges(){
   const t=S.territorios;
+  const disp=t.filter(x=>x.estado==='disponible').length;
+  const asig=t.filter(x=>x.estado==='asignado').length;
+  const venc=t.filter(x=>x.estado==='vencido').length;
+  const prox=t.filter(x=>statusOf(x)==='proximo').length;
+  // Sidebar badges
   document.getElementById('nb-tot').textContent=t.length;
   document.getElementById('nb-pub').textContent=S.publicadores.length;
   document.getElementById('nb-grp').textContent=S.grupos.length;
-  document.getElementById('nb-disp').textContent=t.filter(x=>x.estado==='disponible').length;
-  document.getElementById('nb-asig').textContent=t.filter(x=>x.estado==='asignado').length;
-  document.getElementById('nb-venc').textContent=t.filter(x=>x.estado==='vencido').length;
-  document.getElementById('nb-prox').textContent=t.filter(x=>statusOf(x)==='proximo').length;
+  document.getElementById('nb-disp').textContent=disp;
+  document.getElementById('nb-asig').textContent=asig;
+  document.getElementById('nb-venc').textContent=venc;
+  document.getElementById('nb-prox').textContent=prox;
   document.getElementById('nb-grup').textContent=t.filter(x=>x.es_grupo).length;
-  document.getElementById('nb-old').textContent=t.filter(x=>x.estado==='disponible').length;
+  document.getElementById('nb-old').textContent=disp;
+  // Drawer badges (mobile)
+  const d=id=>document.getElementById(id);
+  if(d('dnb-tot')) d('dnb-tot').textContent=t.length;
+  if(d('dnb-pub')) d('dnb-pub').textContent=S.publicadores.length;
+  if(d('dnb-old')) d('dnb-old').textContent=disp;
+  if(d('dnb-disp')) d('dnb-disp').textContent=disp;
+  if(d('dnb-asig')) d('dnb-asig').textContent=asig;
+  if(d('dnb-venc')) d('dnb-venc').textContent=venc;
   if(leafletMap) updateMapColors();
 }
 
@@ -1407,13 +1513,32 @@ function closeMapPanel(){
 
 // ══ PRIORIDAD ══
 function renderPrioridad(){
-  const list=S.territorios.filter(t=>t.estado==='disponible').sort((a,b)=>daysSince(a.ultimo_trabajado)-daysSince(b.ultimo_trabajado));
+  // Get REAL last worked date from historial (more accurate than ultimo_trabajado field)
+  function realUltimo(t){
+    const hist=S.historial.filter(h=>h.territorio_id===t.id&&h.fecha_dev);
+    const fromHist=hist.length?hist.map(h=>h.fecha_dev).sort().slice(-1)[0]:null;
+    const candidates=[fromHist,t.ultimo_trabajado].filter(Boolean);
+    return candidates.length?candidates.sort().slice(-1)[0]:null;
+  }
+  const sortBy=document.getElementById('prioSort')?.value||'antiguo';
+  let list=S.territorios.filter(t=>t.estado==='disponible').map(t=>({...t,_ru:realUltimo(t)}));
+  if(sortBy==='antiguo'){
+    list.sort((a,b)=>{
+      if(!a._ru&&!b._ru) return a.num.localeCompare(b.num,undefined,{numeric:true});
+      if(!a._ru) return -1; if(!b._ru) return 1;
+      return a._ru.localeCompare(b._ru);
+    });
+  } else if(sortBy==='reciente'){
+    list.sort((a,b)=>{if(!a._ru) return 1;if(!b._ru) return -1;return b._ru.localeCompare(a._ru);});
+  } else {
+    list.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  }
   const el=document.getElementById('prioList');
   if(!list.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">No hay disponibles</div>`;return;}
   el.innerHTML=list.map((t,i)=>{
-    const ds=daysSince(t.ultimo_trabajado);
-    const col=ds>365?'var(--red)':ds>180?'var(--amber)':'var(--t2)';
-    const lastDate=t.ultimo_trabajado?`Último: ${fmtDate(t.ultimo_trabajado)}`:'Nunca trabajado';
+    const ds=t._ru?daysSince(t._ru):9999;
+    const col=ds===9999?'var(--red)':ds>365?'var(--red)':ds>180?'var(--amber)':ds>90?'var(--text)':'var(--t2)';
+    const lastDate=t._ru?`Último trabajo: ${fmtDate(t._ru)} · ${ds}d`:'Nunca trabajado';
     return`<div class="prio-item" onclick="openTerDetail(${t.id})">
       <div class="prio-rank">#${i+1}</div>
       <div class="prio-info">
@@ -1421,7 +1546,6 @@ function renderPrioridad(){
         <div class="prio-sub">${t.tipo} · ${grupoLabel(t)} · ${t.num_dirs||0} puertas</div>
         <div class="prio-last" style="color:${col}">${lastDate}</div>
       </div>
-      <div class="prio-days" style="color:${col}">${ds===9999?'Nunca':ds+'d'}</div>
       <button class="btn btn-success btn-xs" onclick="event.stopPropagation();openTerDetailTab(${t.id},'asignar')">Asignar</button>
     </div>`;
   }).join('');
@@ -1474,15 +1598,47 @@ function renderPublicadores(){
     const g=S.grupos.find(x=>x.id===p.grupo_id);
     const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')).length;
     const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
-    const grpLabel=g?`G${g.num} — ${g.nombre||`Grupo ${g.num}`}`:'—';
-    return`<div class="tbl-row" style="grid-template-columns:1fr 130px 80px 110px 80px">
-      <span style="font-weight:600">${p.nombre}</span>
+    const grpLabel=g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'—';
+    return`<div class="tbl-row" style="grid-template-columns:1fr 130px 70px 90px 70px;cursor:pointer" onclick="openPubDetail(${p.id})">
+      <span style="font-weight:600;color:var(--blue)">${p.nombre}</span>
       <span style="color:var(--t2);font-size:12px">${grpLabel}</span>
       <span><span class="nav-badge ${act?'a':''}">${act}</span></span>
       <span><span class="nav-badge">${comp}</span></span>
       <span><button class="btn btn-danger btn-xs" onclick="event.stopPropagation();elimPub(${p.id})">✕</button></span>
     </div>`;
   }).join('');
+}
+
+function openPubDetail(id){
+  const p=S.publicadores.find(x=>x.id===id);
+  if(!p) return;
+  const g=S.grupos.find(x=>x.id===p.grupo_id);
+  const activos=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+  const hist=S.historial.filter(h=>h.pub_id===p.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
+
+  document.getElementById('mPubDetTitle').textContent=p.nombre;
+  document.getElementById('mPubDetBody').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Grupo</div><div style="font-size:14px;font-weight:600">${g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo'}</div></div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Teléfono</div><div style="font-size:14px;font-weight:600">${p.tel||'—'}</div></div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Activos</div><div style="font-size:22px;font-weight:700;color:var(--blue)">${activos.length}</div></div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completados</div><div style="font-size:22px;font-weight:700;color:var(--green)">${hist.filter(h=>h.fecha_dev).length}</div></div>
+    </div>
+    ${activos.length?`<div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">TERRITORIOS ACTIVOS</div>
+    ${activos.map(t=>`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="closeModal('mPubDet');openTerDetail(${t.id})">
+      <div><div style="font-weight:600;font-size:13px">${t.num} — ${t.nombre}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Asignado: ${fmtDate(t.fecha_asig)} · Vence: ${fmtDate(t.fecha_vence)}</div></div>
+      <span class="pill ${statusOf(t)==='vencido'?'pill-venc':'pill-asig'}">${statusOf(t)==='vencido'?'Vencido':'Asignado'}</span>
+    </div>`).join('')}`:''}
+    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">HISTORIAL (${hist.length} asignaciones)</div>
+    ${hist.length?hist.slice(0,20).map(h=>{
+      const t=S.territorios.find(x=>x.id===h.territorio_id);
+      const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
+      return`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <div><div style="font-weight:500">${t?t.num+' — '+t.nombre:'—'}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(h.fecha_asig)} → ${fmtDate(h.fecha_dev)}</div></div>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--t3);align-self:center">${dias}d</span>
+      </div>`;
+    }).join(''):'<div style="color:var(--t3);font-size:13px">Sin historial</div>'}`;
+  openModal('mPubDet');
 }
 
 // ══ GRUPOS ══
@@ -1770,8 +1926,8 @@ async function ejecutarDevolucion(t,fecha){
 // ══ SHARE ══
 function generarEnlace(){
   const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
-  const base=location.href.replace(/[^/]*$/,'')+' territorio-visor.html';
-  const url=`${base.trim()}?t=${t.id}`;
+  const base=location.href.replace(/[^/]*$/,'');
+  const url=`${base}territorio-visor.html?t=${t.id}`;
   document.getElementById('shareLinkInput').value=url;
   document.getElementById('shareBox').style.display='block';
   const pub=pubName(t.pub_id);
@@ -1854,14 +2010,72 @@ function abrirNuevoGrupo(){
   editingGId=null;document.getElementById('mGrupoTitle').textContent='Nuevo grupo';
   document.getElementById('btnElimGrupo').style.display='none';
   document.getElementById('g-num').value='';document.getElementById('g-nombre').value='';
-  fillSiervoSel('g-siervo',null,null);openModal('mGrupo');
+  document.getElementById('tabGTers').style.display='none';
+  document.getElementById('tabGStats').style.display='none';
+  fillSiervoSel('g-siervo',null,null);switchTabByName('mGrupo','gedit');openModal('mGrupo');
 }
+
 function editarGrupo(id){
   editingGId=id;const g=S.grupos.find(x=>x.id===id);
-  document.getElementById('mGrupoTitle').textContent=`Editar Grupo ${g.num}`;
+  document.getElementById('mGrupoTitle').textContent=`Grupo ${g.num} — ${g.nombre||''}`;
   document.getElementById('btnElimGrupo').style.display='';
   document.getElementById('g-num').value=g.num;document.getElementById('g-nombre').value=g.nombre||'';
-  fillSiervoSel('g-siervo',g.id,g.siervo_id);openModal('mGrupo');
+  document.getElementById('tabGTers').style.display='';
+  document.getElementById('tabGStats').style.display='';
+  fillSiervoSel('g-siervo',g.id,g.siervo_id);
+  switchTabByName('mGrupo','gedit');
+  renderGrupoTers(id); renderGrupoStats(id);
+  openModal('mGrupo');
+}
+
+let _grupoFiltro='todos';
+function setGrupoFilter(el){
+  document.querySelectorAll('[data-gf]').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); _grupoFiltro=el.dataset.gf;
+  if(editingGId) renderGrupoTers(editingGId);
+}
+
+function renderGrupoTers(gId){
+  let ters=S.territorios.filter(t=>t.grupo_id===gId);
+  if(_grupoFiltro!=='todos') ters=ters.filter(t=>t.estado===_grupoFiltro||(statusOf(t)===_grupoFiltro));
+  ters.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  const el=document.getElementById('grupoTerList');
+  if(!ters.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">Sin territorios con este filtro</div>`;return;}
+  el.innerHTML=ters.map(t=>{
+    const st=statusOf(t);
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="closeModal('mGrupo');openTerDetail(${t.id})">
+      <div>
+        <div style="font-size:13px;font-weight:600">${t.num} — ${t.nombre}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">${pubName(t.pub_id)} · ${t.num_dirs||0} puertas ${t.fecha_vence?'· Vence '+fmtDate(t.fecha_vence):''}</div>
+      </div>
+      ${pillHtml(st,t.es_grupo)}
+    </div>`;
+  }).join('');
+}
+
+function renderGrupoStats(gId){
+  const g=S.grupos.find(x=>x.id===gId);
+  const ters=S.territorios.filter(t=>t.grupo_id===gId);
+  const pubs=S.publicadores.filter(p=>p.grupo_id===gId);
+  const hist=S.historial.filter(h=>{const t=S.territorios.find(x=>x.id===h.territorio_id);return t?.grupo_id===gId;});
+  const disp=ters.filter(t=>t.estado==='disponible').length;
+  const asig=ters.filter(t=>t.estado==='asignado').length;
+  const venc=ters.filter(t=>t.estado==='vencido').length;
+  const comp=hist.filter(h=>h.fecha_dev).length;
+  // Top publicadores del grupo
+  const pubStats=pubs.map(p=>({nombre:p.nombre,cnt:hist.filter(h=>h.pub_id===p.id&&h.fecha_dev).length})).sort((a,b)=>b.cnt-a.cnt);
+  const maxCnt=Math.max(1,...pubStats.map(x=>x.cnt));
+  document.getElementById('grupoStats').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
+      <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
+      <div class="grp-stat"><div class="grp-stat-val">${pubs.length}</div><div class="grp-stat-lbl">Publicadores</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${comp}</div><div class="grp-stat-lbl">Completados</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Actividad por publicador</div>
+    <div class="chart-wrap">${pubStats.map(x=>barRow(x.nombre.split(' ')[0]+' '+x.nombre.split(' ').slice(-1)[0],x.cnt,maxCnt)).join('')}</div>`;
 }
 async function guardarGrupo(){
   const num=parseInt(document.getElementById('g-num').value);
@@ -1999,13 +2213,25 @@ function fillGroupFilter(){
 }
 function fillAllSels(){fillGrupoSel('p-grupo');fillGrupoSel('t-grupo');fillGroupFilter();}
 
-// ══ MOBILE NAV ══
-function navMobile(el) {
-  document.querySelectorAll('.bn-item').forEach(n => n.classList.remove('on'));
-  el.classList.add('on');
+// ══ MOBILE DRAWER ══
+let drawerOpen = false;
+function toggleDrawer() {
+  drawerOpen = !drawerOpen;
+  document.getElementById('mobileDrawer').classList.toggle('open', drawerOpen);
+}
+function navDrawer(el) {
   const v = el.dataset.v;
-  document.querySelectorAll('.nav-item[data-v]').forEach(n => n.classList.toggle('on', n.dataset.v === v));
+  document.querySelectorAll('#drawerPanel .nav-item').forEach(n => n.classList.remove('on'));
+  document.querySelectorAll('#sidebar .nav-item[data-v]').forEach(n => n.classList.toggle('on', n.dataset.v === v));
+  el.classList.add('on');
+  toggleDrawer();
   showView(v);
+}
+function quickFilterDrawer(el) {
+  currentFilter = el.dataset.filter;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.f === currentFilter));
+  toggleDrawer();
+  showView('territorios');
 }
 
 // ══ MODAL HELPERS ══
