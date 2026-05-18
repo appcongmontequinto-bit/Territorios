@@ -248,7 +248,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 .tbl-row:last-child{border-bottom:none}
 .tbl-row:hover{background:var(--s2)}
 .tbl-row span{padding:10px 6px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tcols{grid-template-columns:72px 1fr 80px 65px 130px 90px 100px 105px}
+.tcols{grid-template-columns:72px 1fr 80px 65px 90px 100px 105px}
 
 /* ── PILLS ── */
 .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
@@ -826,6 +826,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
       <div><div class="view-title">Territorios</div><div class="view-sub" id="tbl-count"></div></div>
       <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="exportarVista()" title="Exportar vista actual a Excel">⬇ Excel</button>
         <div class="tgl-btn on" id="tgl-list" onclick="setViewMode('list')" title="Lista">☰</div>
         <div class="tgl-btn" id="tgl-card" onclick="setViewMode('card')" title="Tarjetas">⊞</div>
       </div>
@@ -854,8 +855,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div id="list-view">
       <div class="tbl-wrap">
         <div class="tbl-head tcols" id="tblHead">
-          <span>Nº</span><span>Nombre</span><span>Tipo</span><span>Grupo</span>
-          <span>Publicador</span><span>Asignado</span><span>Vence</span><span>Estado</span>
+          <span>Nº</span><span>Publicador</span><span>Tipo</span><span>Grupo</span>
+          <span>Asignado</span><span>Vence</span><span>Estado</span>
         </div>
         <div class="tbl-body" id="tbl-body" style="max-height:calc(100dvh - 280px)"></div>
       </div>
@@ -907,12 +908,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 <div id="view-prioridad" class="view">
   <div class="view-head">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div><div class="view-title">Sin trabajar</div><div class="view-sub">Disponibles ordenados por última fecha trabajada real (desde historial)</div></div>
-      <select class="fi" id="prioSort" style="width:auto;padding:6px 12px;font-size:13px" onchange="renderPrioridad()">
-        <option value="antiguo">Más antiguos primero</option>
-        <option value="reciente">Más recientes primero</option>
-        <option value="num">Por número</option>
-      </select>
+      <div><div class="view-title">Sin trabajar</div><div class="view-sub">Disponibles ordenados por última fecha trabajada real</div></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="exportarPrioridad()">⬇ Excel</button>
+        <select class="fi" id="prioSort" style="width:auto;padding:6px 12px;font-size:13px" onchange="renderPrioridad()">
+          <option value="antiguo">Más antiguos primero</option>
+          <option value="reciente">Más recientes primero</option>
+          <option value="num">Por número</option>
+        </select>
+      </div>
     </div>
   </div>
   <div class="view-scroll"><div id="prioList"></div></div>
@@ -947,7 +951,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   <div class="view-head">
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
       <div><div class="view-title">Publicadores</div><div class="view-sub">Todos los publicadores registrados</div></div>
-      <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Añadir</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="exportarPublicadores()">⬇ Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Añadir</button>
+      </div>
     </div>
   </div>
   <div class="view-scroll">
@@ -977,7 +984,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
       <div><div class="view-title">Historial</div><div class="view-sub">Haz clic en un territorio para ver sus asignaciones</div></div>
       <div style="display:flex;gap:6px">
-        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:200px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
+        <button class="btn btn-ghost btn-sm" onclick="exportarHistorial()">⬇ Excel</button>
+        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:180px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
       </div>
     </div>
   </div>
@@ -1503,27 +1511,31 @@ function renderListView(list){
   if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
   const mob=window.innerWidth<=700;
   body.innerHTML=list.map(t=>{
-    const st=statusOf(t);const g=grupoOf(t);
+    const st=statusOf(t); const g=grupoOf(t);
+    const pub=pubName(t.pub_id);
     const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const col=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${col}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
-    const lastWorked=t.estado==='disponible'&&t.ultimo_trabajado?`<span style="color:var(--t3);font-size:11px"> · ult. ${fmtDate(t.ultimo_trabajado)}</span>`:'';
+
     if(mob){
-      const sub=t.pub_id?pubName(t.pub_id):(t.ultimo_trabajado?`Ult: ${fmtDate(t.ultimo_trabajado)}`:'Sin asignar nunca');
-      const extra=t.fecha_vence&&st!=='disponible'?` · ${daysUntil(t.fecha_vence)<0?'Vencido hace '+(-daysUntil(t.fecha_vence))+'d':daysUntil(t.fecha_vence)+'d'}` :'';
-      return`<div class="tbl-row" style="grid-template-columns:44px 1fr auto;gap:0;min-height:54px" onclick="openTerDetail(${t.id})">
-        <span style="font-family:var(--font-mono);font-size:11px;color:var(--t3);padding-top:12px">${t.num}</span>
-        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 6px">
-          <span style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.nombre}</span>
-          <span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}${extra}</span>
+      // Mobile: num | publicador (o última fecha) | pill estado
+      const pubLine = t.pub_id ? pub : (t.ultimo_trabajado ? `Ult: ${fmtDate(t.ultimo_trabajado)}` : '—');
+      const dateLine = t.estado==='asignado'||t.estado==='vencido'
+        ? (t.fecha_vence ? (daysUntil(t.fecha_vence)<0 ? `Vencido hace ${-daysUntil(t.fecha_vence)}d` : `Vence en ${daysUntil(t.fecha_vence)}d`) : '')
+        : (t.ultimo_trabajado ? `Ult: ${fmtDate(t.ultimo_trabajado)}` : '');
+      return`<div class="tbl-row" style="grid-template-columns:44px 1fr auto;gap:0;min-height:52px" onclick="openTerDetail(${t.id})">
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);padding-top:13px;font-weight:600">${t.num}</span>
+        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 6px;overflow:hidden">
+          <span style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pubLine}</span>
+          ${dateLine?`<span style="font-size:12px;color:var(--t2)">${dateLine}</span>`:''}
         </span>
         <span style="padding:10px 0 10px 6px;flex-shrink:0">${pillHtml(st,t.es_grupo)}</span>
       </div>`;
     }
+    // Desktop: num | publicador | tipo | grupo | asignado | vence | estado
     return`<div class="tbl-row tcols" onclick="openTerDetail(${t.id})">
-      <span style="font-family:var(--font-mono);font-size:11px;color:var(--t2)">${t.num}</span>
-      <span style="font-weight:600">${t.nombre}${lastWorked}</span>
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text)">${t.num}</span>
+      <span style="font-weight:600">${pub}</span>
       <span style="color:var(--t2);font-size:12px">${t.tipo}</span>
       <span style="color:var(--t2);font-size:12px">${g?`G${g.num}`:'—'}</span>
-      <span style="font-size:13px">${pubName(t.pub_id)}</span>
       <span style="color:var(--t2);font-size:12px">${fmtDate(t.fecha_asig)}</span>
       <span style="font-size:12px">${vH}</span>
       <span>${pillHtml(st,t.es_grupo)}</span>
@@ -1536,12 +1548,13 @@ function renderCardView(list){
   if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);grid-column:1/-1">Sin resultados</div>`;return;}
   body.innerHTML=list.map(t=>{
     const st=statusOf(t);const cls=st==='proximo'?'prox':st==='asignado'?'asig':st==='vencido'?'venc':(t.es_grupo?'grup':'disp');
-    const lastInfo=t.estado==='disponible'&&t.ultimo_trabajado?`📅 Ult. entregado: ${fmtDate(t.ultimo_trabajado)}<br>`:'';
+    const pub=pubName(t.pub_id);
+    const lastInfo=t.estado==='disponible'&&t.ultimo_trabajado?`📅 Ult: ${fmtDate(t.ultimo_trabajado)}<br>`:'';
     return`<div class="tcard ${cls}" onclick="openTerDetail(${t.id})">
-      <div class="tcard-num">${t.num} · ${t.tipo}</div>
-      <div class="tcard-name">${t.nombre}</div>
-      <div class="tcard-meta">${t.pub_id?`👤 ${pubName(t.pub_id)}<br>`:''}${lastInfo}${t.fecha_vence?`⏰ Vence ${fmtDate(t.fecha_vence)}<br>`:''}${t.num_dirs?`🏠 ${t.num_dirs} puertas`:''}</div>
-      <div class="tcard-foot">${pillHtml(st,t.es_grupo)}<span style="font-size:11px;color:var(--t3)">${grupoLabel(t)}</span></div>
+      <div class="tcard-num">${t.num} · ${t.tipo} · ${grupoLabel(t)}</div>
+      <div class="tcard-name">${pub}</div>
+      <div class="tcard-meta">${lastInfo}${t.fecha_vence?`⏰ Vence ${fmtDate(t.fecha_vence)}<br>`:''}${t.num_dirs?`🏠 ${t.num_dirs} puertas`:''}</div>
+      <div class="tcard-foot">${pillHtml(st,t.es_grupo)}</div>
     </div>`;
   }).join('');
 }
@@ -1870,21 +1883,25 @@ function renderGrupos(){
     const ters=S.territorios.filter(t=>t.grupo_id===g.id);
     const venc=ters.filter(t=>t.estado==='vencido').length;
     const asig=ters.filter(t=>t.estado==='asignado').length;
+    const disp=ters.filter(t=>t.estado==='disponible').length;
     const siervo=S.publicadores.find(p=>p.id===g.siervo_id);
-    return`<div class="grp-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div><div style="font-size:18px;font-weight:700;letter-spacing:-.4px">Grupo ${g.num}</div><div style="font-size:13px;color:var(--t2)">${g.nombre||''} ${siervo?'· '+siervo.nombre:''}</div></div>
-        <button class="btn btn-ghost btn-xs" onclick="editarGrupo(${g.id})">✏ Editar</button>
+    // Publishers WITH active territory
+    const pubsConTer=pubs.filter(p=>S.territorios.some(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')));
+    return`<div class="grp-card" style="cursor:pointer;transition:border-color .15s" onclick="editarGrupo(${g.id})" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:19px;font-weight:700;letter-spacing:-.4px">Grupo ${g.num}</div>
+          <div style="font-size:13px;color:var(--t2);margin-top:2px">${g.nombre||''} ${siervo?'· <b>'+siervo.nombre+'</b>':''}</div>
+        </div>
+        <span class="nav-badge a" style="font-size:12px;padding:3px 9px">${pubs.length} hermanos</span>
       </div>
       <div class="grp-stats">
-        <div class="grp-stat"><div class="grp-stat-val">${pubs.length}</div><div class="grp-stat-lbl">Publicadores</div></div>
         <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
+        <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
         <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
         <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
       </div>
-      <div style="font-size:11px;font-weight:600;color:var(--t3);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase">Publicadores</div>
-      ${pubs.slice(0,6).map(p=>`<div class="pub-row">${p.id===g.siervo_id?'<span style="color:var(--amber)">★</span>':''} ${p.nombre}</div>`).join('')}
-      ${pubs.length>6?`<div style="font-size:12px;color:var(--t3);margin-top:4px">+${pubs.length-6} más</div>`:''}
+      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} publicadores con territorio activo · Toca para ver detalles</div>
     </div>`;
   }).join('');
 }
@@ -2244,8 +2261,8 @@ function editarGrupo(id){
   document.getElementById('tabGTers').style.display='';
   document.getElementById('tabGStats').style.display='';
   fillSiervoSel('g-siervo',g.id,g.siervo_id);
-  switchTabByName('mGrupo','gedit');
   renderGrupoTers(id); renderGrupoStats(id);
+  switchTabByName('mGrupo','gstats'); // open on stats tab
   openModal('mGrupo');
 }
 
@@ -2278,25 +2295,103 @@ function renderGrupoStats(gId){
   const g=S.grupos.find(x=>x.id===gId);
   const ters=S.territorios.filter(t=>t.grupo_id===gId);
   const pubs=S.publicadores.filter(p=>p.grupo_id===gId);
+  const siervo=S.publicadores.find(p=>p.id===g?.siervo_id);
   const hist=S.historial.filter(h=>{const t=S.territorios.find(x=>x.id===h.territorio_id);return t?.grupo_id===gId;});
+
   const disp=ters.filter(t=>t.estado==='disponible').length;
   const asig=ters.filter(t=>t.estado==='asignado').length;
   const venc=ters.filter(t=>t.estado==='vencido').length;
+  const prox=ters.filter(t=>statusOf(t)==='proximo').length;
   const comp=hist.filter(h=>h.fecha_dev).length;
-  // Top publicadores del grupo
-  const pubStats=pubs.map(p=>({nombre:p.nombre,cnt:hist.filter(h=>h.pub_id===p.id&&h.fecha_dev).length})).sort((a,b)=>b.cnt-a.cnt);
-  const maxCnt=Math.max(1,...pubStats.map(x=>x.cnt));
+
+  // Per-publisher analysis
+  const pubAnalysis = pubs.map(p=>{
+    const terActivo = S.territorios.find(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+    const histPub = S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev);
+    const lastDate = histPub.length ? histPub.sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev))[0].fecha_dev : null;
+    const daysSinceWork = lastDate ? daysSince(lastDate) : 9999;
+    return { p, terActivo, histPub, lastDate, daysSinceWork };
+  }).sort((a,b)=>{
+    // Sorted: con territorio primero, luego sin territorio por días desde trabajo
+    if(!!a.terActivo !== !!b.terActivo) return a.terActivo ? -1 : 1;
+    return a.daysSinceWork - b.daysSinceWork;
+  });
+
+  const conTer = pubAnalysis.filter(x=>x.terActivo);
+  const sinTer = pubAnalysis.filter(x=>!x.terActivo);
+
+  // Chart data
+  const pubStats = pubs.map(p=>({
+    nombre: p.nombre, cnt: hist.filter(h=>h.pub_id===p.id&&h.fecha_dev).length
+  })).sort((a,b)=>b.cnt-a.cnt);
+  const maxCnt = Math.max(1,...pubStats.map(x=>x.cnt));
+
   document.getElementById('grupoStats').innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+    <!-- KPI Grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px">
+      <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
       <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
       <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
       <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
-      <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
-      <div class="grp-stat"><div class="grp-stat-val">${pubs.length}</div><div class="grp-stat-lbl">Publicadores</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--amber)">${prox}</div><div class="grp-stat-lbl">Próx. vencer</div></div>
       <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${comp}</div><div class="grp-stat-lbl">Completados</div></div>
     </div>
-    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">Actividad por publicador</div>
-    <div class="chart-wrap">${pubStats.map(x=>barRow(x.nombre.split(' ')[0]+' '+x.nombre.split(' ').slice(-1)[0],x.cnt,maxCnt)).join('')}</div>`;
+
+    <!-- Publishers WITH territory -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">
+      Con territorio activo (${conTer.length})
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
+    ${conTer.length ? conTer.map(({p,terActivo})=>{
+      const st=statusOf(terActivo);
+      const isSiervo=p.id===g?.siervo_id;
+      const dv=terActivo.fecha_vence?daysUntil(terActivo.fecha_vence):null;
+      const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
+      const dvTxt=dv===null?'Sin vencimiento':dv<0?`Vencido hace ${-dv}d`:dv===0?'Vence hoy':`Vence en ${dv}d`;
+      return`<div style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;cursor:pointer" onclick="closeModal('mGrupo');openTerDetail(${terActivo.id})">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px">
+            ${isSiervo?'<span style="color:var(--amber)">★</span>':''}${p.nombre}
+          </div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px">Terr. ${terActivo.num} · ${fmtDate(terActivo.fecha_asig)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          ${pillHtml(st,terActivo.es_grupo)}
+          <div style="font-size:11px;color:${dvCol};margin-top:3px">${dvTxt}</div>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Ningún publicador con territorio activo</div>'}
+    </div>
+
+    <!-- Publishers WITHOUT territory -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">
+      Sin territorio (${sinTer.length})
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
+    ${sinTer.length ? sinTer.map(({p,lastDate,daysSinceWork,histPub})=>{
+      const isSiervo=p.id===g?.siervo_id;
+      const dCol=daysSinceWork>365?'var(--red)':daysSinceWork>180?'var(--amber)':'var(--t2)';
+      const dTxt=daysSinceWork===9999?'Nunca ha trabajado':daysSinceWork>365?`Hace más de un año (${fmtDate(lastDate)})`:daysSinceWork>0?`Hace ${daysSinceWork} días (${fmtDate(lastDate)})`:'Hoy';
+      return`<div style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px">
+            ${isSiervo?'<span style="color:var(--amber)">★</span>':''}${p.nombre}
+          </div>
+          <div style="font-size:11px;color:${dCol};margin-top:2px">${dTxt}</div>
+        </div>
+        <div style="flex-shrink:0">
+          <span class="nav-badge">${histPub.length} complet.</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Todos tienen territorio asignado</div>'}
+    </div>
+
+    <!-- Activity chart -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Actividad total por publicador</div>
+    <div class="chart-wrap">${pubStats.map(x=>barRow(x.nombre.split(' ')[0]+' '+x.nombre.split(' ').slice(-1)[0],x.cnt,maxCnt)).join('')}</div>
+    <div style="margin-top:14px;display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="exportarGrupo(${gId})">⬇ Exportar grupo a Excel</button>
+    </div>`;
 }
 async function guardarGrupo(){
   const num=parseInt(document.getElementById('g-num').value);
@@ -2646,7 +2741,151 @@ async function verS13Preview(){
   document.getElementById('s13PreviewContent').innerHTML = html;
 }
 
-function loadScript(src){
+// ══ EXCEL EXPORTS — vistas ══
+async function _loadXLSX(){
+  await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+  return window.XLSX;
+}
+
+function _xlsxDownload(XLSX, wb, filename){
+  XLSX.writeFile(wb, filename);
+}
+
+// Helper: create simple worksheet from array of row objects
+function _makeWS(XLSX, headers, rows){
+  const data = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  // Style header row
+  headers.forEach((_,ci)=>{
+    const addr=XLSX.utils.encode_cell({r:0,c:ci});
+    if(!ws[addr]) ws[addr]={};
+    ws[addr].s={font:{bold:true,name:'Arial',sz:10},fill:{fgColor:{rgb:'DDEEFF'},patternType:'solid'},alignment:{horizontal:'center'}};
+  });
+  // Auto column widths
+  ws['!cols'] = headers.map(h=>({wch:Math.max(12,(h||'').length+4)}));
+  return ws;
+}
+
+// 1. Territorios — vista actual filtrada
+async function exportarVista(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const list=filteredList();
+    const wb=XLSX.utils.book_new();
+    const headers=['Nº','Publicador','Tipo','Grupo','Estado','Asignado','Vence','Puertas','Notas'];
+    const rows=list.map(t=>[
+      t.num, pubName(t.pub_id), t.tipo, grupoLabel(t),
+      statusOf(t), fmtDate(t.fecha_asig), fmtDate(t.fecha_vence),
+      t.num_dirs||'', t.notas||''
+    ]);
+    const ws=_makeWS(XLSX,headers,rows);
+    const filterLabel=currentFilter==='todos'?'Todos':currentFilter;
+    XLSX.utils.book_append_sheet(wb,ws,filterLabel.slice(0,31));
+    _xlsxDownload(XLSX,wb,`territorios_${filterLabel}.xlsx`);
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 2. Prioridad — sin trabajar
+async function exportarPrioridad(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    function realUltimo(t){
+      const hist=S.historial.filter(h=>h.territorio_id===t.id&&h.fecha_dev);
+      const fromHist=hist.length?hist.map(h=>h.fecha_dev).sort().slice(-1)[0]:null;
+      const candidates=[fromHist,t.ultimo_trabajado].filter(Boolean);
+      return candidates.length?candidates.sort().slice(-1)[0]:null;
+    }
+    const list=S.territorios.filter(t=>t.estado==='disponible')
+      .map(t=>({...t,_ru:realUltimo(t)}))
+      .sort((a,b)=>{if(!a._ru&&!b._ru) return 0;if(!a._ru) return -1;if(!b._ru) return 1;return a._ru.localeCompare(b._ru);});
+    const wb=XLSX.utils.book_new();
+    const headers=['Nº','Nombre','Tipo','Grupo','Último trabajo','Días sin trabajar','Puertas'];
+    const rows=list.map((t,i)=>[
+      t.num, t.nombre, t.tipo, grupoLabel(t),
+      t._ru?fmtDate(t._ru):'Nunca',
+      t._ru?daysSince(t._ru):'∞',
+      t.num_dirs||''
+    ]);
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,headers,rows),'Sin trabajar');
+    _xlsxDownload(XLSX,wb,'territorios_sin_trabajar.xlsx');
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 3. Publicadores
+async function exportarPublicadores(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const wb=XLSX.utils.book_new();
+    const headers=['Nombre','Teléfono','Grupo','Territorios activos','Completados','Territorio actual','Estado actual'];
+    const rows=S.publicadores.map(p=>{
+      const g=S.grupos.find(x=>x.id===p.grupo_id);
+      const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+      const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
+      const ter=act[0];
+      return[
+        p.nombre, p.tel||'', g?`Grupo ${g.num} — ${g.nombre||''}`:'Sin grupo',
+        act.length, comp,
+        ter?`${ter.num} — ${ter.nombre}`:'',
+        ter?statusOf(ter):''
+      ];
+    });
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,headers,rows),'Publicadores');
+    _xlsxDownload(XLSX,wb,'publicadores.xlsx');
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 4. Historial
+async function exportarHistorial(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const wb=XLSX.utils.book_new();
+    const headers=['Nº','Territorio','Publicador','Grupo','Fecha entrega','Fecha devolución','Días'];
+    const rows=S.historial.filter(h=>h.fecha_dev).map(h=>{
+      const t=S.territorios.find(x=>x.id===h.territorio_id);
+      const dias=daysBetween(h.fecha_asig,h.fecha_dev);
+      return[t?.num||'',t?.nombre||'',pubName(h.pub_id),t?grupoLabel(t):'',fmtDate(h.fecha_asig),fmtDate(h.fecha_dev),dias];
+    });
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,headers,rows),'Historial');
+    _xlsxDownload(XLSX,wb,'historial.xlsx');
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 5. Grupo específico
+async function exportarGrupo(gId){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const g=S.grupos.find(x=>x.id===gId);
+    const wb=XLSX.utils.book_new();
+
+    // Sheet 1: Territorios del grupo
+    const ters=S.territorios.filter(t=>t.grupo_id===gId).sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+    const terHeaders=['Nº','Nombre','Publicador','Estado','Asignado','Vence','Puertas'];
+    const terRows=ters.map(t=>[t.num,t.nombre,pubName(t.pub_id),statusOf(t),fmtDate(t.fecha_asig),fmtDate(t.fecha_vence),t.num_dirs||'']);
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,terHeaders,terRows),'Territorios');
+
+    // Sheet 2: Publicadores del grupo con estado
+    const pubs=S.publicadores.filter(p=>p.grupo_id===gId);
+    const pubHeaders=['Nombre','Con territorio','Territorio','Estado','Asignado','Último trabajo','Completados'];
+    const pubRows=pubs.map(p=>{
+      const act=S.territorios.find(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+      const hist=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev));
+      return[p.nombre,act?'Sí':'No',act?act.num:'—',act?statusOf(act):'',fmtDate(act?.fecha_asig),fmtDate(hist[0]?.fecha_dev),hist.length];
+    });
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,pubHeaders,pubRows),'Publicadores');
+
+    _xlsxDownload(XLSX,wb,`grupo_${g?.num||gId}.xlsx`);
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[src="${src}"]`)){res();return;}
     const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
