@@ -158,7 +158,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
 /* ── LAYOUT ── */
-#app{display:flex;flex:1;overflow:hidden}
+#app{flex:1;overflow:hidden} /* display controlled by JS */
 
 /* ── SIDEBAR ── */
 #sidebar{
@@ -1329,13 +1329,18 @@ function doLogin() {
     document.getElementById('loginPass').focus();
   }
 }
-function doLogout() { sessionStorage.removeItem('ter_auth'); location.reload(); }
+function doLogout() { sessionStorage.removeItem('ter_auth'); window._appInitialized=false; location.reload(); }
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
-if (sessionStorage.getItem('ter_auth')==='1') {
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('topbar').style.display='flex';
-  document.getElementById('app').style.display='flex';
-}
+
+// Auto-login if session exists
+(function checkSession(){
+  if (sessionStorage.getItem('ter_auth')==='1') {
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('topbar').style.display='flex';
+    document.getElementById('app').style.display='flex';
+    // initApp called at bottom of script
+  }
+})();
 
 // ══ SYNC ══
 function setSyncStatus(s) {
@@ -1367,6 +1372,8 @@ function statusOf(t){
 
 // ══ INIT ══
 async function initApp(){
+  if(window._appInitialized) return; // prevent double call
+  window._appInitialized = true;
   showLoader('Cargando datos…');
   try {
     await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial()]);
@@ -3037,7 +3044,11 @@ window.addEventListener('appinstalled', () => {
 });
 
 // ══ INIT ══
-if(sessionStorage.getItem('ter_auth')==='1') initApp();
+// Solo llamar si la sesión ya existía ANTES de cargar la página
+// (si el usuario acaba de hacer login, doLogin() ya llamó initApp)
+if(sessionStorage.getItem('ter_auth')==='1' && !window._appInitialized) {
+  initApp();
+}
 </script>
 </body>
 </html>
