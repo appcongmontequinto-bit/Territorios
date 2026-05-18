@@ -2329,82 +2329,321 @@ async function eliminarGrupo(){
 }
 
 // ══ S-13 ══
+// ══ S-13 EXPORT — formato oficial exacto ══
 async function exportarS13(){
   showLoader('Generando S-13…');
   try{
-    const year=parseInt(document.getElementById('s13Year').value);
-    const perSheet=parseInt(document.getElementById('s13PerSheet').value);
-    const tipo=document.getElementById('s13Tipo').value;
-    const fromNum=document.getElementById('s13From').value.trim();
-    const toNum=document.getElementById('s13To').value.trim();
-    let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
-    if(tipo) ters=ters.filter(t=>t.tipo===tipo);
-    if(fromNum) ters=ters.filter(t=>t.num.localeCompare(fromNum,undefined,{numeric:true})>=0);
-    if(toNum) ters=ters.filter(t=>t.num.localeCompare(toNum,undefined,{numeric:true})<=0);
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
-    const XLSX=window.XLSX;const wb=XLSX.utils.book_new();
-    for(let i=0;i<ters.length;i+=perSheet){
-      const chunk=ters.slice(i,i+perSheet);
-      const wsData=[];
-      wsData.push(['REGISTRO DE ASIGNACIÓN DE TERRITORIO','','','','','','','','']);
-      wsData.push(['Año de servicio','',year,'','','','','','']);
-      wsData.push(['']);
-      wsData.push(['Terr. n.º','Última fecha en que se completó*','Asignado a','','Asignado a','','Asignado a','','Asignado a']);
-      wsData.push(['','','Fecha de entrega','Fecha de devolución','Fecha de entrega','Fecha de devolución','Fecha de entrega','Fecha de devolución','Fecha de entrega','Fecha de devolución']);
-      for(const t of chunk){
-        const hist=S.historial.filter(h=>h.territorio_id===t.id).sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
-        const nameRow=[t.num,t.ultimo_trabajado?fmtDate(t.ultimo_trabajado):''];
-        for(let h=0;h<4;h++){nameRow.push(hist[h]?pubName(hist[h].pub_id):'');nameRow.push('');}
-        wsData.push(nameRow);
-        const dateRow=['',''];
-        for(let h=0;h<4;h++){dateRow.push(hist[h]?.fecha_asig?fmtDate(hist[h].fecha_asig):'');dateRow.push(hist[h]?.fecha_dev?fmtDate(hist[h].fecha_dev):'');}
-        wsData.push(dateRow);
-      }
-      wsData.push(['**Cuando comience una nueva página, anote en esta columna la última fecha en que los territorios se completaron.']);
-      wsData.push(['S-13 1/22']);
-      const ws=XLSX.utils.aoa_to_sheet(wsData);
-      ws['!cols']=[{wch:10},{wch:18},{wch:22},{wch:18},{wch:22},{wch:18},{wch:22},{wch:18},{wch:22},{wch:18}];
-      XLSX.utils.book_append_sheet(wb,ws,chunk[0].num);
+    await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+    const XLSX = window.XLSX;
+
+    const year     = parseInt(document.getElementById('s13Year').value);
+    const perSheet = parseInt(document.getElementById('s13PerSheet').value);
+    const tipo     = document.getElementById('s13Tipo').value;
+    const fromNum  = document.getElementById('s13From').value.trim();
+    const toNum    = document.getElementById('s13To').value.trim();
+
+    let ters = [...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+    if(tipo)    ters = ters.filter(t=>t.tipo===tipo);
+    if(fromNum) ters = ters.filter(t=>t.num.localeCompare(fromNum,undefined,{numeric:true})>=0);
+    if(toNum)   ters = ters.filter(t=>t.num.localeCompare(toNum,undefined,{numeric:true})<=0);
+
+    const wb = XLSX.utils.book_new();
+
+    for(let i=0; i<ters.length; i+=perSheet){
+      const chunk = ters.slice(i, i+perSheet);
+      const ws    = buildS13Sheet(XLSX, chunk, year);
+      const sheetName = chunk[0].num.replace(/[:\\/?*\[\]]/g,'').slice(0,31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     }
-    XLSX.writeFile(wb,`S-13_${year}.xlsx`);
-    hideLoader();toast('✓ S-13 descargado','g');
-  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+
+    XLSX.writeFile(wb, `S-13_${year}.xlsx`);
+    hideLoader();
+    toast('✓ S-13 descargado','g');
+  }catch(e){ hideLoader(); toast('Error: '+e.message,'r'); console.error(e); }
+}
+
+function buildS13Sheet(XLSX, territories, year){
+  // SheetJS cell builder
+  const C = (v, t='s', style={}) => ({v, t, s: style});
+
+  // Styles
+  const STH = { // Section header (title row)
+    font:{bold:true, name:'Arial', sz:13},
+    alignment:{horizontal:'center', vertical:'center'},
+  };
+  const SYEAR = {
+    font:{bold:true, name:'Arial', sz:10, underline:true},
+    alignment:{horizontal:'left', vertical:'center'},
+  };
+  const SYEAR_LBL = {
+    font:{bold:true, name:'Arial', sz:10},
+    alignment:{horizontal:'left', vertical:'center'},
+  };
+  const SHD = { // Column header
+    font:{bold:true, name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center', wrapText:true},
+    fill:{fgColor:{rgb:'F2F2F2'}, patternType:'solid'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SHDL = { // Sub header (dates)
+    font:{bold:false, name:'Arial', sz:8},
+    alignment:{horizontal:'center', vertical:'center', wrapText:true},
+    fill:{fgColor:{rgb:'F2F2F2'}, patternType:'solid'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SNUM = { // Terr number cell
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SULT = { // Ultimo trabajado
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SPUB = { // Publicador name
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'hair'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SDATE = { // Date cell
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'hair'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SFOOTER = {
+    font:{italic:true, name:'Arial', sz:8},
+    alignment:{horizontal:'left', vertical:'center', wrapText:true},
+  };
+  const SFOOTER2 = {
+    font:{name:'Arial', sz:8},
+    alignment:{horizontal:'left', vertical:'center'},
+  };
+
+  // Build raw 2D array and then set cells manually for merging
+  const ws = {};
+  const merges = [];
+  let R = 0; // 0-indexed row
+
+  // Helper to set a cell
+  const set = (row, col, val, style) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = {v: val, t: typeof val==='number'?'n':'s', s: style};
+  };
+  const setNum = (row, col, val, style) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = {v: val, t:'n', s: style};
+  };
+  const merge = (rs,cs,re,ce) => merges.push({s:{r:rs,c:cs},e:{r:re,c:ce}});
+
+  // ── ROW 0: Title ──
+  set(R, 0, 'REGISTRO DE ASIGNACIÓN DE TERRITORIO', STH);
+  merge(R,0, R,9); // A1:J1
+  R++;
+
+  // ── ROW 1: Year ──
+  set(R, 0, 'Año de servicio', SYEAR_LBL);
+  merge(R,0, R,2);
+  setNum(R, 3, year, SYEAR);
+  R++;
+
+  // ── ROW 2: blank ──
+  R++;
+
+  // ── ROWS 3-4: Headers ──
+  // Row 3 (index 3): Terr | Última fecha | Asignado a x4
+  set(R, 0, 'Terr.\nn.º', SHD);   merge(R,0, R+1,0);
+  set(R, 1, 'Última fecha\nen que se\ncompletó*', SHD); merge(R,1, R+1,1);
+  set(R, 2, 'Asignado a', SHD);  merge(R,2, R,3);
+  set(R, 4, 'Asignado a', SHD);  merge(R,4, R,5);
+  set(R, 6, 'Asignado a', SHD);  merge(R,6, R,7);
+  set(R, 8, 'Asignado a', SHD);  merge(R,8, R,9);
+  // Fill merged cells with empty so border renders
+  for(const c of [3,5,7,9]) set(R, c, '', SHD);
+  R++;
+
+  // Row 4 (index 4): sub-headers dates
+  set(R, 0, '', SHD);  // merged from above
+  set(R, 1, '', SHD);  // merged from above
+  set(R, 2, 'Fecha de\nentrega', SHDL);
+  set(R, 3, 'Fecha de\ndevolución', SHDL);
+  set(R, 4, 'Fecha de\nentrega', SHDL);
+  set(R, 5, 'Fecha de\ndevolución', SHDL);
+  set(R, 6, 'Fecha de\nentrega', SHDL);
+  set(R, 7, 'Fecha de\ndevolución', SHDL);
+  set(R, 8, 'Fecha de\nentrega', SHDL);
+  set(R, 9, 'Fecha de\ndevolución', SHDL);
+  R++;
+
+  // ── DATA ROWS ──
+  for(const t of territories){
+    const hist = S.historial
+      .filter(h=>h.territorio_id===t.id)
+      .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+
+    // Pad to 4
+    while(hist.length<4) hist.push({pub_id:null, fecha_asig:'', fecha_dev:''});
+
+    const rA = R, rB = R+1;
+
+    // Num — spans 2 rows
+    set(rA, 0, t.num, SNUM); merge(rA,0, rB,0);
+    // Ultimo — spans 2 rows
+    set(rA, 1, t.ultimo_trabajado ? fmtDate(t.ultimo_trabajado) : '', SULT); merge(rA,1, rB,1);
+    // Empty bottom of merged cells
+    set(rB, 0, '', SNUM);
+    set(rB, 1, '', SULT);
+
+    // 4 assignee groups
+    const pubCols = [[2,3],[4,5],[6,7],[8,9]];
+    for(let idx=0; idx<4; idx++){
+      const [cs, ce] = pubCols[idx];
+      const h = hist[idx];
+      const pName = h.pub_id ? pubName(h.pub_id) : '';
+
+      // Name row — spans 2 cols
+      set(rA, cs, pName, SPUB);
+      merge(rA, cs, rA, ce);
+      set(rA, ce, '', SPUB); // fill merged
+
+      // Date row
+      set(rB, cs, h.fecha_asig ? fmtDate(h.fecha_asig) : '', SDATE);
+      set(rB, ce, h.fecha_dev  ? fmtDate(h.fecha_dev)  : '', SDATE);
+    }
+
+    R += 2;
+  }
+
+  // ── FOOTER ──
+  set(R, 0, '**Cuando comience una nueva página, anote en esta columna la última fecha en que los territorios se completaron.', SFOOTER);
+  merge(R,0, R,9);
+  R++;
+  set(R, 0, 'S-13 1/22', SFOOTER2);
+  R++;
+
+  // ── Sheet metadata ──
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:R-1,c:9}});
+  ws['!merges'] = merges;
+
+  // Column widths (characters)
+  ws['!cols'] = [
+    {wch:7},   // A: Terr n.º
+    {wch:14},  // B: Último completado
+    {wch:19},  // C: Pub1 entrega
+    {wch:13},  // D: Pub1 devolución
+    {wch:19},  // E: Pub2 entrega
+    {wch:13},  // F: Pub2 devolución
+    {wch:19},  // G: Pub3 entrega
+    {wch:13},  // H: Pub3 devolución
+    {wch:19},  // I: Pub4 entrega
+    {wch:13},  // J: Pub4 devolución
+  ];
+
+  // Row heights
+  ws['!rows'] = [];
+  ws['!rows'][0] = {hpt:24};  // title
+  ws['!rows'][1] = {hpt:16};  // year
+  ws['!rows'][2] = {hpt:6};   // spacer
+  ws['!rows'][3] = {hpt:36};  // header 1
+  ws['!rows'][4] = {hpt:28};  // header 2
+
+  // Print landscape A4
+  ws['!pageSetup'] = {
+    orientation: 'landscape',
+    paperSize: 9,
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+  };
+
+  return ws;
 }
 
 async function verS13Preview(){
-  const tipo=document.getElementById('s13Tipo').value;
-  let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
-  if(tipo) ters=ters.filter(t=>t.tipo===tipo);
-  ters=ters.slice(0,20);
-  const prev=document.getElementById('s13Preview');
+  const tipo = document.getElementById('s13Tipo').value;
+  const year = parseInt(document.getElementById('s13Year').value);
+  let ters = [...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  if(tipo) ters = ters.filter(t=>t.tipo===tipo);
+  ters = ters.slice(0,20);
+
+  const prev = document.getElementById('s13Preview');
   prev.style.display='';
-  let html=`<div class="tbl-wrap" style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
-    <thead style="background:var(--s2)"><tr>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px;letter-spacing:.04em">Nº</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Últ. completado</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Publicador 1</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Entrega</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Devolución</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Publicador 2</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Entrega</th>
-      <th style="padding:8px 10px;text-align:left;color:var(--t3);font-size:11px">Devolución</th>
-    </tr></thead><tbody>`;
+
+  let html = `
+  <div style="overflow-x:auto;background:var(--s1);border:1px solid var(--border);border-radius:var(--r2)">
+  <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px;min-width:900px;width:100%">
+    <thead>
+      <tr><th colspan="10" style="padding:10px;font-size:13px;font-weight:700;text-align:center;border:1px solid var(--border);background:var(--s2)">REGISTRO DE ASIGNACIÓN DE TERRITORIO</th></tr>
+      <tr><td colspan="2" style="padding:6px 10px;font-weight:700;border:1px solid var(--border);background:var(--s2)">Año de servicio <u>${year}</u></td><td colspan="8" style="border:1px solid var(--border);background:var(--s2)"></td></tr>
+      <tr style="background:var(--s3)">
+        <th rowspan="2" style="padding:6px 4px;border:1px solid var(--border);text-align:center;width:55px">Terr. n.º</th>
+        <th rowspan="2" style="padding:6px 8px;border:1px solid var(--border);text-align:center;width:100px">Última fecha<br>en que se<br>completó*</th>
+        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
+        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
+        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
+        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
+      </tr>
+      <tr style="background:var(--s3)">
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
+        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
   for(const t of ters){
-    const hist=S.historial.filter(h=>h.territorio_id===t.id).sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
-    html+=`<tr style="border-top:1px solid var(--border)">
-      <td style="padding:8px 10px;font-family:var(--font-mono);color:var(--t2)">${t.num}</td>
-      <td style="padding:8px 10px;color:var(--t2)">${fmtDate(t.ultimo_trabajado)}</td>
-      <td style="padding:8px 10px;font-weight:600">${hist[0]?pubName(hist[0].pub_id):'—'}</td>
-      <td style="padding:8px 10px;color:var(--t2)">${fmtDate(hist[0]?.fecha_asig)}</td>
-      <td style="padding:8px 10px;color:var(--t2)">${fmtDate(hist[0]?.fecha_dev)}</td>
-      <td style="padding:8px 10px;font-weight:600">${hist[1]?pubName(hist[1].pub_id):'—'}</td>
-      <td style="padding:8px 10px;color:var(--t2)">${fmtDate(hist[1]?.fecha_asig)}</td>
-      <td style="padding:8px 10px;color:var(--t2)">${fmtDate(hist[1]?.fecha_dev)}</td>
+    const hist = S.historial
+      .filter(h=>h.territorio_id===t.id)
+      .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+    while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
+
+    const td = `border:1px solid var(--border);text-align:center;padding:3px 5px`;
+    html+=`<tr>
+      <td rowspan="2" style="${td};font-weight:600">${t.num}</td>
+      <td rowspan="2" style="${td};color:var(--t2)">${fmtDate(t.ultimo_trabajado)}</td>
+      ${hist.map(h=>`<td colspan="2" style="${td}">${h.pub_id?pubName(h.pub_id):''}</td>`).join('')}
+    </tr>
+    <tr>
+      ${hist.map(h=>`
+        <td style="${td};color:var(--t2);font-size:10px">${h.fecha_asig?fmtDate(h.fecha_asig):''}</td>
+        <td style="${td};color:var(--t2);font-size:10px">${h.fecha_dev?fmtDate(h.fecha_dev):''}</td>
+      `).join('')}
     </tr>`;
   }
-  html+='</tbody></table></div>';
-  if(ters.length===20) html+=`<div style="font-size:12px;color:var(--t3);margin-top:8px">Primeros 20. El Excel incluirá todos.</div>`;
-  document.getElementById('s13PreviewContent').innerHTML=html;
+
+  html+=`
+    </tbody>
+    <tfoot>
+      <tr><td colspan="10" style="padding:6px 10px;font-size:10px;font-style:italic;border:1px solid var(--border)">**Cuando comience una nueva página, anote en esta columna la última fecha en que los territorios se completaron.</td></tr>
+      <tr><td colspan="10" style="padding:4px 10px;font-size:10px;border:1px solid var(--border)">S-13 1/22</td></tr>
+    </tfoot>
+  </table></div>`;
+
+  if(ters.length===20) html+=`<div style="font-size:12px;color:var(--t3);margin-top:8px">Mostrando primeros 20. El Excel incluirá todos los territorios.</div>`;
+  document.getElementById('s13PreviewContent').innerHTML = html;
 }
 
 function loadScript(src){
