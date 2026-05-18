@@ -734,7 +734,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
       <div class="nav-sect">Acciones</div>
       <div class="nav-item" onclick="toggleDrawer();openTerModal()"><span class="nav-icon">➕</span>Nuevo territorio</div>
       <div class="nav-item" onclick="toggleDrawer();openModal('mPub')"><span class="nav-icon">👤</span>Nuevo publicador</div>
-      <div class="nav-sect">Acciones</div>
+    </div>
+  </div>
+</div>
+
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="nav-sect">Principal</div>
@@ -2799,6 +2802,8 @@ async function exportarGrupo(gId){
     hideLoader(); toast('✓ Descargado','g');
   }catch(e){hideLoader();toast('Error: '+e.message,'r');}
 }
+
+function loadScript(src){
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[src="${src}"]`)){res();return;}
     const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
