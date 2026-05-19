@@ -5,269 +5,281 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Mi Territorio">
-<meta name="theme-color" content="#1a1c24">
+<meta name="theme-color" content="#0a0a0f">
 <link rel="manifest" href="manifest-visor.json">
 <link rel="apple-touch-icon" href="icons/icon-152x152.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-<title>Mi Territorio</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Mis Territorios</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --font:'Inter',system-ui,-apple-system,sans-serif;
-  --font-serif:'Playfair Display',Georgia,serif;
-  --font-mono:'JetBrains Mono','Menlo',monospace;
-  --ink:#1a1c24;--ink2:#3d4259;--ink3:#7a8099;--ink4:#b0b7cc;
-  --paper:#f5f3ee;--paper2:#eceae3;--paper3:#e2dfd6;
-  --gold:#c9973a;--gold-dim:rgba(201,151,58,.13);
-  --red:#c94040;--red-dim:rgba(201,64,64,.1);
-  --green:#2d8a55;--green-dim:rgba(45,138,85,.1);
-  --blue:#2d5fa8;--blue-dim:rgba(45,95,168,.1);
-  --r:12px;--r2:18px;--sh:0 4px 24px rgba(26,28,36,.1);
+  --mono:'JetBrains Mono','Menlo',monospace;
+  --bg:#0a0a0f;--s1:#111118;--s2:#18181f;--s3:#222230;--s4:#2c2c3a;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.13);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,.15);
+  --green:#22c55e;--green-dim:rgba(34,197,94,.12);
+  --amber:#f59e0b;--amber-dim:rgba(245,158,11,.12);
+  --red:#ef4444;--red-dim:rgba(239,68,68,.12);
+  --purple:#a855f7;--purple-dim:rgba(168,85,247,.12);
+  --text:#f1f5f9;--t2:#94a3b8;--t3:#475569;
+  --r:10px;--r2:16px;--r3:22px;--sh:0 4px 24px rgba(0,0,0,.5);
 }
-html{scroll-behavior:smooth}
-body{font-family:var(--font);background:var(--paper);color:var(--ink);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
-body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:999;opacity:.5}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--font);-webkit-font-smoothing:antialiased}
 
-/* LOADER */
-#loadingState{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
-.spin{width:36px;height:36px;border:3px solid var(--paper3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+/* ── LOADING / STATES ── */
+.full-center{min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center}
+.fc-icon{font-size:60px;margin-bottom:4px}
+.fc-title{font-size:24px;font-weight:800;letter-spacing:-.4px}
+.fc-sub{font-size:15px;color:var(--t2);line-height:1.65;max-width:320px}
+.spin{width:40px;height:40px;border:3px solid var(--s3);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spin-label{font-size:13px;color:var(--ink3)}
 
-/* ERROR */
-#errorState{display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center}
-.err-icon{font-size:52px;opacity:.5}
-.err-title{font-family:var(--font-serif);font-size:24px;font-weight:600;color:var(--ink)}
-.err-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:300px}
+/* ── MAIN ── */
+#app{display:none;flex-direction:column;min-height:100vh}
 
-/* HEADER */
-header{background:var(--ink);padding:13px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;flex-shrink:0}
-.hlogo{font-family:var(--font-serif);font-size:15px;font-weight:600;color:var(--paper);letter-spacing:-.2px;display:flex;align-items:center;gap:8px}
-.hpulse{width:7px;height:7px;background:var(--gold);border-radius:50%;animation:pulse 2s ease-in-out infinite;flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
-.hter-num{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink4);letter-spacing:.06em}
-
-/* HERO */
-.hero{background:var(--ink);padding:0 20px 24px;position:relative;overflow:hidden}
-.hero::after{content:'';position:absolute;top:-80px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,rgba(201,151,58,.15) 0%,transparent 70%);border-radius:50%;pointer-events:none}
-.hero-name{font-family:var(--font-serif);font-size:28px;font-weight:600;color:#fff;letter-spacing:-.3px;line-height:1.15;margin-bottom:4px}
-.hero-tipo{font-size:13px;color:var(--ink4);margin-bottom:22px}
-
-/* COUNTDOWN */
-.cdown-wrap{display:flex;align-items:center;gap:18px;margin-bottom:18px}
-.ring-container{position:relative;width:88px;height:88px;flex-shrink:0}
-.ring-svg{width:88px;height:88px;transform:rotate(-90deg)}
-.ring-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:7}
-.ring-fill{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1),stroke .4s}
-.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
-.ring-days{font-family:var(--font-serif);font-size:24px;font-weight:700;color:#fff;line-height:1}
-.ring-unit{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
-.cdown-info{flex:1;min-width:0}
-.cdown-lbl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-bottom:7px}
-.cdown-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
-.cdown-row span:first-child{color:var(--ink3)}
-.cdown-row span:last-child{color:#fff;font-weight:500}
-.cdown-bar{height:4px;background:rgba(255,255,255,.08);border-radius:99px;margin-top:10px;overflow:hidden}
-.cdown-fill{height:100%;border-radius:99px;transition:width .9s cubic-bezier(.4,0,.2,1)}
-.status-banner{display:flex;align-items:center;gap:9px;padding:10px 14px;border-radius:var(--r);font-size:13px;font-weight:500}
-.sb-ok{background:rgba(45,138,85,.15);color:#5fd68a;border:1px solid rgba(45,138,85,.25)}
-.sb-warn{background:rgba(201,151,58,.15);color:#e8c06a;border:1px solid rgba(201,151,58,.25)}
-.sb-bad{background:rgba(201,64,64,.15);color:#f08080;border:1px solid rgba(201,64,64,.25)}
-
-/* INFO STRIP */
-.info-strip{display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper3);gap:1px;border-bottom:1px solid var(--paper3)}
-.info-cell{background:var(--paper);padding:14px 10px;text-align:center}
-.info-val{font-family:var(--font-serif);font-size:21px;font-weight:700;color:var(--ink);line-height:1}
-.info-lbl{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin-top:4px}
-
-/* SECTIONS */
-.sections{padding:18px;display:flex;flex-direction:column;gap:16px;max-width:620px;margin:0 auto;width:100%;padding-bottom:32px}
-.sec{background:#fff;border:1.5px solid var(--paper3);border-radius:var(--r2);overflow:hidden;box-shadow:var(--sh)}
-.sec-head{padding:13px 16px;border-bottom:1.5px solid var(--paper2);display:flex;align-items:center;gap:10px}
-.sec-ico{width:28px;height:28px;border-radius:7px;background:var(--paper);border:1px solid var(--paper3);display:flex;align-items:center;justify-content:center;font-size:13px}
-.sec-title{font-family:var(--font-serif);font-size:15px;font-weight:600;color:var(--ink)}
-.sec-body{padding:16px}
-
-/* MAP IMAGE */
-.map-img-wrap{background:var(--paper);border-radius:var(--r);overflow:hidden;min-height:180px;display:flex;align-items:center;justify-content:center;border:1.5px dashed var(--paper3)}
-.map-img-wrap img{width:100%;max-height:380px;object-fit:contain;display:block;cursor:zoom-in}
-.no-map{text-align:center;padding:36px 20px;color:var(--ink3);font-size:13px;line-height:1.6}
-.no-map span{font-size:32px;display:block;margin-bottom:10px;opacity:.5}
-.thumb-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid var(--paper3);transition:all .15s}
-.thumb:hover,.thumb.on{border-color:var(--gold);transform:scale(1.06)}
-.pdf-thumb{width:64px;height:64px;border-radius:8px;border:2px solid var(--paper3);display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--paper);cursor:pointer;transition:all .15s}
-.pdf-thumb:hover{border-color:var(--blue)}
-
-/* LEAFLET */
-/* ── MAP FULLSCREEN ── */
-#leafletMap{height:270px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--paper3);transition:height .3s ease}
-#leafletMap.fullscreen{
-  position:fixed!important;inset:0!important;z-index:800!important;
-  border-radius:0!important;height:100vh!important;border:none!important;
+/* ── TERRITORY SWITCHER (top bar when multiple) ── */
+#switcher{
+  background:rgba(17,17,24,.95);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  display:flex;flex-direction:column;gap:0;
 }
-.map-fs-close{
-  position:fixed;top:16px;right:16px;z-index:801;
-  width:40px;height:40px;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
-  border:none;border-radius:50%;color:#fff;font-size:20px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;
+.sw-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:13px 18px;
 }
+.sw-logo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--t2)}
+.sw-dot{width:7px;height:7px;background:var(--blue);border-radius:50%;box-shadow:0 0 8px var(--blue);animation:glow 2s ease-in-out infinite alternate}
+@keyframes glow{from{opacity:.6;box-shadow:0 0 5px var(--blue)}to{opacity:1;box-shadow:0 0 14px var(--blue)}}
+.sw-pub{font-size:15px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+
+/* Territory tabs */
+.sw-tabs{
+  display:flex;gap:0;overflow-x:auto;padding:0 12px 12px;
+  scrollbar-width:none;
+}
+.sw-tabs::-webkit-scrollbar{display:none}
+.sw-tab{
+  flex:none;display:flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:99px;border:1px solid var(--border);
+  background:var(--s2);color:var(--t2);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .15s;white-space:nowrap;margin-right:6px;
+}
+.sw-tab:hover{border-color:var(--border2);color:var(--text)}
+.sw-tab.on{background:var(--blue-dim);border-color:rgba(59,130,246,.35);color:var(--blue)}
+.sw-tab .sw-tab-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* ── HERO ── */
+.hero{
+  position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#0f0f1a 0%,#0a0a0f 60%);
+  padding:0;
+}
+.hero-blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.3;pointer-events:none}
+.hero-blob-1{width:260px;height:260px;background:var(--blue);top:-80px;right:-60px;animation:b1 8s ease-in-out infinite alternate}
+.hero-blob-2{width:180px;height:180px;background:var(--purple);bottom:-50px;left:-40px;animation:b2 10s ease-in-out infinite alternate}
+@keyframes b1{from{transform:translate(0,0) scale(1)}to{transform:translate(20px,30px) scale(1.1)}}
+@keyframes b2{from{transform:translate(0,0)}to{transform:translate(-15px,-20px) scale(1.1)}}
+
+.hero-content{padding:22px 20px 26px;position:relative;z-index:2}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);background:var(--blue-dim);border:1px solid rgba(59,130,246,.2);border-radius:99px;padding:4px 12px;margin-bottom:12px}
+.hero-name{font-size:28px;font-weight:800;letter-spacing:-.5px;line-height:1.1;color:var(--text);margin-bottom:22px}
+
+/* ── COUNTDOWN ── */
+.cd-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--r2);padding:18px;margin-bottom:14px}
+.cd-top{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.ring-wrap{position:relative;width:90px;height:90px;flex-shrink:0}
+.ring-svg{width:90px;height:90px;transform:rotate(-90deg)}
+.ring-track{fill:none;stroke:rgba(255,255,255,.06);stroke-width:8}
+.ring-fill{fill:none;stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1),stroke .5s ease}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-num{font-size:24px;font-weight:800;line-height:1;letter-spacing:-.4px}
+.ring-lbl{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-top:2px}
+.cd-right{flex:1;min-width:0}
+.cd-title{font-size:14px;font-weight:700;margin-bottom:8px;letter-spacing:-.2px}
+.cd-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.cd-row .lbl{color:var(--t2)}.cd-row .val{font-weight:600;font-family:var(--mono);font-size:12px}
+.cd-bar{height:5px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden;margin-top:10px}
+.cd-fill{height:100%;border-radius:99px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+.status-badge{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--r);font-size:13px;font-weight:600}
+.sb-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.sb-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
+.sb-amber{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,.2)}
+.sb-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+
+.info-pills{display:flex;gap:8px;flex-wrap:wrap;padding:0 20px 20px;position:relative;z-index:2}
+.pill-item{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:99px;padding:7px 14px;font-size:13px;font-weight:500;color:var(--t2)}
+.pill-item strong{color:var(--text);font-weight:700}
+
+.wave{height:28px;background:var(--bg);clip-path:ellipse(55% 100% at 50% 100%);margin-top:-1px}
+
+/* ── CONTENT ── */
+.content{background:var(--bg);padding:0 16px 40px;display:flex;flex-direction:column;gap:14px;max-width:640px;margin:0 auto;width:100%}
+
+/* ── CARDS ── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.card-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.card-title{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.card-body{padding:14px}
+
+/* Map image */
+.map-img-wrap{background:var(--s2);border-radius:var(--r);overflow:hidden;min-height:180px;display:flex;align-items:center;justify-content:center}
+.map-img-wrap img{width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto}
+.no-map{display:flex;flex-direction:column;align-items:center;gap:8px;padding:36px 20px;color:var(--t3);font-size:13px;text-align:center}
+.no-map span{font-size:32px;opacity:.4}
+.thumb-strip{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.thumb{width:58px;height:58px;flex-shrink:0;border-radius:8px;object-fit:cover;cursor:pointer;border:2px solid transparent;transition:all .15s;pointer-events:auto}
+.thumb:hover,.thumb.on{border-color:var(--blue);transform:scale(1.06)}
+
+/* Leaflet map */
+#leafletMap{height:280px;border-radius:var(--r);overflow:hidden;border:1px solid var(--border)}
+.tile-tabs{display:flex;gap:5px;margin-bottom:10px;background:var(--s2);border-radius:10px;padding:4px}
+.tile-tab{flex:1;padding:7px;border-radius:7px;text-align:center;font-size:12px;font-weight:600;color:var(--t2);cursor:pointer;transition:all .13s}
+.tile-tab.on{background:var(--s4);color:var(--text)}
+.addr-row{display:flex;gap:7px;margin-bottom:10px}
+.addr-input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;font-family:var(--font);font-size:14px;color:var(--text);outline:none;transition:border-color .13s}
+.addr-input:focus{border-color:var(--blue)}
+.addr-btn{padding:9px 16px;background:var(--blue);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer}
+.loc-btn{width:100%;margin-top:10px;padding:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:var(--r);font-family:var(--font);font-size:14px;font-weight:500;color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .13s}
+.loc-btn:hover{background:var(--s2);color:var(--text)}
+
+/* Details */
+.det-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px}
+.det-row:last-child{border-bottom:none}
+.det-row .key{color:var(--t2);font-weight:500}.det-row .val{font-weight:600;text-align:right;max-width:65%}
+.notes-box{margin-top:12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;font-size:13px;color:var(--t2);line-height:1.6}
+
+/* Map fullscreen */
+#leafletMap.fullscreen{position:fixed!important;inset:0!important;z-index:800!important;height:100dvh!important;border-radius:0!important;border:none!important}
+.map-fs-btn{margin-left:auto;font-size:12px;font-weight:600;color:var(--blue);background:var(--blue-dim);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+.map-fs-close{position:fixed;top:16px;right:16px;z-index:801;width:40px;height:40px;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:none;align-items:center;justify-content:center}
 .map-fs-close.show{display:flex}
 
-/* ── IMAGE ENLARGE ── */
-.map-img-wrap img{cursor:zoom-in}
-.map-img-wrap img:active{opacity:.9}
-.tile-row{display:flex;gap:7px;margin-bottom:10px}
-.tile-btn{flex:1;padding:7px 8px;background:var(--paper);border:1.5px solid var(--paper3);border-radius:8px;font-family:var(--font);font-size:12px;font-weight:500;color:var(--ink2);cursor:pointer;transition:all .15s;text-align:center}
-.tile-btn:hover,.tile-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.addr-row{display:flex;gap:7px;margin-bottom:10px}
-.addr-input{flex:1;background:var(--paper);border:1.5px solid var(--paper3);border-radius:var(--r);padding:8px 12px;font-family:var(--font);font-size:13px;color:var(--ink);outline:none;transition:border-color .15s}
-.addr-input:focus{border-color:var(--gold)}
-.addr-btn{padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer}
-.loc-btn{width:100%;margin-top:10px;padding:10px;background:var(--blue-dim);border:1.5px solid rgba(45,95,168,.2);border-radius:var(--r);font-family:var(--font);font-size:13px;font-weight:500;color:var(--blue);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s}
-.loc-btn:hover{background:rgba(45,95,168,.18)}
-
-/* DETAILS */
-.det-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.det-field{background:var(--paper);border-radius:var(--r);padding:10px 13px;border:1px solid var(--paper3)}
-.det-key{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
-.det-val{font-size:13px;color:var(--ink);font-weight:500;word-break:break-word}
-.det-full{grid-column:1/-1}
-.notes-box{background:var(--gold-dim);border:1px solid rgba(201,151,58,.22);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--ink2);line-height:1.6;display:flex;gap:10px;align-items:flex-start;margin-top:12px}
-
-/* LIGHTBOX */
-#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;align-items:center;justify-content:center;padding:16px}
+/* Lightbox */
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:900;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
 #lb.on{display:flex}
 #lb img{max-width:100%;max-height:90vh;border-radius:var(--r);object-fit:contain}
-#lbClose{position:absolute;top:14px;right:14px;width:36px;height:36px;background:rgba(255,255,255,.12);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#lbClose{position:absolute;top:16px;right:16px;width:40px;height:40px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
-.fade-in{animation:fadeIn .35s ease both}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-
-@media(max-width:400px){.det-grid{grid-template-columns:1fr}.cdown-wrap{flex-direction:column;align-items:flex-start;gap:12px}}
-
-/* ── SCREENSHOT PROTECTION ── */
-/* 1. Print media: hide everything */
-@media print{
-  body *{visibility:hidden!important}
-  body::after{
-    visibility:visible!important;position:fixed;inset:0;
-    display:flex;align-items:center;justify-content:center;flex-direction:column;
-    background:var(--paper);color:var(--ink);font-family:sans-serif;
-    content:"Este contenido no está disponible fuera del enlace original.";
-    font-size:20px;text-align:center;padding:40px;
-  }
-}
-/* 2. Screenshot overlay — shown on key combos and visibility change */
-#screenshotOverlay{
-  display:none;position:fixed;inset:0;z-index:99999;
-  background:var(--paper);
-  align-items:center;justify-content:center;flex-direction:column;
-  gap:16px;text-align:center;padding:32px;
-  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-}
-#screenshotOverlay.show{display:flex}
-.sc-icon{font-size:52px;margin-bottom:4px}
-.sc-title{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.3px}
-.sc-sub{font-size:14px;color:var(--ink3);line-height:1.6;max-width:300px}
-.sc-btn{margin-top:8px;padding:11px 24px;background:var(--gold);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
-/* 3. CSS user-select — prevent text selection */
+/* Screen protection */
+@media print{body *{visibility:hidden!important}}
+#scOverlay{display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:32px}
+#scOverlay.show{display:flex}
 body{-webkit-user-select:none;user-select:none}
-/* 4. Only block dragging, NOT clicking on images */
-img{-webkit-user-drag:none;user-drag:none}
-#mapImgWrap img,.thumb,.pdf-thumb,.map-img-wrap img{pointer-events:auto;cursor:zoom-in}
+
+@media(max-width:480px){.hero-name{font-size:24px}.ring-num{font-size:20px}.ring-wrap{width:80px;height:80px}.ring-svg{width:80px;height:80px}#leafletMap{height:240px}}
 </style>
 </head>
 <body>
 
-<!-- SCREENSHOT PROTECTION OVERLAY -->
-<div id="screenshotOverlay">
-  <div class="sc-icon">🔒</div>
-  <div class="sc-title">Contenido protegido</div>
-  <div class="sc-sub">Este territorio solo puede consultarse a través del enlace que te ha enviado el responsable.</div>
-  <button class="sc-btn" onclick="hideScreenshotOverlay()">Volver a mi territorio</button>
-</div>
-
-<header>
-  <div class="hlogo"><div class="hpulse"></div>Territorios</div>
-  <div class="hter-num" id="hNum"></div>
-</header>
-
-<div id="loadingState">
+<!-- LOADING -->
+<div class="full-center" id="loadingState">
   <div class="spin"></div>
-  <div class="spin-label">Cargando territorio…</div>
+  <div style="font-size:14px;color:var(--t2);margin-top:4px">Cargando tus territorios…</div>
 </div>
 
-<div id="errorState" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center">
-  <div class="err-icon">🔗</div>
-  <div class="err-title">Enlace no válido</div>
-  <div class="err-sub">Este enlace no contiene un territorio. Pide al responsable que genere un enlace desde la app principal.</div>
+<!-- ERROR -->
+<div class="full-center" id="errorState" style="display:none">
+  <div class="fc-icon">🔗</div>
+  <div class="fc-title">Enlace no válido</div>
+  <div class="fc-sub" id="errorMsg">Pide al responsable que genere el enlace desde la app.</div>
 </div>
 
-<!-- EXPIRED STATE -->
-<div id="expiredState" style="display:none;flex:1;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:40px 24px;text-align:center">
-  <div style="font-size:56px;margin-bottom:4px">⏰</div>
-  <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--ink)">Territorio devuelto</div>
-  <div style="font-size:15px;color:var(--ink3);line-height:1.6;max-width:300px">Este territorio ya ha sido devuelto al responsable. El enlace ha caducado.<br><br>Si tienes un nuevo territorio asignado, pide el enlace actualizado al responsable.</div>
+<!-- EXPIRED / NO TERRITORIES -->
+<div class="full-center" id="expiredState" style="display:none">
+  <div class="fc-icon">✅</div>
+  <div class="fc-title">Sin territorios activos</div>
+  <div class="fc-sub">No tienes ningún territorio asignado actualmente. Cuando el responsable te asigne uno, aparecerá aquí automáticamente.</div>
 </div>
 
-<div id="terContent" style="display:none;flex-direction:column;flex:1" class="fade-in">
+<!-- PROTECTION OVERLAY -->
+<div id="scOverlay">
+  <div style="font-size:48px">🔒</div>
+  <div style="font-size:20px;font-weight:700">Contenido protegido</div>
+  <div style="font-size:14px;color:var(--t2);max-width:280px;line-height:1.6;margin-top:4px">Usa el enlace que te envió el responsable para acceder a tus territorios.</div>
+  <button onclick="document.getElementById('scOverlay').classList.remove('show')" style="margin-top:8px;padding:12px 28px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer">Volver</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- SWITCHER (shown when multiple territories) -->
+  <div id="switcher">
+    <div class="sw-header">
+      <div class="sw-logo"><div class="sw-dot"></div>Mis Territorios</div>
+      <div class="sw-pub" id="swPubName"></div>
+    </div>
+    <div class="sw-tabs" id="swTabs"></div>
+  </div>
+
+  <!-- HERO (territory details) -->
   <div class="hero">
-    <div class="hero-name" id="heroName"></div>
-    <div class="hero-tipo" id="heroTipo"></div>
-    <div class="cdown-wrap">
-      <div class="ring-container">
-        <svg class="ring-svg" viewBox="0 0 88 88">
-          <circle class="ring-bg" cx="44" cy="44" r="37"/>
-          <circle class="ring-fill" id="ringFill" cx="44" cy="44" r="37" stroke-dasharray="233" stroke-dashoffset="233"/>
-        </svg>
-        <div class="ring-center">
-          <div class="ring-days" id="ringDays">—</div>
-          <div class="ring-unit" id="ringUnit">días</div>
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-content">
+      <div class="hero-badge" id="heroBadge">📍 Territorio</div>
+      <div class="hero-name" id="heroName">—</div>
+      <div class="cd-card">
+        <div class="cd-top">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 90 90">
+              <circle class="ring-track" cx="45" cy="45" r="38"/>
+              <circle class="ring-fill" id="ringFill" cx="45" cy="45" r="38" stroke-dasharray="239" stroke-dashoffset="239"/>
+            </svg>
+            <div class="ring-center">
+              <div class="ring-num" id="ringNum">—</div>
+              <div class="ring-lbl" id="ringLbl">días</div>
+            </div>
+          </div>
+          <div class="cd-right">
+            <div class="cd-title" id="cdTitle">Período de trabajo</div>
+            <div class="cd-row"><span class="lbl">Asignado</span><span class="val" id="cdDesde">—</span></div>
+            <div class="cd-row"><span class="lbl">Vence</span><span class="val" id="cdHasta">—</span></div>
+            <div class="cd-bar"><div class="cd-fill" id="cdFill"></div></div>
+          </div>
         </div>
-      </div>
-      <div class="cdown-info">
-        <div class="cdown-lbl">Período de trabajo</div>
-        <div class="cdown-row"><span>Asignado</span><span id="cdDesde">—</span></div>
-        <div class="cdown-row"><span>Vence</span><span id="cdHasta">—</span></div>
-        <div class="cdown-bar"><div class="cdown-fill" id="cdFill"></div></div>
+        <div class="status-badge sb-green" id="statusBadge"><span id="stIcon">✅</span><span id="stMsg">—</span></div>
       </div>
     </div>
-    <div class="status-banner" id="statusBanner"></div>
+    <div class="info-pills" id="infoPills"></div>
+    <div class="wave"></div>
   </div>
 
-  <div class="info-strip">
-    <div class="info-cell"><div class="info-val" id="iDirs">—</div><div class="info-lbl">Puertas</div></div>
-    <div class="info-cell"><div class="info-val" id="iGrupo">—</div><div class="info-lbl">Grupo</div></div>
-    <div class="info-cell"><div class="info-val" id="iPub">—</div><div class="info-lbl">Publicador</div></div>
-  </div>
+  <!-- CARDS -->
+  <div class="content">
 
-  <div class="sections">
-    <div class="sec fade-in" style="animation-delay:.04s">
-      <div class="sec-head"><div class="sec-ico">🗺</div><div class="sec-title">Mapa del territorio</div></div>
-      <div class="sec-body">
-        <div class="map-img-wrap" id="mapImgWrap">
-          <div class="no-map"><span>📂</span>No hay mapa cargado aún.</div>
-        </div>
-        <div class="thumb-row" id="thumbRow"></div>
+    <!-- Map image -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-ico" style="background:rgba(59,130,246,.12);color:var(--blue)">🗺</div>
+        <div class="card-title">Mapa del territorio</div>
+        <span style="font-size:11px;color:var(--t3);margin-left:auto">Toca para ampliar</span>
+      </div>
+      <div class="card-body" style="padding:12px">
+        <div class="map-img-wrap" id="mapImgWrap"><div class="no-map"><span>📂</span>No hay mapa cargado</div></div>
+        <div class="thumb-strip" id="thumbStrip"></div>
       </div>
     </div>
 
-    <div class="sec fade-in" style="animation-delay:.08s">
-      <div class="sec-head">
-        <div class="sec-ico">📍</div>
-        <div class="sec-title">Localización</div>
-        <button onclick="toggleMapFullscreen()" id="mapFsBtn" style="margin-left:auto;background:var(--paper);border:1.5px solid var(--paper3);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;display:flex;align-items:center;gap:5px">⛶ Ampliar</button>
+    <!-- Leaflet map -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-ico" style="background:rgba(168,85,247,.12);color:var(--purple)">📍</div>
+        <div class="card-title">Localización</div>
+        <button class="map-fs-btn" onclick="toggleMapFs()">⛶ Pantalla completa</button>
       </div>
-      <div class="sec-body">
-        <div class="tile-row">
-          <div class="tile-btn on" onclick="setTile('street',this)">🗺 Calles</div>
-          <div class="tile-btn" onclick="setTile('satellite',this)">🛰 Satélite</div>
-          <div class="tile-btn" onclick="setTile('topo',this)">⛰ Topo</div>
+      <div class="card-body" style="padding:12px">
+        <div class="tile-tabs">
+          <div class="tile-tab on" onclick="setTile('street',this)">🗺 Calles</div>
+          <div class="tile-tab" onclick="setTile('satellite',this)">🛰 Satélite</div>
+          <div class="tile-tab" onclick="setTile('topo',this)">⛰ Topo</div>
         </div>
         <div class="addr-row">
           <input class="addr-input" id="addrInput" placeholder="Buscar dirección…" onkeydown="if(event.key==='Enter')searchAddr()">
@@ -278,398 +290,317 @@ img{-webkit-user-drag:none;user-drag:none}
       </div>
     </div>
 
-    <div class="sec fade-in" style="animation-delay:.12s">
-      <div class="sec-head"><div class="sec-ico">ℹ</div><div class="sec-title">Detalles</div></div>
-      <div class="sec-body">
-        <div class="det-grid" id="detGrid"></div>
-        <div class="notes-box" id="notesBox" style="display:none">
-          <span style="font-size:18px;flex-shrink:0">⚠️</span>
-          <span id="notesText"></span>
-        </div>
+    <!-- Details -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-ico" style="background:rgba(34,197,94,.12);color:var(--green)">ℹ</div>
+        <div class="card-title">Detalles</div>
       </div>
+      <div class="card-body">
+        <div id="detList"></div>
+        <div class="notes-box" id="notesBox" style="display:none"><span style="font-size:18px;flex-shrink:0">⚠️</span><span id="notesText"></span></div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:12px;color:var(--t3);padding:8px 0">
+      Territorios · Vista del publicador
     </div>
   </div>
 </div>
 
-<div id="lb" onclick="closeLb()">
-  <button id="lbClose" onclick="closeLb()">✕</button>
-  <img id="lbImg" src="" alt="">
-</div>
-
-<!-- MAP FULLSCREEN CLOSE BUTTON -->
-<button class="map-fs-close" id="mapFsClose" onclick="toggleMapFullscreen()">✕</button>
+<!-- Lightbox -->
+<div id="lb" onclick="closeLb()"><button id="lbClose" onclick="closeLb()">✕</button><img id="lbImg" src="" alt=""></div>
+<button class="map-fs-close" id="mapFsClose" onclick="toggleMapFs()">✕</button>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ══ SUPABASE CONFIG ══
+// ══ CONFIG ══
 const SB_URL = 'https://iycqizsxmbaboaxveaeb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5Y3FpenN4bWJhYm9heHZlYWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTM3MzQsImV4cCI6MjA5NDU4OTczNH0.-5jCFsD2WWEity7UDuEmpDqZvXrGLEiCg8fQWPZkOXE';
-const BUCKET = 'mapas-territorios';
-const EXPIRY_DAYS = 120;
-const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+const BUCKET  = 'mapas-territorios';
+const EXPIRY  = 120;
+const GEOJSON = 'zonas.geojson';
+const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` };
 
-async function sbGet(table, params = {}) {
+async function sbGet(table, params={}) {
   const url = new URL(`${SB_URL}/rest/v1/${table}`);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
   const r = await fetch(url, { headers: H });
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
-function sbStorageUrl(path) { return `${SB_URL}/storage/v1/object/public/${BUCKET}/${path}`; }
+function sbUrl(p) { return `${SB_URL}/storage/v1/object/public/${BUCKET}/${p}`; }
 
 // ══ UTILS ══
-function today() { return new Date().toISOString().split('T')[0]; }
-function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
-function daysUntil(d) { return d ? daysBetween(today(), d) : null; }
-function fmtDate(s) { if (!s) return '—'; const [y, m, d] = s.split('-'); return `${d}/${m}/${y}`; }
+const today = () => new Date().toISOString().split('T')[0];
+const daysBetween = (a,b) => Math.round((new Date(b)-new Date(a))/86400000);
+const daysUntil = d => d ? daysBetween(today(),d) : null;
+const fmtDate = s => { if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
+
+// ══ STATE ══
+const PID = parseInt(new URLSearchParams(location.search).get('p')||'0');
+let territories = [];   // active territories of this publisher
+let currentIdx  = 0;    // which territory is shown
+let pub = null, grupos = [];
+let geoData = null, map = null, tileL = null, userMarker = null;
 
 // ══ INIT ══
-const params = new URLSearchParams(location.search);
-const TID = parseInt(params.get('t') || '0');
-
 async function init() {
-  if (!TID) { showError('Enlace sin territorio. Pide al responsable que genere el enlace desde la app.'); return; }
+  if (!PID) { showError('Enlace sin publicador. Pide al responsable que genere uno desde la app.'); return; }
   try {
-    // First load territory to know its grupo_id
-    const ters = await sbGet('territorios', { select: '*', id: `eq.${TID}` });
-    document.getElementById('loadingState').style.display = 'none';
-    if (!ters.length) { showError(`Territorio #${TID} no encontrado. Puede haber sido eliminado o el enlace desactualizado.`); return; }
+    // Load publisher, their active territories, grupos, archivos
+    const [pubs, grps, ters] = await Promise.all([
+      sbGet('publicadores', { select:'id,nombre,grupo_id', id:`eq.${PID}` }),
+      sbGet('grupos', { select:'id,num,nombre' }),
+      sbGet('territorios', { select:'*', pub_id:`eq.${PID}`, estado:`in.(asignado,vencido)`, order:'num.asc' }),
+    ]);
 
-    const t = ters[0];
+    hide('loadingState');
 
-    // Check expiry — if territory is no longer assigned to anyone, link is expired
-    if (t.estado === 'disponible') {
-      showExpired();
-      return;
-    }
+    if (!pubs.length) { showError(`Publicador #${PID} no encontrado.`); return; }
+    pub = pubs[0];
+    grupos = grps;
+    territories = ters;
+    document.title = `Territorios de ${pub.nombre.split(' ')[0]}`;
 
-    // Load supporting data
-    const queries = [
-      sbGet('publicadores', { select: 'id,nombre,grupo_id' }),
-      sbGet('archivos', { select: '*', territorio_id: `eq.${TID}`, order: 'created_at.asc' }),
-    ];
-    // Only load grupo if territory has one
-    if (t.grupo_id) {
-      queries.push(sbGet('grupos', { select: 'id,num,nombre', id: `eq.${t.grupo_id}` }));
-    }
+    if (!territories.length) { show('expiredState'); return; }
 
-    const results = await Promise.all(queries);
-    const pubs = results[0];
-    const archs = results[1];
-    const grps = results[2] || [];
+    // Load archivos for all territories
+    const terIds = territories.map(t=>t.id).join(',');
+    const archivos = await sbGet('archivos', { select:'*', territorio_id:`in.(${terIds})`, order:'created_at.asc' });
 
-    render(t, pubs, grps, archs);
-  } catch (e) {
-    document.getElementById('loadingState').style.display = 'none';
+    // Attach archivos to each territory
+    territories.forEach(t => { t._archs = archivos.filter(a=>a.territorio_id===t.id); });
+
+    buildSwitcher();
+    renderTerritory(0);
+    show('app');
+    setTimeout(() => initMap(), 120);
+
+  } catch(e) {
+    hide('loadingState');
     showError('Error al conectar: ' + e.message);
   }
 }
 
-function showError(msg) {
-  document.getElementById('loadingState').style.display = 'none';
-  document.getElementById('errorState').style.display = 'flex';
-  document.getElementById('errorState').querySelector('.err-sub').textContent = msg;
+function hide(id){ const el=document.getElementById(id); if(el) el.style.display='none'; }
+function show(id){ const el=document.getElementById(id); if(el){ el.style.display='flex'; el.style.flexDirection='column'; } }
+function showError(msg){ hide('loadingState'); const s=document.getElementById('errorState'); s.style.display='flex'; s.style.flexDirection='column'; document.getElementById('errorMsg').textContent=msg; }
+
+// ══ SWITCHER ── build territory tabs
+function buildSwitcher() {
+  document.getElementById('swPubName').textContent = pub.nombre;
+
+  const tabs = document.getElementById('swTabs');
+  if (territories.length <= 1) {
+    // Hide switcher tabs row, keep just the name header
+    tabs.style.display = 'none';
+    return;
+  }
+
+  tabs.innerHTML = territories.map((t,i) => {
+    const d = daysUntil(t.fecha_vence);
+    const col = d===null ? 'var(--t3)' : d<0 ? '#ef4444' : d<=20 ? '#f59e0b' : '#22c55e';
+    return `<div class="sw-tab${i===0?' on':''}" onclick="switchTerritory(${i})" id="swtab-${i}">
+      <div class="sw-tab-dot" style="background:${col}"></div>
+      ${t.num}
+      ${d!==null ? `<span style="font-size:11px;opacity:.7">${d<0?'Vencido':d+'d'}</span>` : ''}
+    </div>`;
+  }).join('');
 }
 
-function showExpired() {
-  document.getElementById('loadingState').style.display = 'none';
-  document.getElementById('expiredState').style.display = 'flex';
+function switchTerritory(idx) {
+  currentIdx = idx;
+  document.querySelectorAll('.sw-tab').forEach((el,i) => el.classList.toggle('on', i===idx));
+  renderTerritory(idx);
+  // Re-render map for new territory
+  if (map) { map.remove(); map=null; }
+  setTimeout(() => initMap(), 80);
 }
 
-function render(t, pubs, grps, archs) {
-  const pub = pubs.find(p => p.id === t.pub_id);
-  // grps now contains only this territory's group (or empty)
-  const grp = grps.length ? grps[0] : null;
+// ══ RENDER TERRITORY ── show details for territory at index
+function renderTerritory(idx) {
+  const t = territories[idx];
+  if (!t) return;
 
-  document.title = `${t.num} — ${t.nombre}`;
-  document.getElementById('hNum').textContent = t.num;
-  document.getElementById('heroName').textContent = t.nombre;
-  document.getElementById('heroTipo').textContent = `${t.tipo}${t.es_grupo ? ' · Territorio de grupo' : ''}`;
-
-  renderCountdown(t);
-  document.getElementById('iDirs').textContent = t.num_dirs || '—';
-  document.getElementById('iGrupo').textContent = grp ? `G${grp.num}` : '—';
-  document.getElementById('iPub').textContent = pub ? pub.nombre.split(' ')[0] : '—';
-
-  renderMapImages(archs);
-  renderDetails(t, pub, grp);
-
-  document.getElementById('terContent').style.display = 'flex';
-  document.getElementById('terContent').style.flexDirection = 'column';
-
-  setTimeout(() => initMap(t), 80);
-}
-
-function renderCountdown(t) {
-  const TOTAL = EXPIRY_DAYS, CIRC = 232;
+  const grp = grupos.find(g=>g.id===t.grupo_id);
   const d = daysUntil(t.fecha_vence);
-  const elapsed = t.fecha_asig ? daysBetween(t.fecha_asig, today()) : 0;
-  const elapsedPct = Math.max(0, Math.min(1, elapsed / TOTAL));
+  const CIRC = 238;
 
-  const ring = document.getElementById('ringFill');
-  const ringDays = document.getElementById('ringDays');
-  const ringUnit = document.getElementById('ringUnit');
-  let ringColor, barColor, bannerCls, bannerIcon, bannerMsg, ringOffset, displayDays;
+  // Hero
+  document.getElementById('heroBadge').textContent = `📍 ${t.tipo}${t.es_grupo?' · Grupo':''}`;
+  document.getElementById('heroName').textContent = t.num + (t.descripcion ? ` — ${t.descripcion.split('\n')[0].substring(0,40)}` : '');
 
-  if (d === null) {
-    ringColor = '#4a6fa5'; barColor = '#4a6fa5'; ringOffset = CIRC; displayDays = '—';
-    bannerCls = 'sb-ok'; bannerIcon = '📋'; bannerMsg = 'Sin fecha de vencimiento asignada'; ringUnit.textContent = '';
-  } else if (d < 0) {
-    ringColor = '#f08080'; barColor = '#c94040'; ringOffset = 0; displayDays = Math.abs(d);
-    bannerCls = 'sb-bad'; bannerIcon = '⚠️'; bannerMsg = `Venció hace ${Math.abs(d)} días — contacta con el responsable`; ringUnit.textContent = 'días';
-  } else if (d === 0) {
-    ringColor = '#f08080'; barColor = '#c94040'; ringOffset = 0; displayDays = 'Hoy';
-    bannerCls = 'sb-bad'; bannerIcon = '🔴'; bannerMsg = '¡Vence hoy!'; ringUnit.textContent = '';
-  } else if (d <= 14) {
-    ringColor = '#e8c06a'; barColor = '#c9973a'; ringOffset = CIRC - (CIRC * d / TOTAL); displayDays = d;
-    bannerCls = 'sb-warn'; bannerIcon = '⏳'; bannerMsg = `Solo quedan ${d} días`; ringUnit.textContent = 'días';
-  } else if (d <= 30) {
-    ringColor = '#e8c06a'; barColor = '#c9973a'; ringOffset = CIRC - (CIRC * d / TOTAL); displayDays = d;
-    bannerCls = 'sb-warn'; bannerIcon = '📅'; bannerMsg = `${d} días restantes — en el tramo final`; ringUnit.textContent = 'días';
+  // Countdown
+  const ring=document.getElementById('ringFill');
+  const elapsed=t.fecha_asig?daysBetween(t.fecha_asig,today()):0;
+  const pct=Math.max(0,Math.min(1,elapsed/EXPIRY));
+
+  let col,barCol,offset,cls,icon,msg,numD,lblD;
+  if(d===null){ col='var(--blue)';barCol='var(--blue)';offset=CIRC;numD='—';lblD='';cls='sb-blue';icon='📋';msg='Sin fecha de vencimiento';document.getElementById('cdTitle').textContent='Sin fecha asignada'; }
+  else if(d<0){ col='#ef4444';barCol='#ef4444';offset=0;numD=Math.abs(d);lblD='días';cls='sb-red';icon='⚠️';msg=`Venció hace ${Math.abs(d)} días`;document.getElementById('cdTitle').textContent='¡Territorio vencido!'; }
+  else if(d===0){ col='#ef4444';barCol='#ef4444';offset=0;numD='Hoy';lblD='';cls='sb-red';icon='🔴';msg='¡Vence hoy!';document.getElementById('cdTitle').textContent='Último día'; }
+  else if(d<=14){ col='#f59e0b';barCol='#f59e0b';offset=CIRC-(CIRC*d/EXPIRY);numD=d;lblD='días';cls='sb-amber';icon='⏳';msg=`Solo quedan ${d} días`;document.getElementById('cdTitle').textContent='Tramo final'; }
+  else{ col='#22c55e';barCol='#22c55e';offset=CIRC-(CIRC*d/EXPIRY);numD=d;lblD='días';cls='sb-green';icon='✅';msg=`${d} días disponibles`;document.getElementById('cdTitle').textContent='Período activo'; }
+
+  requestAnimationFrame(()=>setTimeout(()=>{ ring.style.stroke=col; ring.style.strokeDashoffset=offset; },60));
+  document.getElementById('ringNum').textContent=numD;
+  document.getElementById('ringNum').style.color=col;
+  document.getElementById('ringLbl').textContent=lblD;
+  document.getElementById('cdDesde').textContent=fmtDate(t.fecha_asig);
+  document.getElementById('cdHasta').textContent=fmtDate(t.fecha_vence);
+  setTimeout(()=>{ const f=document.getElementById('cdFill'); f.style.width=(pct*100)+'%'; f.style.background=`linear-gradient(90deg,${barCol}66,${barCol})`; },100);
+  const badge=document.getElementById('statusBadge');
+  badge.className=`status-badge ${cls}`;
+  document.getElementById('stIcon').textContent=icon;
+  document.getElementById('stMsg').textContent=msg;
+
+  // Pills
+  const pills=[];
+  if(grp) pills.push(`🔵 <strong>Grupo ${grp.num}</strong>`);
+  if(t.num_dirs) pills.push(`🏠 <strong>${t.num_dirs}</strong> puertas`);
+  if(territories.length>1) pills.push(`📋 <strong>${idx+1}/${territories.length}</strong> territorios`);
+  document.getElementById('infoPills').innerHTML=pills.map(p=>`<div class="pill-item">${p}</div>`).join('');
+
+  // Images
+  renderImages(t._archs||[]);
+
+  // Details
+  const rows=[
+    ['Número',t.num],['Tipo',t.tipo],
+    ['Grupo',grp?`Grupo ${grp.num}${grp.nombre?' — '+grp.nombre:''}`:'—'],
+    ['Puertas',t.num_dirs||'—'],
+    ['Asignado',fmtDate(t.fecha_asig)],['Vence',fmtDate(t.fecha_vence)],
+    ['Modalidad',t.es_grupo?'Territorio de grupo':'Individual'],
+    ...(t.descripcion?[['Descripción',t.descripcion]]:[] ),
+  ];
+  document.getElementById('detList').innerHTML=rows.map(([k,v])=>
+    `<div class="det-row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('');
+  const nb=document.getElementById('notesBox');
+  if(t.notas){ nb.style.display='flex'; document.getElementById('notesText').textContent=t.notas; }
+  else nb.style.display='none';
+}
+
+// ══ IMAGES ──
+function renderImages(archs) {
+  const wrap=document.getElementById('mapImgWrap');
+  const strip=document.getElementById('thumbStrip');
+  const imgs=archs.filter(f=>!f.tipo_mime?.includes('pdf'));
+  const pdfs=archs.filter(f=>f.tipo_mime?.includes('pdf'));
+  strip.innerHTML='';
+  if(!archs.length){ wrap.innerHTML='<div class="no-map"><span>📂</span>No hay mapa cargado</div>'; return; }
+  if(imgs.length){
+    const url=sbUrl(imgs[0].storage_path);
+    wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
   } else {
-    ringColor = '#5fd68a'; barColor = '#2d8a55'; ringOffset = CIRC - (CIRC * d / TOTAL); displayDays = d;
-    bannerCls = 'sb-ok'; bannerIcon = '✅'; bannerMsg = `${d} días disponibles`; ringUnit.textContent = 'días';
+    const url=sbUrl(pdfs[0].storage_path);
+    wrap.innerHTML=`<div class="no-map" style="cursor:pointer" onclick="window.open('${url}','_blank')"><span>📄</span>PDF — toca para abrir</div>`;
   }
-
-  requestAnimationFrame(() => setTimeout(() => { ring.style.stroke = ringColor; ring.style.strokeDashoffset = ringOffset; }, 50));
-  ringDays.textContent = displayDays;
-  setTimeout(() => { document.getElementById('cdFill').style.width = (elapsedPct * 100) + '%'; document.getElementById('cdFill').style.background = `linear-gradient(90deg,${barColor}77,${barColor})`; }, 100);
-  document.getElementById('cdDesde').textContent = fmtDate(t.fecha_asig);
-  document.getElementById('cdHasta').textContent = fmtDate(t.fecha_vence);
-  const banner = document.getElementById('statusBanner');
-  banner.className = `status-banner ${bannerCls}`;
-  banner.innerHTML = `<span style="font-size:17px">${bannerIcon}</span><span>${bannerMsg}</span>`;
-}
-
-function renderMapImages(archs) {
-  const wrap = document.getElementById('mapImgWrap');
-  const thumbRow = document.getElementById('thumbRow');
-  const imgs = archs.filter(f => !f.tipo_mime?.includes('pdf'));
-  const pdfs = archs.filter(f => f.tipo_mime?.includes('pdf'));
-
-  if (!archs.length) return;
-
-  if (imgs.length) {
-    const url = sbStorageUrl(imgs[0].storage_path);
-    wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')" style="cursor:zoom-in;pointer-events:auto">`;
-    wrap.style.cursor = 'zoom-in';
-  } else if (pdfs.length) {
-    const url = sbStorageUrl(pdfs[0].storage_path);
-    wrap.innerHTML = `<div class="no-map" style="cursor:pointer" onclick="window.open('${url}','_blank')"><span>📄</span>PDF disponible — toca para abrir</div>`;
-  }
-
-  thumbRow.innerHTML = '';
-  if (imgs.length > 1) {
-    const hint = document.createElement('div');
-    hint.style.cssText = 'font-size:11px;color:var(--ink3);width:100%;margin-bottom:4px';
-    hint.textContent = 'Toca la imagen para ampliarla';
-    thumbRow.appendChild(hint);
-  }
-  imgs.forEach((f, i) => {
-    const url = sbStorageUrl(f.storage_path);
-    const el = document.createElement('img');
-    el.className = 'thumb' + (i === 0 ? ' on' : '');
-    el.src = url; el.alt = f.nombre;
-    el.style.pointerEvents = 'auto';
-    el.onclick = () => {
-      wrap.innerHTML = `<img src="${url}" alt="Mapa" onclick="openLb('${url}')" style="cursor:zoom-in;pointer-events:auto">`;
-      document.querySelectorAll('.thumb').forEach(x => x.classList.remove('on')); el.classList.add('on');
-    };
-    thumbRow.appendChild(el);
+  imgs.forEach((f,i)=>{
+    const url=sbUrl(f.storage_path);
+    const el=document.createElement('img');
+    el.className='thumb'+(i===0?' on':''); el.src=url; el.alt=f.nombre;
+    el.onclick=()=>{ wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`; strip.querySelectorAll('.thumb').forEach(x=>x.classList.remove('on')); el.classList.add('on'); };
+    strip.appendChild(el);
   });
-  pdfs.forEach(f => {
-    const url = sbStorageUrl(f.storage_path);
-    const el = document.createElement('div');
-    el.className = 'pdf-thumb'; el.textContent = '📄'; el.title = f.nombre;
-    el.onclick = () => window.open(url, '_blank');
-    thumbRow.appendChild(el);
+  pdfs.forEach(f=>{
+    const url=sbUrl(f.storage_path);
+    const el=document.createElement('div');
+    el.style.cssText='width:58px;height:58px;flex-shrink:0;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--s2);cursor:pointer;pointer-events:auto';
+    el.textContent='📄'; el.onclick=()=>window.open(url,'_blank');
+    strip.appendChild(el);
   });
 }
 
-function renderDetails(t, pub, grp) {
-  document.getElementById('detGrid').innerHTML = `
-    <div class="det-field"><div class="det-key">Tipo</div><div class="det-val">${t.tipo}</div></div>
-    <div class="det-field"><div class="det-key">Grupo</div><div class="det-val">${grp ? `Grupo ${grp.num}` : '—'}</div></div>
-    <div class="det-field"><div class="det-key">Publicador</div><div class="det-val">${pub?.nombre || '—'}</div></div>
-    <div class="det-field"><div class="det-key">Puertas</div><div class="det-val">${t.num_dirs || '—'}</div></div>
-    <div class="det-field"><div class="det-key">Vence</div><div class="det-val">${fmtDate(t.fecha_vence)}</div></div>
-    <div class="det-field"><div class="det-key">Modalidad</div><div class="det-val">${t.es_grupo ? 'Territorio de grupo' : 'Individual'}</div></div>
-    ${t.descripcion ? `<div class="det-field det-full"><div class="det-key">Descripción / Límites</div><div class="det-val">${t.descripcion}</div></div>` : ''}`;
-
-  const nb = document.getElementById('notesBox');
-  if (t.notas) { nb.style.display = 'flex'; document.getElementById('notesText').textContent = t.notas; }
-  else nb.style.display = 'none';
-}
-
-// ══ LEAFLET ══
-let map = null, tileLayer = null, userMarker = null;
-const TILES = {
-  street: ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', '© OpenStreetMap · © CARTO'],
-  satellite: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', '© Esri'],
-  topo: ['https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', '© OpenTopoMap'],
+// ══ MAP ──
+const TILES={
+  street:['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png','© OpenStreetMap · © CARTO'],
+  satellite:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}','© Esri'],
+  topo:['https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png','© OpenTopoMap'],
 };
-const GEOJSON_URL = 'zonas.geojson';
 
-function initMap(t) {
-  if (map) { map.remove(); map = null; }
-  map = L.map('leafletMap', { zoomControl: true }).setView([37.3355, -5.9282], 15);
-  applyTile('street');
-  loadGeoJsonAndHighlight(t);
+function initMap() {
+  if (map) { map.remove(); map=null; }
+  map = L.map('leafletMap',{zoomControl:true}).setView([37.3355,-5.9282],14);
+  setTileL('street');
+  loadGeoAndHighlight();
 }
+function setTileL(type){
+  if(tileL) tileL.remove();
+  const [url,attr]=TILES[type];
+  tileL=L.tileLayer(url,{attribution:attr,maxZoom:19}).addTo(map);
+}
+function setTile(type,el){ setTileL(type); document.querySelectorAll('.tile-tab').forEach(b=>b.classList.remove('on')); el.classList.add('on'); }
 
-async function loadGeoJsonAndHighlight(t) {
+async function loadGeoAndHighlight() {
+  const t = territories[currentIdx];
+  if (!t) return;
   try {
-    const r = await fetch(GEOJSON_URL);
-    const data = await r.json();
-    const targetNum = t.num;
-    let targetBounds = null;
-
-    L.geoJson(data, {
-      style: (feature) => {
-        const isTarget = String(feature.properties.Name).trim() === targetNum;
-        return {
-          fillColor: isTarget ? '#c9973a' : '#94a3b8',
-          weight: isTarget ? 3 : 0.5,
-          opacity: isTarget ? 1 : 0.35,
-          color: isTarget ? '#7c5e1e' : '#64748b',
-          fillOpacity: isTarget ? 0.55 : 0.1,
-        };
+    if (!geoData) { const r=await fetch(GEOJSON); geoData=await r.json(); }
+    let bounds=null;
+    L.geoJson(geoData,{
+      style:f=>{
+        const isMe=String(f.properties.Name).trim()===t.num;
+        return{ fillColor:isMe?'#f59e0b':'#64748b', weight:isMe?2.5:.5, opacity:isMe?1:.3, color:isMe?'#d97706':'#475569', fillOpacity:isMe?.45:.07 };
       },
-      onEachFeature: (feature, layer) => {
-        if (String(feature.properties.Name).trim() === targetNum) {
-          targetBounds = layer.getBounds();
-          layer.bindPopup(`<b>Territorio ${targetNum}</b><br>${t.nombre}`).openPopup();
-        }
+      onEachFeature:(f,layer)=>{
+        if(String(f.properties.Name).trim()===t.num){ bounds=layer.getBounds(); layer.bindPopup(`<b style="font-family:system-ui">${t.num}</b>`).openPopup(); }
       }
     }).addTo(map);
-
-    if (targetBounds) {
-      map.fitBounds(targetBounds, { padding: [50, 50], maxZoom: 17 });
-    }
-  } catch (e) {
-    // GeoJSON not available — fallback
-    console.warn('zonas.geojson no encontrado');
-  }
+    if(bounds) map.fitBounds(bounds,{padding:[50,50],maxZoom:17});
+  } catch(e){ console.warn('GeoJSON not loaded:',e); }
 }
 
-function applyTile(type) {
-  if (tileLayer) tileLayer.remove();
-  const [url, attr] = TILES[type];
-  tileLayer = L.tileLayer(url, { attribution: attr, maxZoom: 19 }).addTo(map);
+async function searchAddr(){
+  const q=document.getElementById('addrInput').value.trim(); if(!q) return;
+  try{
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+    const d=await r.json();
+    if(d.length){ const lat=parseFloat(d[0].lat),lng=parseFloat(d[0].lon); map.setView([lat,lng],16); L.marker([lat,lng]).addTo(map).bindPopup(d[0].display_name.split(',')[0]).openPopup(); }
+    else alert('No encontrada');
+  }catch{ alert('Error'); }
+}
+function goToMyLocation(){
+  if(!navigator.geolocation){ alert('Sin soporte GPS'); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const {latitude:la,longitude:lo}=pos.coords;
+    if(userMarker) userMarker.remove();
+    userMarker=L.circleMarker([la,lo],{radius:8,fillColor:'#3b82f6',fillOpacity:1,color:'#fff',weight:2}).addTo(map).bindPopup('Tu ubicación').openPopup();
+    map.setView([la,lo],16);
+  },()=>alert('Sin ubicación'));
 }
 
-function setTile(type, el) {
-  applyTile(type);
-  document.querySelectorAll('.tile-btn').forEach(b => b.classList.remove('on')); el.classList.add('on');
+let mapFs=false;
+function toggleMapFs(){
+  mapFs=!mapFs;
+  document.getElementById('leafletMap').classList.toggle('fullscreen',mapFs);
+  document.getElementById('mapFsClose').classList.toggle('show',mapFs);
+  document.body.style.overflow=mapFs?'hidden':'';
+  setTimeout(()=>map?.invalidateSize(),320);
 }
 
-function icon(e) { return L.divIcon({ html: `<div style="font-size:28px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))">${e}</div>`, iconSize: [32, 32], iconAnchor: [16, 28], className: '' }); }
+// ══ LIGHTBOX ──
+function openLb(src){ document.getElementById('lbImg').src=src; document.getElementById('lb').classList.add('on'); }
+function closeLb(){ document.getElementById('lb').classList.remove('on'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeLb(); if(mapFs)toggleMapFs(); document.getElementById('scOverlay').classList.remove('show'); } });
 
-async function searchAddr() {
-  const q = document.getElementById('addrInput').value.trim(); if (!q) return;
-  try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
-    const data = await r.json();
-    if (data.length) { const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon); map.setView([lat, lng], 16); L.marker([lat, lng], { icon: icon('📌') }).addTo(map).bindPopup(data[0].display_name.split(',')[0]).openPopup(); }
-    else alert('Dirección no encontrada');
-  } catch { alert('Error de conexión'); }
-}
-
-function goToMyLocation() {
-  if (!navigator.geolocation) { alert('Sin soporte de geolocalización'); return; }
-  navigator.geolocation.getCurrentPosition(pos => {
-    const { latitude: lat, longitude: lng } = pos.coords;
-    if (userMarker) userMarker.remove();
-    userMarker = L.marker([lat, lng], { icon: icon('🔵') }).addTo(map).bindPopup('Tu ubicación').openPopup();
-    map.setView([lat, lng], 15);
-  }, () => alert('No se pudo obtener la ubicación'));
-}
-
-// ══ MAP FULLSCREEN ══
-let mapIsFullscreen = false;
-function toggleMapFullscreen() {
-  const mapEl = document.getElementById('leafletMap');
-  const closeBtn = document.getElementById('mapFsClose');
-  const fsBtn = document.getElementById('mapFsBtn');
-  mapIsFullscreen = !mapIsFullscreen;
-  mapEl.classList.toggle('fullscreen', mapIsFullscreen);
-  closeBtn.classList.toggle('show', mapIsFullscreen);
-  document.body.style.overflow = mapIsFullscreen ? 'hidden' : '';
-  if (fsBtn) fsBtn.textContent = mapIsFullscreen ? '⛶ Reducir' : '⛶ Ampliar';
-  setTimeout(() => map && map.invalidateSize(), 320);
-}
-
-// ══ LIGHTBOX ══
-function openLb(src) { document.getElementById('lbImg').src = src; document.getElementById('lb').classList.add('on'); }
-function closeLb() { document.getElementById('lb').classList.remove('on'); }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLb(); });
-
-// ══ SCREENSHOT PROTECTION ══
-let _scTimer = null;
-
-function showScreenshotOverlay() {
-  document.getElementById('screenshotOverlay').classList.add('show');
-}
-function hideScreenshotOverlay() {
-  document.getElementById('screenshotOverlay').classList.remove('show');
-}
-
-// Block PrintScreen key and common screenshot combos
-document.addEventListener('keydown', e => {
-  const blockedKeys = [
-    'PrintScreen',
-    'F12',  // DevTools (can inspect DOM)
-  ];
-  // Cmd/Ctrl + Shift + S, Cmd/Ctrl + Shift + 4/5 (Mac screenshot), Ctrl+P (print)
-  const isScreenshotCombo =
-    (e.key === 'PrintScreen') ||
-    (e.ctrlKey && e.key === 'p') ||
-    (e.metaKey && e.key === 'p') ||
-    (e.ctrlKey && e.shiftKey && ['s','S','x','X','4','5'].includes(e.key)) ||
-    (e.metaKey && e.shiftKey && ['4','5','6','s','S'].includes(e.key));
-
-  if (isScreenshotCombo) {
-    e.preventDefault();
-    e.stopPropagation();
-    showScreenshotOverlay();
-    if (_scTimer) clearTimeout(_scTimer);
-    _scTimer = setTimeout(hideScreenshotOverlay, 3500);
-    return false;
-  }
-}, true);
-
-// Hide content when tab becomes invisible (switching apps to screenshot)
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) {
-    // Blur sensitive content briefly
-    document.getElementById('terContent') &&
-      (document.getElementById('terContent').style.filter = 'blur(12px)');
-  } else {
-    setTimeout(() => {
-      document.getElementById('terContent') &&
-        (document.getElementById('terContent').style.filter = '');
-    }, 800);
-  }
+// ══ SCREEN PROTECTION ──
+let _st;
+document.addEventListener('keydown',e=>{
+  const b=e.key==='PrintScreen'||(e.ctrlKey&&e.key==='p')||(e.metaKey&&e.key==='p')||
+    (e.ctrlKey&&e.shiftKey&&['s','S','4','5'].includes(e.key))||(e.metaKey&&e.shiftKey&&['4','5','6'].includes(e.key));
+  if(b){ e.preventDefault(); document.getElementById('scOverlay').classList.add('show'); clearTimeout(_st); _st=setTimeout(()=>document.getElementById('scOverlay').classList.remove('show'),3500); }
+},true);
+document.addEventListener('visibilitychange',()=>{
+  const a=document.getElementById('app');
+  if(!a) return;
+  a.style.filter=document.hidden?'blur(16px)':'';
+  if(!document.hidden) setTimeout(()=>{ a.style.filter=''; },700);
 });
+document.addEventListener('contextmenu',e=>e.preventDefault());
 
-// Prevent right-click context menu (which has "Save image as")
-document.addEventListener('contextmenu', e => e.preventDefault());
-
-// Detect if DevTools is open (basic heuristic)
-let _devToolsOpen = false;
-const _devCheck = setInterval(() => {
-  const threshold = 160;
-  if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
-    if (!_devToolsOpen) { _devToolsOpen = true; }
-  } else {
-    _devToolsOpen = false;
-  }
-}, 1000);
-
-// ══ SERVICE WORKER ══
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
-}
+// ══ SW ──
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 init();
 </script>
