@@ -648,7 +648,12 @@ body.light{
 
   /* ── HISTORIAL ── */
   #histScrollArea{flex-direction:column!important}
-  #histDetail.open{display:block!important;position:fixed!important;inset:0!important;z-index:500!important;background:var(--bg)!important;overflow-y:auto!important;padding:16px!important}
+  #histDetail.open{
+    display:block!important;
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
+    z-index:500!important;background:var(--bg)!important;
+    overflow-y:auto!important;padding:16px!important;
+  }
   #histTblHead{display:none!important}
 
   /* ── GRUPOS grid ── */
@@ -1915,56 +1920,94 @@ function openPubDetail(id){
   const hist=S.historial.filter(h=>h.pub_id===p.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
   const base=location.href.replace(/[^/]*$/,'');
   const enlacePub=`${base}territorio-visor.html?p=${p.id}`;
+  const grupoOpts=S.grupos.sort((a,b)=>a.num-b.num).map(gr=>`<option value="${gr.id}"${gr.id===p.grupo_id?' selected':''}>${gr.nombre||'Grupo '+gr.num}</option>`).join('');
 
   document.getElementById('mPubDetTitle').textContent=p.nombre;
   document.getElementById('mPubDetBody').innerHTML=`
+    <!-- EDIT FORM -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Editar datos</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Nombre</label><input class="fi" id="dpd-nombre" value="${p.nombre}"></div>
+        <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="dpd-tel" value="${p.tel||''}" type="tel"></div>
+      </div>
+      <div class="fg"><label class="fl">Grupo</label>
+        <select class="fs" id="dpd-grupo"><option value="">Sin grupo</option>${grupoOpts}</select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="guardarPubDesdeDetalle(${p.id})">💾 Guardar cambios</button>
+        <button class="btn btn-danger btn-sm" onclick="elimPub(${p.id})">🗑 Eliminar</button>
+      </div>
+    </div>
+
+    <!-- STATS -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
-      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Grupo</div><div style="font-size:14px;font-weight:600">${g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo'}</div></div>
-      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Teléfono</div><div style="font-size:14px;font-weight:600">${p.tel||'—'}</div></div>
-      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Activos</div><div style="font-size:22px;font-weight:700;color:var(--blue)">${activos.length}</div></div>
-      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completados</div><div style="font-size:22px;font-weight:700;color:var(--green)">${hist.filter(h=>h.fecha_dev).length}</div></div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Grupo</div>
+        <div style="font-size:14px;font-weight:600">${g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo'}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Teléfono</div>
+        <div style="font-size:14px;font-weight:600">${p.tel||'—'}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Activos</div>
+        <div style="font-size:22px;font-weight:700;color:var(--blue)">${activos.length}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completados</div>
+        <div style="font-size:22px;font-weight:700;color:var(--green)">${hist.filter(h=>h.fecha_dev).length}</div>
+      </div>
     </div>
 
     ${activos.length ? `
     <!-- SHARE LINK -->
     <div style="background:var(--blue-dim);border:1px solid rgba(10,132,255,.2);border-radius:var(--r2);padding:14px;margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">🔗 Enlace del publicador</div>
-      <div style="font-size:12px;color:var(--t2);margin-bottom:10px">
-        Un único enlace para todos sus territorios activos (${activos.length}). Se actualiza automáticamente.
-      </div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:10px">Un único enlace para todos sus territorios (${activos.length}). Se actualiza automáticamente.</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         <input id="pubShareInput_${p.id}" readonly value="${enlacePub}"
-          style="flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);border-radius:8px;
-                 padding:7px 10px;font-family:var(--font-mono);font-size:11px;color:var(--t2);outline:none;cursor:text">
-        <button class="btn btn-primary btn-sm" onclick="
-          navigator.clipboard.writeText('${enlacePub}').then(()=>toast('✓ Enlace copiado','g')).catch(()=>{
-            document.getElementById('pubShareInput_${p.id}').select();document.execCommand('copy');toast('✓ Copiado','g');
-          })">Copiar</button>
-        <a class="share-wa" style="padding:6px 12px;border-radius:8px" href="https://wa.me/?text=${encodeURIComponent(
-          activos.length>1
-          ? `Hola ${p.nombre.split(' ')[0]} 👋\n\nAquí tienes tus territorios activos (*${activos.map(t=>t.num).join(', ')}*).\nPuedes verlos todos desde este enlace:\n${enlacePub}`
-          : `Hola ${p.nombre.split(' ')[0]} 👋\n\nAquí tienes tu territorio *${activos[0].num}*.\nMapa y días restantes:\n${enlacePub}`
-        )}" target="_blank">💬 WhatsApp</a>
+          style="flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:var(--font-mono);font-size:11px;color:var(--t2);outline:none;cursor:text">
+        <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${enlacePub}').then(()=>toast('✓ Copiado','g'))">Copiar</button>
+        <a class="share-wa" style="padding:6px 12px;border-radius:8px" href="https://wa.me/?text=${encodeURIComponent(activos.length>1?`Hola ${p.nombre.split(' ')[0]} 👋\n\nAquí tienes tus territorios (*${activos.map(t=>t.num).join(', ')}*):\n${enlacePub}`:`Hola ${p.nombre.split(' ')[0]} 👋\n\nAquí tienes tu territorio *${activos[0].num}*:\n${enlacePub}`)}" target="_blank">💬</a>
       </div>
     </div>
-
-    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">TERRITORIOS ACTIVOS (${activos.length})</div>
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">TERRITORIOS ACTIVOS</div>
     ${activos.map(t=>`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="closeModal('mPubDet');openTerDetail(${t.id})">
-      <div><div style="font-weight:600;font-size:13px">${t.num} — ${t.nombre}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">Asignado: ${fmtDate(t.fecha_asig)} · Vence: ${fmtDate(t.fecha_vence)}</div></div>
-      <span class="pill ${statusOf(t)==='vencido'?'pill-venc':'pill-asig'}">${statusOf(t)==='vencido'?'Vencido':'Asignado'}</span>
-    </div>`).join('')}` : '<div style="font-size:13px;color:var(--t3);margin-bottom:16px;padding:10px 0">Sin territorios activos — no hay enlace que compartir.</div>'}
+      <div><div style="font-weight:600;font-size:13px">${t.num}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${fmtDate(t.fecha_asig)} → ${fmtDate(t.fecha_vence)}</div></div>
+      <span>${pillHtml(statusOf(t),t.es_grupo)}</span>
+    </div>`).join('')}` : '<div style="font-size:13px;color:var(--t3);margin-bottom:16px">Sin territorios activos.</div>'}
 
-    <div style="font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">HISTORIAL (${hist.length} asignaciones)</div>
-    ${hist.length?hist.slice(0,20).map(h=>{
+    <!-- HISTORIAL -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">HISTORIAL (${hist.length})</div>
+    ${hist.length ? hist.slice(0,15).map(h=>{
       const t=S.territorios.find(x=>x.id===h.territorio_id);
       const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
       return`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-        <div><div style="font-weight:500">${t?t.num+' — '+t.nombre:'—'}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(h.fecha_asig)} → ${fmtDate(h.fecha_dev)}</div></div>
+        <div><div style="font-weight:500">${t?t.num:h.territorio_id}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(h.fecha_asig)} → ${fmtDate(h.fecha_dev)}</div></div>
         <span style="font-family:var(--font-mono);font-size:11px;color:var(--t3);align-self:center">${dias}d</span>
       </div>`;
-    }).join(''):'<div style="color:var(--t3);font-size:13px">Sin historial</div>'}`;
+    }).join('') : '<div style="color:var(--t3);font-size:13px">Sin historial</div>'}`;
   openModal('mPubDet');
 }
+
+async function guardarPubDesdeDetalle(id){
+  const nombre=document.getElementById('dpd-nombre')?.value.trim();
+  const tel=document.getElementById('dpd-tel')?.value.trim();
+  const grupoId=parseInt(document.getElementById('dpd-grupo')?.value)||null;
+  if(!nombre){toast('El nombre es obligatorio','am');return;}
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPatch('publicadores',{id},{nombre,tel:tel||null,grupo_id:grupoId});
+    const p=S.publicadores.find(x=>x.id===id);
+    if(p){p.nombre=rows[0].nombre;p.tel=rows[0].tel;p.grupo_id=rows[0].grupo_id;}
+    setSyncStatus('ok');
+    toast('✓ Publicador actualizado','g');
+    closeModal('mPubDet');
+    renderView(currentView);
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
 
 // ══ GRUPOS ══
 function renderGrupos(){
@@ -2113,8 +2156,8 @@ function openTerModal(){
 async function openTerDetail(id){
   editingTId=id;
   const t=S.territorios.find(x=>x.id===id);
+  if(!t) return;
   document.getElementById('mTerTitle').textContent=`Territorio ${t.num}`;
-  // Context-sensitive buttons
   document.getElementById('btnElimTer').style.display='';
   document.getElementById('btnCancelarAsig').style.display=
     (t.estado==='asignado'||t.estado==='vencido')?'':'none';
@@ -2130,9 +2173,7 @@ async function openTerDetail(id){
   document.getElementById('asig-fecha').value=t.fecha_asig||today();
   document.getElementById('dev-fecha').value=today();
   document.getElementById('venc-fechaEntrega').value=today();
-  document.getElementById('shareBox').style.display='none';
-  const st=statusOf(t);
-  showAsignarPanels(st);
+  showAsignarPanels(statusOf(t));
   renderAsigStatus(t);
   renderTerHistorial(t);
   switchTabByName('mTer','asignar');
@@ -2200,7 +2241,7 @@ async function guardarTer(){
       S.territorios.push(rows[0]);
       toast('✓ Territorio creado','g');
     }
-    setSyncStatus('ok');closeModal('mTer');renderView(currentView);fillGroupFilter();
+    setSyncStatus('ok');closeModal('mTer');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
@@ -2217,7 +2258,7 @@ async function eliminarTer(){
     await sbDelete('territorios',{id:editingTId});
     S.territorios=S.territorios.filter(x=>x.id!==editingTId);
     S.historial=S.historial.filter(x=>x.territorio_id!==editingTId);
-    setSyncStatus('ok');closeModal('mTer');renderView(currentView);updateBadges();
+    setSyncStatus('ok');closeModal('mTer');reloadAndRender();
     toast('🗑 Territorio eliminado');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2231,7 +2272,7 @@ async function cancelarAsignacion(){
     Object.assign(t,rows[0]);
     setSyncStatus('ok');
     document.getElementById('btnCancelarAsig').style.display='none';
-    showAsignarPanels('disponible');renderAsigStatus(t);renderView(currentView);updateBadges();
+    showAsignarPanels('disponible');renderAsigStatus(t);reloadAndRender();
     toast('↩ Asignación cancelada','am');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2250,7 +2291,7 @@ async function confirmarAsig(){
     Object.assign(t,rows[0]);
     setSyncStatus('ok');
     closeModal('mTer'); // close immediately — no need to "Guardar" separately
-    renderView(currentView);updateBadges();
+    reloadAndRender();
     toast(`📌 Asignado a ${pubName(pubId)}`,'a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2263,7 +2304,7 @@ async function renovar(){
   try{
     const rows=await sbPatch('territorios',{id:t.id},{estado:'asignado',fecha_vence:nuevaVence});
     Object.assign(t,rows[0]);
-    setSyncStatus('ok');renderAsigStatus(t);renderView(currentView);updateBadges();
+    setSyncStatus('ok');renderAsigStatus(t);reloadAndRender();
     toast(`🔄 Renovado hasta ${fmtDate(nuevaVence)}`,'g');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2291,7 +2332,7 @@ async function ejecutarDevolucion(t,fecha){
     S.historial.unshift(hRow[0]);
     const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha});
     Object.assign(t,rows[0]);
-    setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);renderView(currentView);updateBadges();
+    setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);reloadAndRender();
     toast('✅ Devuelto y disponible','g');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2305,7 +2346,8 @@ function generarEnlace(){
   // Count active territories for this publisher
   const activos=S.territorios.filter(x=>x.pub_id===t.pub_id&&(x.estado==='asignado'||x.estado==='vencido'));
   document.getElementById('shareLinkInput').value=url;
-  document.getElementById('shareBox').style.display='block';
+  // enlace generado — ya no hay shareBox en el modal del territorio
+  // El enlace se gestiona desde el perfil del publicador
   const nombre=pub.nombre.split(' ')[0];
   const listaTers=activos.map(x=>x.num).join(', ');
   const msg=activos.length>1
@@ -2375,7 +2417,7 @@ async function guardarPub(){
   try{
     const rows=await sbPost('publicadores',{nombre,tel:document.getElementById('p-tel').value.trim(),grupo_id:grupoId});
     S.publicadores.push(rows[0]);S.publicadores.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-    setSyncStatus('ok');closeModal('mPub');fillAllSels();renderView(currentView);updateBadges();
+    setSyncStatus('ok');closeModal('mPub');fillAllSels();reloadAndRender();
     toast('👤 Añadido','g');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2385,7 +2427,7 @@ async function elimPub(id){
   setSyncStatus('syncing');
   try{
     await sbDelete('publicadores',{id});S.publicadores=S.publicadores.filter(p=>p.id!==id);
-    setSyncStatus('ok');renderView(currentView);updateBadges();fillAllSels();toast('🗑 Eliminado');
+    setSyncStatus('ok');reloadAndRender();fillAllSels();toast('🗑 Eliminado');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
@@ -2552,7 +2594,7 @@ async function guardarGrupo(){
     } else {
       const rows=await sbPost('grupos',{num,nombre,siervo_id:siervoId});S.grupos.push(rows[0]);
     }
-    editingGId=null;setSyncStatus('ok');closeModal('mGrupo');fillAllSels();renderView(currentView);updateBadges();
+    editingGId=null;setSyncStatus('ok');closeModal('mGrupo');fillAllSels();reloadAndRender();
     toast('✓ Grupo guardado','g');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2564,7 +2606,7 @@ async function eliminarGrupo(){
     S.grupos=S.grupos.filter(x=>x.id!==editingGId);
     S.publicadores.forEach(p=>{if(p.grupo_id===editingGId)p.grupo_id=null;});
     S.territorios.forEach(t=>{if(t.grupo_id===editingGId)t.grupo_id=null;});
-    editingGId=null;setSyncStatus('ok');closeModal('mGrupo');fillAllSels();renderView(currentView);updateBadges();
+    editingGId=null;setSyncStatus('ok');closeModal('mGrupo');fillAllSels();reloadAndRender();
     toast('🗑 Eliminado');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -3033,7 +3075,17 @@ async function exportarGrupo(gId){
   }catch(e){hideLoader();toast('Error: '+e.message,'r');}
 }
 
-function loadScript(src){
+async function reloadAndRender(){
+  setSyncStatus('syncing');
+  try{
+    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial()]);
+    await checkVencidos();
+    fillAllSels();
+    renderView(currentView);
+    updateBadges();
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('error');console.error(e);}
+}
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[src="${src}"]`)){res();return;}
     const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
