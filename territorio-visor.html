@@ -534,33 +534,39 @@ function renderImages(archs) {
   const t=territories[currentIdx];
   if(!t) return;
 
-  // Direct Storage URL by territory number (primary method)
-  const numPad=String(t.num).padStart(3,'0');
-  const directUrl=`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${numPad}.jpg`;
+  // Build multiple candidate URLs to try
+  const numRaw=String(t.num).trim();
+  const numPad=numRaw.replace(/^(\d+)$/,(_,n)=>n.padStart(3,'0')); // "4"→"004", "E001"→"E001"
+  const candidates=[
+    `${SB_URL}/storage/v1/object/public/${BUCKET}/${numRaw}/Territorio-${numPad}.jpg`,
+    `${SB_URL}/storage/v1/object/public/${BUCKET}/${numPad}/Territorio-${numPad}.jpg`,
+    `${SB_URL}/storage/v1/object/public/${BUCKET}/${numRaw}/Territorio-${numRaw}.jpg`,
+  ];
 
-  // Also try archivos table entries
   const imgs=(archs||[]).filter(f=>f.tipo_mime?.startsWith('image/')||
     (!f.tipo_mime&&f.nombre&&!f.nombre.endsWith('.pdf')));
   const pdfs=(archs||[]).filter(f=>f.tipo_mime?.includes('pdf')||f.nombre?.endsWith('.pdf'));
 
-  // Show main image: prefer archivos, fallback to direct URL
-  const mainUrl=imgs.length ? sbUrl(imgs[0].storage_path) : directUrl;
-  wrap.innerHTML=`<img src="${mainUrl}" alt="Mapa"
-    style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto"
-    onclick="openLb('${mainUrl}')"
-    onerror="this.onerror=null;
-      ${imgs.length ? `this.src='${directUrl}';this.onerror=function(){this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'}` :
-        `this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'`}">`;
+  // Primary: use archivos table if available, else first candidate URL
+  const primaryUrl=imgs.length ? sbUrl(imgs[0].storage_path) : candidates[0];
 
-  // Thumbnails from archivos
+  // Build onerror chain to try all candidates
+  const fallbackChain=candidates.slice(1).map(url=>
+    `if(this.dataset.tried==='${url}'){this.parentElement.innerHTML='<div class=\\"no-map\\"><span>📂</span>No hay mapa</div>'}else{this.dataset.tried='${url}';this.src='${url}'}`
+  ).join(';')||`this.parentElement.innerHTML='<div class=\\"no-map\\"><span>📂</span>No hay mapa</div>'`;
+
+  wrap.innerHTML=`<img src="${primaryUrl}" alt="Mapa" data-tried=""
+    style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto"
+    onclick="openLb(this.src)"
+    onerror="this.onerror=null;${imgs.length?`this.src='${candidates[0]}';this.onerror=function(){${fallbackChain}}`:fallbackChain}">`;
+
   imgs.forEach((f,i)=>{
     const url=sbUrl(f.storage_path);
     const el=document.createElement('img');
     el.className='thumb'+(i===0?' on':'');
-    el.src=url; el.alt=f.nombre||'';
-    el.style.pointerEvents='auto';
+    el.src=url; el.alt=f.nombre||''; el.style.pointerEvents='auto';
     el.onclick=()=>{
-      wrap.innerHTML=`<img src="${url}" alt="Mapa" style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto" onclick="openLb('${url}')">`;
+      wrap.innerHTML=`<img src="${url}" alt="Mapa" style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto" onclick="openLb(this.src)">`;
       strip.querySelectorAll('.thumb').forEach(x=>x.classList.remove('on'));
       el.classList.add('on');
     };
@@ -570,8 +576,7 @@ function renderImages(archs) {
     const url=sbUrl(f.storage_path);
     const el=document.createElement('div');
     el.style.cssText='width:58px;height:58px;flex-shrink:0;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--s2);cursor:pointer;pointer-events:auto';
-    el.textContent='📄';
-    el.onclick=()=>window.open(url,'_blank');
+    el.textContent='📄'; el.onclick=()=>window.open(url,'_blank');
     strip.appendChild(el);
   });
 }
