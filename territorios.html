@@ -1110,9 +1110,6 @@ body.light{
                     <input class="fi" id="asig-pub-input" type="text" placeholder="Escribe el nombre…"
                       autocomplete="off" oninput="pubAutocomplete(this.value)" onfocus="pubAutocomplete(this.value)"
                       onkeydown="pubAutocompleteKey(event)">
-                    <div id="asig-pub-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;
-                      background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
-                      max-height:220px;overflow-y:auto;box-shadow:var(--sh);margin-top:2px"></div>
                   </div>
                   <input type="hidden" id="asig-pub">
                 </div>
@@ -2328,13 +2325,22 @@ async function registrarDevolucionVencido(){
 async function ejecutarDevolucion(t,fecha){
   setSyncStatus('syncing');
   try{
-    const hRow=await sbPost('historial',{territorio_id:t.id,pub_id:t.pub_id,fecha_asig:t.fecha_asig,fecha_dev:fecha});
-    S.historial.unshift(hRow[0]);
+    // Insert historial — use upsert to avoid 409 if already exists
+    const r = await fetch(`${SB_URL}/rest/v1/historial`, {
+      method:'POST',
+      headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},
+      body:JSON.stringify({territorio_id:t.id,pub_id:t.pub_id,fecha_asig:t.fecha_asig,fecha_dev:fecha})
+    });
+    if(!r.ok) throw new Error(await r.text());
+    const hRows = await r.json();
+    if(hRows[0]) S.historial.unshift(hRows[0]);
     const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha});
     Object.assign(t,rows[0]);
-    setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);reloadAndRender();
+    setSyncStatus('ok');
     toast('✅ Devuelto y disponible','g');
-  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+    closeModal('mTer');
+    reloadAndRender();
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');console.error(e);}
 }
 
 // ══ SHARE ══
@@ -3116,6 +3122,7 @@ function fillPubSel(selId,val=null){
 let _acSel=-1;
 function pubAutocomplete(q){
   const dd=document.getElementById('asig-pub-dropdown');
+  const input=document.getElementById('asig-pub-input');
   if(!q.trim()){dd.style.display='none';return;}
   const matches=S.publicadores.filter(p=>p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,12);
   if(!matches.length){dd.style.display='none';return;}
@@ -3130,6 +3137,11 @@ function pubAutocomplete(q){
       <span>${hl}</span>${g?`<span style="font-size:11px;color:var(--t3)">G${g.num}</span>`:''}
     </div>`;
   }).join('');
+  // Position under input using fixed coords
+  const rect=input.getBoundingClientRect();
+  dd.style.top=(rect.bottom+4)+'px';
+  dd.style.left=rect.left+'px';
+  dd.style.width=rect.width+'px';
   dd.style.display='';
 }
 function hlAC(i){
@@ -3457,5 +3469,10 @@ function toggleTheme(){
 // ══ INIT ══
 initApp();
 </script>
+<!-- Autocomplete dropdown portal - fixed position to escape modal overflow -->
+<div id="asig-pub-dropdown" style="display:none;position:fixed;z-index:9000;
+  background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
+  max-height:240px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);"></div>
+
 </body>
 </html>
