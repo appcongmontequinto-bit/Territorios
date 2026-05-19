@@ -250,9 +250,15 @@ body{-webkit-user-select:none;user-select:none}
     <div class="sw-header">
       <div class="sw-logo"><div class="sw-dot"></div>Mis Territorios</div>
       <div class="sw-pub" id="swPubName"></div>
-      <button onclick="toggleThemeVisor()" id="themeBtnVisor" title="Cambiar tema"
-        style="width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:9px;
-               cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:8px">🌙</button>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:8px">
+        <button id="visorInstallBtn" onclick="installVisorPWA()" title="Instalar app"
+          style="display:none;padding:5px 10px;background:var(--green-dim);color:var(--green);
+                 border:1px solid rgba(34,197,94,.25);border-radius:8px;font-family:var(--font);
+                 font-size:12px;font-weight:600;cursor:pointer">⬇ Instalar</button>
+        <button onclick="toggleThemeVisor()" id="themeBtnVisor" title="Cambiar tema"
+          style="width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:9px;
+                 cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🌙</button>
+      </div>
     </div>
     <div class="sw-tabs" id="swTabs"></div>
   </div>
@@ -523,22 +529,40 @@ function renderTerritory(idx) {
 function renderImages(archs) {
   const wrap=document.getElementById('mapImgWrap');
   const strip=document.getElementById('thumbStrip');
-  const imgs=archs.filter(f=>!f.tipo_mime?.includes('pdf'));
-  const pdfs=archs.filter(f=>f.tipo_mime?.includes('pdf'));
   strip.innerHTML='';
-  if(!archs.length){ wrap.innerHTML='<div class="no-map"><span>📂</span>No hay mapa cargado</div>'; return; }
+
+  // Also try direct path by territory number as fallback
+  const t=territories[currentIdx];
+  const directUrl=t?`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${t.num.padStart(3,'0')}.jpg`:null;
+
+  const imgs=archs.filter(f=>f.tipo_mime?.startsWith('image/')||(!f.tipo_mime&&!f.nombre?.endsWith('.pdf')));
+  const pdfs=archs.filter(f=>f.tipo_mime?.includes('pdf')||f.nombre?.endsWith('.pdf'));
+
   if(imgs.length){
     const url=sbUrl(imgs[0].storage_path);
-    wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
-  } else {
+    wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')"
+      onerror="this.onerror=null;this.src='${directUrl}';this.onerror=function(){this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'}">`;
+  } else if(directUrl){
+    // Try direct path
+    wrap.innerHTML=`<img src="${directUrl}" alt="Mapa" onclick="openLb('${directUrl}')"
+      onerror="this.onerror=null;this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'">`;
+  } else if(pdfs.length){
     const url=sbUrl(pdfs[0].storage_path);
     wrap.innerHTML=`<div class="no-map" style="cursor:pointer" onclick="window.open('${url}','_blank')"><span>📄</span>PDF — toca para abrir</div>`;
+  } else {
+    wrap.innerHTML='<div class="no-map"><span>📂</span>No hay mapa cargado</div>';
+    return;
   }
+
   imgs.forEach((f,i)=>{
     const url=sbUrl(f.storage_path);
     const el=document.createElement('img');
-    el.className='thumb'+(i===0?' on':''); el.src=url; el.alt=f.nombre;
-    el.onclick=()=>{ wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`; strip.querySelectorAll('.thumb').forEach(x=>x.classList.remove('on')); el.classList.add('on'); };
+    el.className='thumb'+(i===0?' on':''); el.src=url; el.alt=f.nombre||'';
+    el.onclick=()=>{
+      wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
+      strip.querySelectorAll('.thumb').forEach(x=>x.classList.remove('on'));
+      el.classList.add('on');
+    };
     strip.appendChild(el);
   });
   pdfs.forEach(f=>{
@@ -638,6 +662,24 @@ document.addEventListener('visibilitychange',()=>{
 document.addEventListener('contextmenu',e=>e.preventDefault());
 
 // ══ SW ──
+// ══ PWA INSTALL ══
+let _visorInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  _visorInstallPrompt=e;
+  const btn=document.getElementById('visorInstallBtn');
+  if(btn) btn.style.display='flex';
+});
+function installVisorPWA(){
+  if(!_visorInstallPrompt) return;
+  _visorInstallPrompt.prompt();
+  _visorInstallPrompt.userChoice.then(()=>{ _visorInstallPrompt=null; document.getElementById('visorInstallBtn').style.display='none'; });
+}
+window.addEventListener('appinstalled',()=>{
+  const btn=document.getElementById('visorInstallBtn');
+  if(btn) btn.style.display='none';
+});
+
 // ══ THEME ══
 function toggleThemeVisor(){
   const light=document.body.classList.toggle('light');
