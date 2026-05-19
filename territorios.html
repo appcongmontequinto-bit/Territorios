@@ -779,6 +779,11 @@ body.light{
   <div class="nav-item" data-filter="vencido" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="nb-venc">0</span></div>
   <div class="nav-item" data-filter="proximo" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--amber)">●</span>Próx. vencer<span class="nav-badge am" id="nb-prox">0</span></div>
   <div class="nav-item" data-filter="grupo" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--purple)">●</span>De grupo<span class="nav-badge pu" id="nb-grup">0</span></div>
+  <div style="padding:12px 10px 8px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);line-height:1.5;margin-top:8px">
+    Desarrollada por <span style="color:var(--t2);font-weight:600">Manuel Fernández</span><br>
+    para uso exclusivo de la congregación<br>
+    <span style="color:var(--t2);font-weight:600">Montequinto</span>
+  </div>
 </nav>
 
 <main id="main">
@@ -1196,6 +1201,10 @@ body.light{
         <button class="btn btn-ghost" onclick="closeModal('mTer')">Cerrar</button>
         <button class="btn btn-primary" id="btnGuardarDatos" onclick="guardarTer()">Guardar datos</button>
       </div>
+    </div>
+    <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;margin-top:auto;border-top:1px solid var(--border)">
+      Desarrollada por <b style="color:var(--t2)">Manuel Fernández</b><br>
+      Congregación <b style="color:var(--t2)">Montequinto</b>
     </div>
   </div>
 </div>
@@ -2548,25 +2557,28 @@ function renderGrupoStats(gId){
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
     ${conTer.length ? conTer.map(({p,tersActivos})=>{
       const isSiervo=p.id===g?.siervo_id;
+      const terRows=tersActivos.map(ter=>{
+        const st=statusOf(ter);
+        const dv=ter.fecha_vence?daysUntil(ter.fecha_vence):null;
+        const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
+        const dvTxt=dv===null?'Sin venc.':dv<0?('Venc. hace '+(-dv)+'d'):dv===0?'Vence hoy':(dv+'d');
+        const pill=pillHtml(st,ter.es_grupo);
+        return '<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .1s" onclick="closeModal(\'mGrupo\');openTerDetail('+ter.id+')" onmouseenter="this.style.background=\'var(--s3)\'" onmouseleave="this.style.background=\'\'">'
+          +'<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--blue);min-width:36px">'+ter.num+'</span>'
+          +'<span style="font-size:12px;color:var(--t2);flex:1">'+fmtDate(ter.fecha_asig)+'</span>'
+          +pill
+          +'<span style="font-size:11px;color:'+dvCol+';min-width:52px;text-align:right">'+dvTxt+'</span>'
+          +'</div>';
+      }).join('');
+      const border=tersActivos.length>1?'border-bottom:1px solid var(--border)':'';
       return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
-        <div style="padding:9px 12px;display:flex;align-items:center;gap:8px;border-bottom:${tersActivos.length>1?'1px solid var(--border)':'none'}">
+        <div style="padding:9px 12px;display:flex;align-items:center;gap:8px;${border}">
           <div style="font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:5px">
             ${isSiervo?'<span style="color:var(--amber)">★</span>':''}${p.nombre}
           </div>
           <span class="nav-badge a">${tersActivos.length} terr.</span>
         </div>
-        ${tersActivos.map(ter=>{
-          const st=statusOf(ter);
-          const dv=ter.fecha_vence?daysUntil(ter.fecha_vence):null;
-          const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
-          const dvTxt=dv===null?'Sin venc.':dv<0?`Venc. hace ${-dv}d`:dv===0?'Vence hoy':\`\${dv}d\`;
-          return \`<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .1s" onclick="closeModal('mGrupo');openTerDetail(\${ter.id})" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
-            <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--blue);min-width:36px">\${ter.num}</span>
-            <span style="font-size:12px;color:var(--t2);flex:1">\${fmtDate(ter.fecha_asig)}</span>
-            \${pillHtml(st,ter.es_grupo)}
-            <span style="font-size:11px;color:\${dvCol};min-width:52px;text-align:right">\${dvTxt}</span>
-          </div>\`;
-        }).join('')}
+        ${terRows}
       </div>`;
     }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Ningún publicador con territorio activo</div>'}
     </div>
