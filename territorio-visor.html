@@ -346,8 +346,9 @@ body{-webkit-user-select:none;user-select:none}
       </div>
     </div>
 
-    <div style="text-align:center;font-size:12px;color:var(--t3);padding:8px 0">
-      Territorios · Vista del publicador
+    <div style="text-align:center;font-size:11px;color:var(--t3);padding:12px 0 4px;line-height:1.7">
+      Desarrollada por <span style="color:var(--t2);font-weight:600">Manuel Fernández</span><br>
+      para uso exclusivo de la congregación <span style="color:var(--t2);font-weight:600">Montequinto</span>
     </div>
   </div>
 </div>
@@ -390,7 +391,13 @@ let geoData = null, map = null, tileL = null, userMarker = null;
 
 // ══ INIT ══
 async function init() {
-  if (!PID) { showError('Enlace sin publicador. Pide al responsable que genere uno desde la app.'); return; }
+  if (!PID) {
+    hide('loadingState');
+    showError('Abre el enlace que te envió el responsable para ver tus territorios. Si ya lo tienes, vuelve a abrirlo desde el mensaje de WhatsApp.');
+    document.querySelector('#errorState .fc-icon').textContent='🗺️';
+    document.querySelector('#errorState .fc-title').textContent='Mis Territorios';
+    return;
+  }
   try {
     // Load publisher, their active territories, grupos, archivos
     const [pubs, grps, ters] = await Promise.all([
@@ -467,7 +474,7 @@ function renderTerritory(idx) {
   const t = territories[idx];
   if (!t) return;
 
-  const grp = grupos.find(g=>g.id===pub.grupo_id);  // group of the PUBLISHER, not the territory
+  const grp = grupos.find(g=>g.id===t.grupo_id);
   const d = daysUntil(t.fecha_vence);
   const CIRC = 238;
 
@@ -688,9 +695,9 @@ function toggleThemeVisor(){
   if(b) b.textContent=light?'☀️':'🌙';
 }
 (function(){
-  // Light mode by default; only dark if explicitly saved
-  const saved = localStorage.getItem('ter_theme');
-  if(saved !== 'dark'){
+  // Light mode by default; dark only if explicitly saved
+  const saved=localStorage.getItem('ter_theme');
+  if(saved!=='dark'){
     document.body.classList.add('light');
     const b=document.getElementById('themeBtnVisor');
     if(b) b.textContent='☀️';
