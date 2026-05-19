@@ -1295,9 +1295,15 @@ const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type
 // ── SUPABASE API ──
 async function sbGet(table, params={}) {
   const url = new URL(`${SB_URL}/rest/v1/${table}`);
-  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
-  const r = await fetch(url, { headers: { ...H, 'Prefer': 'count=exact' } });
-  if (!r.ok) throw new Error(await r.text());
+  // Extract limit separately (needs Range header, not query param)
+  const limit = params.limit ? parseInt(params.limit) : null;
+  const p = {...params};
+  delete p.limit;
+  Object.entries(p).forEach(([k,v]) => url.searchParams.set(k,v));
+  const headers = {...H};
+  if(limit) headers['Range'] = `0-${limit-1}`;
+  const r = await fetch(url, { headers });
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
   return r.json();
 }
 async function sbPost(table, body) {
