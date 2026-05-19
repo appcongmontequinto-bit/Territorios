@@ -976,6 +976,57 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">Vista previa (primeros 20)</div>
       <div id="s13PreviewContent"></div>
     </div>
+
+    <!-- CONTAR VIVIENDAS -->
+    <div class="tbl-wrap" style="padding:24px;max-width:580px;margin-top:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700;letter-spacing:-.2px">🏠 Contar viviendas automáticamente</div>
+      </div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:16px">
+        Consulta OpenStreetMap para contar las entradas y números de portal dentro de cada polígono de territorio.<br>
+        <span style="color:var(--t3)">Necesita internet. Procesa un territorio cada 2.5 segundos (~8 min para todos).</span>
+      </div>
+
+      <div class="frow" style="margin-bottom:14px">
+        <div class="fg"><label class="fl">Desde territorio</label><input class="fi" id="cvFrom" type="text" placeholder="001 (vacío = todos)"></div>
+        <div class="fg"><label class="fl">Hasta territorio</label><input class="fi" id="cvTo" type="text" placeholder="201"></div>
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label class="fl">Fuente de datos OSM</label>
+        <select class="fs" id="cvFuente">
+          <option value="entrance">Entradas de edificio (entrance=*)</option>
+          <option value="housenumber">Números de portal (addr:housenumber)</option>
+          <option value="both" selected>Ambos (más completo)</option>
+        </select>
+      </div>
+
+      <!-- Progress area -->
+      <div id="cvProgress" style="display:none;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px">
+          <span id="cvProgressText">Iniciando…</span>
+          <span id="cvProgressPct" style="color:var(--blue)">0%</span>
+        </div>
+        <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
+          <div id="cvProgressBar" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px;width:0%;transition:width .4s ease"></div>
+        </div>
+        <div id="cvLog" style="margin-top:10px;max-height:160px;overflow-y:auto;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--t2);line-height:1.8"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="cvResults" style="display:none;margin-bottom:14px">
+        <div style="background:var(--green-dim);border:1px solid rgba(48,209,88,.2);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--green);font-weight:600;margin-bottom:10px" id="cvSummary"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-success btn-sm" onclick="cvGuardarEnBD()">💾 Guardar en Supabase</button>
+          <button class="btn btn-ghost btn-sm" onclick="cvDescargarSQL()">⬇ Descargar SQL</button>
+          <button class="btn btn-ghost btn-sm" onclick="cvDescargarJSON()">⬇ JSON</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="cvStartBtn" onclick="cvIniciar()">🔍 Iniciar conteo</button>
+        <button class="btn btn-danger btn-sm" id="cvStopBtn" style="display:none" onclick="cvDetener()">⏹ Detener</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2953,6 +3004,131 @@ window.addEventListener('appinstalled', () => {
   toast('✓ Territorios instalado como app', 'g');
   _installPrompt = null;
 });
+
+// ══ CONTAR VIVIENDAS ══
+const OVERPASS_SERVERS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+let _cvRunning=false, _cvStop=false, _cvResults={}, _cvGeoJSON=null;
+
+async function cvCargarGeoJSON(){
+  if(_cvGeoJSON) return _cvGeoJSON;
+  const r=await fetch(GEOJSON_URL);
+  _cvGeoJSON=await r.json();
+  return _cvGeoJSON;
+}
+function cvPolyStr(coords){
+  return coords.slice(0,-1).map(c=>`${c[1].toFixed(6)} ${c[0].toFixed(6)}`).join(' ');
+}
+async function cvQuery(polyStr,fuente,serverIdx=0){
+  const server=OVERPASS_SERVERS[serverIdx%OVERPASS_SERVERS.length];
+  let nodes='';
+  if(fuente==='entrance'||fuente==='both') nodes+=`\n  node["entrance"](poly:"${polyStr}");`;
+  if(fuente==='housenumber'||fuente==='both') nodes+=`\n  node["addr:housenumber"](poly:"${polyStr}");`;
+  const q=`[out:json][timeout:30];\n(\n${nodes}\n);\nout count;`;
+  const body=new URLSearchParams({data:q});
+  const r=await fetch(server,{method:'POST',body,headers:{'Content-Type':'application/x-www-form-urlencoded'}});
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data=await r.json();
+  const el=data.elements?.[0];
+  if(el?.type==='count') return parseInt(el.tags?.total||'0');
+  return data.elements?.length||0;
+}
+function cvLog(msg,color='var(--t2)'){
+  const log=document.getElementById('cvLog');
+  const line=document.createElement('div');
+  line.style.color=color; line.textContent=msg;
+  log.appendChild(line); log.scrollTop=log.scrollHeight;
+}
+async function cvIniciar(){
+  if(_cvRunning) return;
+  const fuente=document.getElementById('cvFuente').value;
+  const fromTer=document.getElementById('cvFrom').value.trim();
+  const toTer=document.getElementById('cvTo').value.trim();
+  let gj;
+  try{ gj=await cvCargarGeoJSON(); }
+  catch(e){ toast('⚠ No se encontró zonas.geojson en la misma carpeta','r'); return; }
+  let features=[...gj.features];
+  if(fromTer) features=features.filter(f=>f.properties.Name.localeCompare(fromTer,undefined,{numeric:true})>=0);
+  if(toTer)   features=features.filter(f=>f.properties.Name.localeCompare(toTer,undefined,{numeric:true})<=0);
+  if(!features.length){ toast('Sin territorios en ese rango','am'); return; }
+  _cvRunning=true; _cvStop=false; _cvResults={};
+  document.getElementById('cvStartBtn').style.display='none';
+  document.getElementById('cvStopBtn').style.display='';
+  document.getElementById('cvProgress').style.display='';
+  document.getElementById('cvResults').style.display='none';
+  document.getElementById('cvLog').innerHTML='';
+  const total=features.length; let done=0, errors=0;
+  for(let i=0;i<features.length;i++){
+    if(_cvStop){ cvLog('⏹ Detenido por el usuario.','var(--amber)'); break; }
+    const feat=features[i];
+    const name=feat.properties.Name;
+    const poly=cvPolyStr(feat.geometry.coordinates[0]);
+    const pct=Math.round(i/total*100);
+    document.getElementById('cvProgressPct').textContent=pct+'%';
+    document.getElementById('cvProgressBar').style.width=pct+'%';
+    document.getElementById('cvProgressText').textContent=`Procesando ${name} (${i+1}/${total})…`;
+    let count=-1;
+    for(let srv=0;srv<OVERPASS_SERVERS.length;srv++){
+      try{ count=await cvQuery(poly,fuente,srv); break; }
+      catch(e){
+        if(srv===OVERPASS_SERVERS.length-1){ cvLog(`✗ ${name}: ${e.message}`,'var(--red)'); errors++; }
+        else await new Promise(r=>setTimeout(r,1500));
+      }
+    }
+    if(count>=0){
+      _cvResults[name]=count; done++;
+      const existing=S.territorios.find(t=>t.num===name);
+      const prev=existing?.num_dirs?` (antes: ${existing.num_dirs})`:'';
+      cvLog(`✓ ${name}: ${count} entradas${prev}`, count>0?'var(--green)':'var(--t3)');
+    }
+    if(i<features.length-1) await new Promise(r=>setTimeout(r,2500));
+  }
+  _cvRunning=false;
+  document.getElementById('cvStartBtn').style.display='';
+  document.getElementById('cvStopBtn').style.display='none';
+  document.getElementById('cvProgressPct').textContent='100%';
+  document.getElementById('cvProgressBar').style.width='100%';
+  document.getElementById('cvProgressText').textContent='Completado';
+  const totalDoors=Object.values(_cvResults).filter(v=>v>=0).reduce((a,b)=>a+b,0);
+  const avg=done>0?Math.round(totalDoors/done):0;
+  document.getElementById('cvSummary').textContent=`✓ ${done} territorios · ${totalDoors.toLocaleString()} entradas · Media: ${avg}${errors?` · ${errors} errores`:''}`;
+  document.getElementById('cvResults').style.display='';
+}
+function cvDetener(){ _cvStop=true; }
+async function cvGuardarEnBD(){
+  const entries=Object.entries(_cvResults).filter(([,v])=>v>=0);
+  if(!entries.length){ toast('Sin datos','am'); return; }
+  showLoader(`Guardando ${entries.length} territorios…`);
+  setSyncStatus('syncing');
+  let ok=0,fail=0;
+  for(const [num,count] of entries){
+    const t=S.territorios.find(x=>x.num===num);
+    if(!t) continue;
+    try{ await sbPatch('territorios',{id:t.id},{num_dirs:count}); t.num_dirs=count; ok++; }
+    catch{ fail++; }
+  }
+  hideLoader(); setSyncStatus(fail?'error':'ok');
+  toast(`✓ ${ok} actualizados${fail?` · ${fail} errores`:''}`,fail?'am':'g');
+  renderView(currentView);
+}
+function cvDescargarSQL(){
+  const lines=['-- Conteo viviendas por territorio\n',
+    ...Object.entries(_cvResults).filter(([,v])=>v>=0)
+      .sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}))
+      .map(([n,c])=>`UPDATE territorios SET num_dirs = ${c} WHERE num = '${n}';`),
+    '\nSELECT num, nombre, num_dirs FROM territorios ORDER BY num;'];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
+  a.download='viviendas.sql'; a.click();
+}
+function cvDescargarJSON(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(_cvResults,null,2)],{type:'application/json'}));
+  a.download='viviendas.json'; a.click();
+}
 
 // ══ INIT ══
 initApp();
