@@ -534,31 +534,43 @@ function renderImages(archs) {
   const t=territories[currentIdx];
   if(!t) return;
 
-  // Build multiple candidate URLs to try
   const numRaw=String(t.num).trim();
-  const numPad=numRaw.replace(/^(\d+)$/,(_,n)=>n.padStart(3,'0')); // "4"→"004", "E001"→"E001"
-  const candidates=[
+  const numPad=numRaw.replace(/^(\d+)$/,(_,n)=>n.padStart(3,'0'));
+
+  // All candidate URLs to try in order
+  window._imgCandidates=[
     `${SB_URL}/storage/v1/object/public/${BUCKET}/${numRaw}/Territorio-${numPad}.jpg`,
     `${SB_URL}/storage/v1/object/public/${BUCKET}/${numPad}/Territorio-${numPad}.jpg`,
     `${SB_URL}/storage/v1/object/public/${BUCKET}/${numRaw}/Territorio-${numRaw}.jpg`,
   ];
+  window._imgIdx=0;
 
   const imgs=(archs||[]).filter(f=>f.tipo_mime?.startsWith('image/')||
     (!f.tipo_mime&&f.nombre&&!f.nombre.endsWith('.pdf')));
   const pdfs=(archs||[]).filter(f=>f.tipo_mime?.includes('pdf')||f.nombre?.endsWith('.pdf'));
 
-  // Primary: use archivos table if available, else first candidate URL
-  const primaryUrl=imgs.length ? sbUrl(imgs[0].storage_path) : candidates[0];
+  const firstUrl=imgs.length ? sbUrl(imgs[0].storage_path) : window._imgCandidates[0];
 
-  // Build onerror chain to try all candidates
-  const fallbackChain=candidates.slice(1).map(url=>
-    `if(this.dataset.tried==='${url}'){this.parentElement.innerHTML='<div class=\\"no-map\\"><span>📂</span>No hay mapa</div>'}else{this.dataset.tried='${url}';this.src='${url}'}`
-  ).join(';')||`this.parentElement.innerHTML='<div class=\\"no-map\\"><span>📂</span>No hay mapa</div>'`;
-
-  wrap.innerHTML=`<img src="${primaryUrl}" alt="Mapa" data-tried=""
-    style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto"
-    onclick="openLb(this.src)"
-    onerror="this.onerror=null;${imgs.length?`this.src='${candidates[0]}';this.onerror=function(){${fallbackChain}}`:fallbackChain}">`;
+  const img=document.createElement('img');
+  img.src=firstUrl;
+  img.alt='Mapa';
+  img.style.cssText='width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto';
+  img.onclick=()=>openLb(img.src);
+  img.onerror=function(){
+    // Try next candidate URL
+    if(window._imgIdx < window._imgCandidates.length){
+      const next=window._imgCandidates[window._imgIdx++];
+      if(img.src===next){window._imgIdx++;} // skip if same
+      if(window._imgIdx-1 < window._imgCandidates.length){
+        img.src=window._imgCandidates[window._imgIdx-1];
+        return;
+      }
+    }
+    // All failed — show placeholder
+    wrap.innerHTML='<div class="no-map"><span>📂</span>No hay mapa cargado</div>';
+  };
+  wrap.innerHTML='';
+  wrap.appendChild(img);
 
   imgs.forEach((f,i)=>{
     const url=sbUrl(f.storage_path);
@@ -566,7 +578,12 @@ function renderImages(archs) {
     el.className='thumb'+(i===0?' on':'');
     el.src=url; el.alt=f.nombre||''; el.style.pointerEvents='auto';
     el.onclick=()=>{
-      wrap.innerHTML=`<img src="${url}" alt="Mapa" style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto" onclick="openLb(this.src)">`;
+      wrap.innerHTML='';
+      const ni=document.createElement('img');
+      ni.src=url; ni.alt='Mapa';
+      ni.style.cssText='width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto';
+      ni.onclick=()=>openLb(ni.src);
+      wrap.appendChild(ni);
       strip.querySelectorAll('.thumb').forEach(x=>x.classList.remove('on'));
       el.classList.add('on');
     };
