@@ -234,7 +234,7 @@ body.light{
 .overlay{
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  z-index:200;align-items:center;justify-content:center;
+  z-index:450;align-items:center;justify-content:center;
 }
 .overlay.on{display:flex;animation:fIn .18s}
 @keyframes fIn{from{opacity:0}to{opacity:1}}
@@ -425,11 +425,13 @@ body.light{
 .legend-item:last-child{margin-bottom:0}
 .legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .map-tooltip{
-  background:rgba(28,28,30,.95)!important;border:1px solid var(--border2)!important;
+  background:var(--s1)!important;border:1px solid var(--border2)!important;
   border-radius:10px!important;color:var(--text)!important;
   font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;
   padding:6px 10px!important;box-shadow:var(--sh)!important;
 }
+/* Leaflet default tooltip arrow — hide it for clean look */
+.map-tooltip::before{display:none!important}
 /* ── MAP SIDE PANEL ── */
 #mapPanel{
   position:absolute;top:0;right:0;width:320px;height:100%;
@@ -648,11 +650,17 @@ body.light{
 
   /* ── HISTORIAL ── */
   #histScrollArea{flex-direction:column!important}
-  #histDetail.open{
-    display:block!important;
-    position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
+  #histDetail{
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;
+    width:100%!important;
     z-index:500!important;background:var(--bg)!important;
     overflow-y:auto!important;padding:16px!important;
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    display:block!important;
+  }
+  #histDetail.open{
+    transform:translateX(0)!important;
   }
   #histTblHead{display:none!important}
 
@@ -1110,6 +1118,9 @@ body.light{
                     <input class="fi" id="asig-pub-input" type="text" placeholder="Escribe el nombre…"
                       autocomplete="off" oninput="pubAutocomplete(this.value)" onfocus="pubAutocomplete(this.value)"
                       onkeydown="pubAutocompleteKey(event)">
+                    <div id="asig-pub-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;
+                      background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
+                      max-height:220px;overflow-y:auto;box-shadow:var(--sh);margin-top:2px"></div>
                   </div>
                   <input type="hidden" id="asig-pub">
                 </div>
@@ -1380,7 +1391,6 @@ async function initApp(){
     renderView('territorios');
     updateBadges();
     hideLoader();
-    initRealtime(); // start multi-device sync
   } catch(e) {
     hideLoader();
     setSyncStatus('error');
@@ -2012,22 +2022,13 @@ function renderGrupos(){
   const el=document.getElementById('gruposGrid');
   el.innerHTML=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{
     const pubs=S.publicadores.filter(p=>p.grupo_id===g.id);
-    const pubIds=new Set(pubs.map(p=>p.id));
-
-    // Count territories two ways: by grupo_id OR by publicador del grupo
-    const tersByGrupo=S.territorios.filter(t=>t.grupo_id===g.id);
-    const tersByPub=S.territorios.filter(t=>t.grupo_id===null&&t.pub_id&&pubIds.has(t.pub_id));
-    // Merge, deduplicate
-    const tersSet=new Map();
-    [...tersByGrupo,...tersByPub].forEach(t=>tersSet.set(t.id,t));
-    const ters=[...tersSet.values()];
-
+    const ters=S.territorios.filter(t=>t.grupo_id===g.id);
     const venc=ters.filter(t=>t.estado==='vencido').length;
     const asig=ters.filter(t=>t.estado==='asignado').length;
     const disp=ters.filter(t=>t.estado==='disponible').length;
     const siervo=S.publicadores.find(p=>p.id===g.siervo_id);
+    // Publishers WITH active territory
     const pubsConTer=pubs.filter(p=>S.territorios.some(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')));
-
     return`<div class="grp-card" style="cursor:pointer;transition:border-color .15s" onclick="editarGrupo(${g.id})" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
         <div>
@@ -2042,7 +2043,7 @@ function renderGrupos(){
         <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
         <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
       </div>
-      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} hermanos con territorio activo · Toca para ver detalles</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} publicadores con territorio activo · Toca para ver detalles</div>
     </div>`;
   }).join('');
 }
@@ -2088,7 +2089,7 @@ function openHistDetail(terId){
   const t=S.territorios.find(x=>x.id===terId);
   const hist=S.historial.filter(h=>h.territorio_id===terId);
   const panel=document.getElementById('histDetail');
-  panel.style.display='';
+  if(window.innerWidth>700) panel.style.display='';
   panel.classList.add('open');
   document.getElementById('histDetailTitle').textContent=`${t?.num} — ${t?.nombre||''}`;
   if(!hist.length){document.getElementById('histDetailList').innerHTML='<div style="color:var(--t3);font-size:13px">Sin asignaciones</div>';return;}
@@ -2115,7 +2116,7 @@ function openHistDetail(terId){
 function closeHistDetail(){
   const panel=document.getElementById('histDetail');
   panel.classList.remove('open');
-  panel.style.display='none';
+  if(window.innerWidth>700) panel.style.display='none';
 }
 
 async function editHistDate(histId, campo, valor, terId){
@@ -2335,22 +2336,13 @@ async function registrarDevolucionVencido(){
 async function ejecutarDevolucion(t,fecha){
   setSyncStatus('syncing');
   try{
-    // Insert historial — use upsert to avoid 409 if already exists
-    const r = await fetch(`${SB_URL}/rest/v1/historial`, {
-      method:'POST',
-      headers:{...H,'Prefer':'return=representation,resolution=merge-duplicates'},
-      body:JSON.stringify({territorio_id:t.id,pub_id:t.pub_id,fecha_asig:t.fecha_asig,fecha_dev:fecha})
-    });
-    if(!r.ok) throw new Error(await r.text());
-    const hRows = await r.json();
-    if(hRows[0]) S.historial.unshift(hRows[0]);
+    const hRow=await sbPost('historial',{territorio_id:t.id,pub_id:t.pub_id,fecha_asig:t.fecha_asig,fecha_dev:fecha});
+    S.historial.unshift(hRow[0]);
     const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha});
     Object.assign(t,rows[0]);
-    setSyncStatus('ok');
+    setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);reloadAndRender();
     toast('✅ Devuelto y disponible','g');
-    closeModal('mTer');
-    reloadAndRender();
-  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');console.error(e);}
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
 // ══ SHARE ══
@@ -2478,7 +2470,8 @@ function setGrupoFilter(el){
 }
 
 function renderGrupoTers(gId){
-  let ters=S.territorios.filter(t=>t.grupo_id===gId);
+  const gIdN=Number(gId);
+  let ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
   if(_grupoFiltro!=='todos') ters=ters.filter(t=>t.estado===_grupoFiltro||(statusOf(t)===_grupoFiltro));
   ters.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
   const el=document.getElementById('grupoTerList');
@@ -2496,21 +2489,14 @@ function renderGrupoTers(gId){
 }
 
 function renderGrupoStats(gId){
-  const g=S.grupos.find(x=>x.id===gId);
-  const pubs=S.publicadores.filter(p=>p.grupo_id===gId);
-  const pubIds=new Set(pubs.map(p=>p.id));
+  const gIdN = Number(gId); // ensure numeric comparison
+  const g=S.grupos.find(x=>Number(x.id)===gIdN);
+  const ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
+  const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gIdN);
   const siervo=S.publicadores.find(p=>p.id===g?.siervo_id);
-
-  // Territories: by grupo_id OR by publicador del grupo (fallback for null grupo_id)
-  const tersByGrupo=S.territorios.filter(t=>t.grupo_id===gId);
-  const tersByPub=S.territorios.filter(t=>t.grupo_id===null&&t.pub_id&&pubIds.has(t.pub_id));
-  const tersMap=new Map();
-  [...tersByGrupo,...tersByPub].forEach(t=>tersMap.set(t.id,t));
-  const ters=[...tersMap.values()];
+  // historial entries where the territory belongs to this group
   const terIds=new Set(ters.map(t=>t.id));
-
-  const hist=S.historial.filter(h=>terIds.has(h.territorio_id)||
-    (()=>{const t=S.territorios.find(x=>x.id===h.territorio_id);return t?.grupo_id===gId||pubIds.has(t?.pub_id);})());
+  const hist=S.historial.filter(h=>terIds.has(h.territorio_id));
 
   const disp=ters.filter(t=>t.estado==='disponible').length;
   const asig=ters.filter(t=>t.estado==='asignado').length;
@@ -3112,67 +3098,7 @@ async function reloadAndRender(){
     setSyncStatus('ok');
   }catch(e){setSyncStatus('error');console.error(e);}
 }
-
-// ══ REALTIME — sincronización entre dispositivos ══
-let _realtimeChannel = null;
-let _reloadTimer = null;
-
-function initRealtime(){
-  // Use Supabase Realtime via WebSocket
-  const wsUrl = `wss://iycqizsxmbaboaxveaeb.supabase.co/realtime/v1/websocket?apikey=${SB_KEY}&vsn=1.0.0`;
-  try {
-    const ws = new WebSocket(wsUrl);
-    ws.onopen = () => {
-      // Subscribe to changes on all relevant tables
-      const sub = {
-        topic: 'realtime:public',
-        event: 'phx_join',
-        payload: {
-          config: {
-            broadcast: { self: false },
-            presence: { key: '' },
-            postgres_changes: [
-              { event: '*', schema: 'public', table: 'territorios' },
-              { event: '*', schema: 'public', table: 'historial' },
-              { event: '*', schema: 'public', table: 'publicadores' },
-            ]
-          }
-        },
-        ref: '1'
-      };
-      ws.send(JSON.stringify(sub));
-      setSyncStatus('ok');
-      console.log('Realtime connected');
-    };
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data);
-      // Any change in the DB → reload after short debounce (avoid flooding)
-      if(msg.event === 'postgres_changes' || msg.payload?.type === 'UPDATE' || msg.payload?.type === 'INSERT' || msg.payload?.type === 'DELETE'){
-        clearTimeout(_reloadTimer);
-        _reloadTimer = setTimeout(() => {
-          console.log('Realtime change detected — reloading...');
-          reloadAndRender();
-        }, 800);
-      }
-    };
-    ws.onclose = () => {
-      // Reconnect after 5s
-      console.log('Realtime disconnected — reconnecting in 5s');
-      setSyncStatus('error');
-      setTimeout(initRealtime, 5000);
-    };
-    ws.onerror = () => ws.close();
-    _realtimeChannel = ws;
-  } catch(e) {
-    console.warn('Realtime not available:', e.message);
-    // Fallback: poll every 30s
-    setInterval(reloadAndRender, 30000);
-  }
-}
-
-// ══ LOAD SCRIPT — cargar scripts externos dinámicamente ══
-// ⚠️ NO BORRAR ESTA DECLARACIÓN — si se pierde la app deja de funcionar
-function loadScript(src){
+async function loadScript(src){
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[src="${src}"]`)){res();return;}
     const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
@@ -3201,7 +3127,6 @@ function fillPubSel(selId,val=null){
 let _acSel=-1;
 function pubAutocomplete(q){
   const dd=document.getElementById('asig-pub-dropdown');
-  const input=document.getElementById('asig-pub-input');
   if(!q.trim()){dd.style.display='none';return;}
   const matches=S.publicadores.filter(p=>p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,12);
   if(!matches.length){dd.style.display='none';return;}
@@ -3216,11 +3141,6 @@ function pubAutocomplete(q){
       <span>${hl}</span>${g?`<span style="font-size:11px;color:var(--t3)">G${g.num}</span>`:''}
     </div>`;
   }).join('');
-  // Position under input using fixed coords
-  const rect=input.getBoundingClientRect();
-  dd.style.top=(rect.bottom+4)+'px';
-  dd.style.left=rect.left+'px';
-  dd.style.width=rect.width+'px';
   dd.style.display='';
 }
 function hlAC(i){
@@ -3548,10 +3468,5 @@ function toggleTheme(){
 // ══ INIT ══
 initApp();
 </script>
-<!-- Autocomplete dropdown portal - fixed position to escape modal overflow -->
-<div id="asig-pub-dropdown" style="display:none;position:fixed;z-index:9000;
-  background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
-  max-height:240px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.5);"></div>
-
 </body>
 </html>
