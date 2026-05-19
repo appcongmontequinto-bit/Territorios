@@ -1380,6 +1380,7 @@ async function initApp(){
     renderView('territorios');
     updateBadges();
     hideLoader();
+    initRealtime(); // start multi-device sync
   } catch(e) {
     hideLoader();
     setSyncStatus('error');
@@ -2011,13 +2012,22 @@ function renderGrupos(){
   const el=document.getElementById('gruposGrid');
   el.innerHTML=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{
     const pubs=S.publicadores.filter(p=>p.grupo_id===g.id);
-    const ters=S.territorios.filter(t=>t.grupo_id===g.id);
+    const pubIds=new Set(pubs.map(p=>p.id));
+
+    // Count territories two ways: by grupo_id OR by publicador del grupo
+    const tersByGrupo=S.territorios.filter(t=>t.grupo_id===g.id);
+    const tersByPub=S.territorios.filter(t=>t.grupo_id===null&&t.pub_id&&pubIds.has(t.pub_id));
+    // Merge, deduplicate
+    const tersSet=new Map();
+    [...tersByGrupo,...tersByPub].forEach(t=>tersSet.set(t.id,t));
+    const ters=[...tersSet.values()];
+
     const venc=ters.filter(t=>t.estado==='vencido').length;
     const asig=ters.filter(t=>t.estado==='asignado').length;
     const disp=ters.filter(t=>t.estado==='disponible').length;
     const siervo=S.publicadores.find(p=>p.id===g.siervo_id);
-    // Publishers WITH active territory
     const pubsConTer=pubs.filter(p=>S.territorios.some(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')));
+
     return`<div class="grp-card" style="cursor:pointer;transition:border-color .15s" onclick="editarGrupo(${g.id})" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
         <div>
@@ -2032,7 +2042,7 @@ function renderGrupos(){
         <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
         <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
       </div>
-      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} publicadores con territorio activo · Toca para ver detalles</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} hermanos con territorio activo · Toca para ver detalles</div>
     </div>`;
   }).join('');
 }
@@ -2487,10 +2497,20 @@ function renderGrupoTers(gId){
 
 function renderGrupoStats(gId){
   const g=S.grupos.find(x=>x.id===gId);
-  const ters=S.territorios.filter(t=>t.grupo_id===gId);
   const pubs=S.publicadores.filter(p=>p.grupo_id===gId);
+  const pubIds=new Set(pubs.map(p=>p.id));
   const siervo=S.publicadores.find(p=>p.id===g?.siervo_id);
-  const hist=S.historial.filter(h=>{const t=S.territorios.find(x=>x.id===h.territorio_id);return t?.grupo_id===gId;});
+
+  // Territories: by grupo_id OR by publicador del grupo (fallback for null grupo_id)
+  const tersByGrupo=S.territorios.filter(t=>t.grupo_id===gId);
+  const tersByPub=S.territorios.filter(t=>t.grupo_id===null&&t.pub_id&&pubIds.has(t.pub_id));
+  const tersMap=new Map();
+  [...tersByGrupo,...tersByPub].forEach(t=>tersMap.set(t.id,t));
+  const ters=[...tersMap.values()];
+  const terIds=new Set(ters.map(t=>t.id));
+
+  const hist=S.historial.filter(h=>terIds.has(h.territorio_id)||
+    (()=>{const t=S.territorios.find(x=>x.id===h.territorio_id);return t?.grupo_id===gId||pubIds.has(t?.pub_id);})());
 
   const disp=ters.filter(t=>t.estado==='disponible').length;
   const asig=ters.filter(t=>t.estado==='asignado').length;
@@ -3093,6 +3113,65 @@ async function reloadAndRender(){
   }catch(e){setSyncStatus('error');console.error(e);}
 }
 
+// ══ REALTIME — sincronización entre dispositivos ══
+let _realtimeChannel = null;
+let _reloadTimer = null;
+
+function initRealtime(){
+  // Use Supabase Realtime via WebSocket
+  const wsUrl = `wss://iycqizsxmbaboaxveaeb.supabase.co/realtime/v1/websocket?apikey=${SB_KEY}&vsn=1.0.0`;
+  try {
+    const ws = new WebSocket(wsUrl);
+    ws.onopen = () => {
+      // Subscribe to changes on all relevant tables
+      const sub = {
+        topic: 'realtime:public',
+        event: 'phx_join',
+        payload: {
+          config: {
+            broadcast: { self: false },
+            presence: { key: '' },
+            postgres_changes: [
+              { event: '*', schema: 'public', table: 'territorios' },
+              { event: '*', schema: 'public', table: 'historial' },
+              { event: '*', schema: 'public', table: 'publicadores' },
+            ]
+          }
+        },
+        ref: '1'
+      };
+      ws.send(JSON.stringify(sub));
+      setSyncStatus('ok');
+      console.log('Realtime connected');
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      // Any change in the DB → reload after short debounce (avoid flooding)
+      if(msg.event === 'postgres_changes' || msg.payload?.type === 'UPDATE' || msg.payload?.type === 'INSERT' || msg.payload?.type === 'DELETE'){
+        clearTimeout(_reloadTimer);
+        _reloadTimer = setTimeout(() => {
+          console.log('Realtime change detected — reloading...');
+          reloadAndRender();
+        }, 800);
+      }
+    };
+    ws.onclose = () => {
+      // Reconnect after 5s
+      console.log('Realtime disconnected — reconnecting in 5s');
+      setSyncStatus('error');
+      setTimeout(initRealtime, 5000);
+    };
+    ws.onerror = () => ws.close();
+    _realtimeChannel = ws;
+  } catch(e) {
+    console.warn('Realtime not available:', e.message);
+    // Fallback: poll every 30s
+    setInterval(reloadAndRender, 30000);
+  }
+}
+
+// ══ LOAD SCRIPT — cargar scripts externos dinámicamente ══
+// ⚠️ NO BORRAR ESTA DECLARACIÓN — si se pierde la app deja de funcionar
 function loadScript(src){
   return new Promise((res,rej)=>{
     if(document.querySelector(`script[src="${src}"]`)){res();return;}
