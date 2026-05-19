@@ -60,8 +60,21 @@
 
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
-  /* Safe area for notch/home bar */
   padding-top:env(safe-area-inset-top);
+  transition:background .2s,color .2s;
+}
+
+/* ── LIGHT MODE ── */
+body.light{
+  --bg:#f2f2f7;--s1:#fff;--s2:#f2f2f7;--s3:#e5e5ea;--s4:#d1d1d6;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.16);
+  --text:#1c1c1e;--t2:#3c3c43;--t3:#8e8e93;
+  --blue:#007aff;--blue-dim:rgba(0,122,255,.12);
+  --green:#34c759;--green-dim:rgba(52,199,89,.12);
+  --red:#ff3b30;--red-dim:rgba(255,59,48,.12);
+  --amber:#ff9500;--amber-dim:rgba(255,149,0,.12);
+  --purple:#af52de;--purple-dim:rgba(175,82,222,.12);
+  --teal:#5ac8fa;--teal-dim:rgba(90,200,250,.12);
 }
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -634,8 +647,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   #statGrid{grid-template-columns:1fr!important}
 
   /* ── HISTORIAL ── */
-  #view-historial .view-scroll{flex-direction:column!important}
-  #histDetail{width:100%!important}
+  #histScrollArea{flex-direction:column!important}
+  #histDetail.open{display:block!important;position:fixed!important;inset:0!important;z-index:500!important;background:var(--bg)!important;overflow-y:auto!important;padding:16px!important}
+  #histTblHead{display:none!important}
 
   /* ── GRUPOS grid ── */
   #gruposGrid{grid-template-columns:1fr!important}
@@ -683,6 +697,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
     <button class="btn btn-ghost btn-sm" onclick="openTerModal()">＋ Territorio</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Publicador</button>
     <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.25);border-radius:9px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:5px">⬇ Instalar</button>
+    <button onclick="toggleTheme()" id="themeBtn" title="Cambiar tema" style="width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🌙</button>
     <button id="addTerBtn" onclick="openTerModal()" style="width:36px;height:36px;background:var(--blue);border:none;border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff;flex-shrink:0">＋</button>
   </div>
 </div>
@@ -924,28 +939,31 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 <!-- VIEW: HISTORIAL -->
 <div id="view-historial" class="view">
   <div class="view-head">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between">
-      <div><div class="view-title">Historial</div><div class="view-sub">Haz clic en un territorio para ver sus asignaciones</div></div>
-      <div style="display:flex;gap:6px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><div class="view-title">Historial</div><div class="view-sub">Toca un territorio para ver sus asignaciones</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" onclick="exportarHistorial()">⬇ Excel</button>
-        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:180px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
+        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:160px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
       </div>
     </div>
   </div>
-  <div class="view-scroll" style="display:flex;gap:14px;padding-top:14px">
+  <div class="view-scroll" id="histScrollArea" style="display:flex;gap:14px;padding-top:14px">
     <!-- Territory list -->
-    <div style="flex:1;min-width:0">
+    <div id="histListCol" style="flex:1;min-width:0">
       <div class="tbl-wrap">
-        <div class="tbl-head" style="grid-template-columns:72px 1fr 110px 90px 70px;display:grid;padding:0 10px">
-          <span>Nº</span><span>Territorio</span><span>Último publicador</span><span>Último trabajo</span><span>Veces</span>
+        <div class="tbl-head" id="histTblHead" style="grid-template-columns:60px 1fr 90px 60px;display:grid;padding:0 10px">
+          <span>Nº</span><span>Último pub.</span><span>Último</span><span>Nº</span>
         </div>
-        <div id="histTable" class="tbl-body" style="max-height:calc(100vh - 220px)"></div>
+        <div id="histTable" class="tbl-body" style="max-height:calc(100dvh - 230px)"></div>
       </div>
     </div>
-    <!-- Assignment detail panel -->
+    <!-- Detail panel -->
     <div id="histDetail" style="width:320px;flex-shrink:0;display:none">
-      <div class="tbl-wrap" style="padding:16px">
-        <div style="font-size:14px;font-weight:700;margin-bottom:14px;letter-spacing:-.2px" id="histDetailTitle">Asignaciones</div>
+      <div class="tbl-wrap" style="padding:16px;position:sticky;top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:14px;font-weight:700;letter-spacing:-.2px" id="histDetailTitle">Asignaciones</div>
+          <button class="xbtn" onclick="closeHistDetail()">✕</button>
+        </div>
         <div id="histDetailList"></div>
       </div>
     </div>
@@ -1081,7 +1099,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
             </div>
             <div class="asign-card-body">
               <div class="frow">
-                <div class="fg"><label class="fl">Publicador / Siervo</label><select class="fs" id="asig-pub"></select></div>
+                <div class="fg">
+                  <label class="fl">Publicador / Siervo</label>
+                  <div style="position:relative">
+                    <input class="fi" id="asig-pub-input" type="text" placeholder="Escribe el nombre…"
+                      autocomplete="off" oninput="pubAutocomplete(this.value)" onfocus="pubAutocomplete(this.value)"
+                      onkeydown="pubAutocompleteKey(event)">
+                    <div id="asig-pub-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;
+                      background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
+                      max-height:220px;overflow-y:auto;box-shadow:var(--sh);margin-top:2px"></div>
+                  </div>
+                  <input type="hidden" id="asig-pub">
+                </div>
                 <div class="fg"><label class="fl">Fecha de entrega</label><input class="fi" id="asig-fecha" type="date"></div>
               </div>
               <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="confirmarAsig()">📌 Asignar</button>
@@ -1094,31 +1123,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
           <div class="asign-card">
             <div class="asign-card-head">
               <span class="aci">📌</span>
-              <span class="act">Territorio asignado — acciones</span>
+              <span class="act">Territorio asignado</span>
             </div>
             <div class="asign-card-body">
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
                 <button class="btn btn-ghost btn-sm" id="btnRenovar" onclick="renovar()">🔄 Renovar (+4 meses)</button>
-                <button class="btn btn-share btn-sm" id="btnShare" onclick="generarEnlace()">🔗 Enlace</button>
               </div>
-              <div style="font-size:13px;color:var(--t2);margin-bottom:10px">¿El hermano entregó el territorio?</div>
+              <div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:600">¿El hermano entregó el territorio?</div>
               <div class="frow">
                 <div class="fg"><label class="fl">Fecha de devolución</label><input class="fi" id="dev-fecha" type="date"></div>
                 <div class="fg" style="display:flex;align-items:flex-end">
-                  <button class="btn btn-success" style="width:100%;justify-content:center;margin-bottom:0" onclick="devolverDesdeModal()">✅ Marcar devuelto</button>
+                  <button class="btn btn-success" style="width:100%;justify-content:center" onclick="devolverDesdeModal()">✅ Marcar devuelto</button>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="share-box" id="shareBox">
-            <div class="share-box-lbl">Enlace del publicador</div>
-            <div id="shareInfo" style="font-size:12px;color:var(--blue);margin-bottom:8px;font-weight:600"></div>
-            <div class="share-row">
-              <input class="share-input" id="shareLinkInput" readonly onclick="this.select()">
-              <button class="share-cp" onclick="copiarEnlace()">Copiar</button>
-              <a class="share-wa" id="shareWhatsapp" href="#" target="_blank">💬 WhatsApp</a>
-            </div>
-            <div style="font-size:11px;color:var(--t3);margin-top:8px">Un solo enlace para todos sus territorios activos. Se actualiza automáticamente al asignar o devolver.</div>
           </div>
         </div>
       </div>
@@ -1161,10 +1179,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
       </div>
 
       <div class="factions">
-        <button class="btn btn-danger btn-sm" id="btnElimTer" onclick="eliminarTer()">Eliminar</button>
+        <!-- Context-sensitive bottom buttons -->
+        <div id="factionLeft" style="display:flex;gap:6px">
+          <button class="btn btn-danger btn-sm" id="btnElimTer" onclick="eliminarTer()" style="display:none">🗑 Eliminar territorio</button>
+          <button class="btn btn-amber btn-sm" id="btnCancelarAsig" onclick="cancelarAsignacion()" style="display:none">↩ Cancelar asignación</button>
+        </div>
         <div style="flex:1"></div>
-        <button class="btn btn-ghost" onclick="closeModal('mTer')">Cancelar</button>
-        <button class="btn btn-primary" onclick="guardarTer()">Guardar datos</button>
+        <button class="btn btn-ghost" onclick="closeModal('mTer')">Cerrar</button>
+        <button class="btn btn-primary" id="btnGuardarDatos" onclick="guardarTer()">Guardar datos</button>
       </div>
     </div>
   </div>
@@ -1402,9 +1424,27 @@ function setFilter(elOrStr){
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
   if(el) el.classList.add('on');
   currentFilter=f;
+  // Smart default sort per filter
+  const sortSel=document.getElementById('fSort');
+  if(sortSel){
+    if(f==='disponible') sortSel.value='ultimo_asc';   // sin trabajar más tiempo primero
+    else if(f==='vencido'||f==='proximo'||f==='asignado') sortSel.value='vence_asc'; // vence antes
+    else sortSel.value='num';
+  }
   renderTerritorios();
 }
-function onSearch(){searchQ=document.getElementById('gSearch').value.toLowerCase();if(currentView==='territorios') renderTerritorios();}
+function onSearch(){
+  searchQ=document.getElementById('gSearch').value.toLowerCase();
+  // Sync local histSearch with global query for consistency
+  const hs=document.getElementById('histSearch');
+  if(hs&&currentView==='historial') hs.value=''; // clear local so global takes over
+  if(currentView==='territorios') renderTerritorios();
+  else if(currentView==='publicadores') renderPublicadores();
+  else if(currentView==='historial') renderHistorial();
+  else if(currentView==='prioridad') renderPrioridad();
+  // For other views switch to territorios to show results
+  else if(searchQ){ showView('territorios'); }
+}
 function setViewMode(m){
   viewMode=m;
   document.getElementById('tgl-list').classList.toggle('on',m==='list');
@@ -1825,15 +1865,20 @@ function renderPublicadores(){
   const el=document.getElementById('pubTable');
   if(!S.publicadores.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin publicadores</div>`;return;}
   const mob=window.innerWidth<=700;
-  el.innerHTML=S.publicadores.map(p=>{
+  const q=searchQ;
+  let pubs=[...S.publicadores];
+  if(q) pubs=pubs.filter(p=>{
+    const g=S.grupos.find(x=>x.id===p.grupo_id);
+    return p.nombre.toLowerCase().includes(q)||(g?.nombre||'').toLowerCase().includes(q)||(`G${g?.num}`).toLowerCase().includes(q);
+  });
+  if(!pubs.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
+  el.innerHTML=pubs.map(p=>{
     const g=S.grupos.find(x=>x.id===p.grupo_id);
     const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')).length;
     const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
     const grpLabel=g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo';
-
     if(mob){
-      // Mobile: full name + group on second line, badges on right, no delete
-      return`<div class="tbl-row" style="grid-template-columns:1fr auto;gap:0;min-height:52px;cursor:pointer" onclick="openPubDetail(${p.id})">
+      return`<div class="tbl-row" style="grid-template-columns:1fr auto;min-height:52px;cursor:pointer" onclick="openPubDetail(${p.id})">
         <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;min-width:0;overflow:hidden">
           <span style="font-weight:700;font-size:14px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</span>
           <span style="font-size:12px;color:var(--t2)">${grpLabel}</span>
@@ -1844,8 +1889,6 @@ function renderPublicadores(){
         </span>
       </div>`;
     }
-
-    // Desktop
     return`<div class="tbl-row" style="grid-template-columns:1fr 150px 60px 80px 60px;cursor:pointer" onclick="openPubDetail(${p.id})">
       <span style="font-weight:600;color:var(--blue)">${p.nombre}</span>
       <span style="color:var(--t2);font-size:12px">${grpLabel}</span>
@@ -1949,22 +1992,36 @@ function renderGrupos(){
 // ══ HISTORIAL ══
 function renderHistorial(){
   const el=document.getElementById('histTable');
-  const q=(document.getElementById('histSearch')?.value||'').toLowerCase();
-  // Group by territory, show territories that have history
+  // Merge both local histSearch and global searchQ
+  const localQ=(document.getElementById('histSearch')?.value||'').toLowerCase();
+  const q=localQ||searchQ;
   let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
-  if(q) ters=ters.filter(t=>t.num.toLowerCase().includes(q)||t.nombre.toLowerCase().includes(q));
-  // Only show territories with at least one historial entry
+  if(q) ters=ters.filter(t=>
+    t.num.toLowerCase().includes(q)||
+    t.nombre.toLowerCase().includes(q)||
+    S.historial.some(h=>h.territorio_id===t.id&&pubName(h.pub_id).toLowerCase().includes(q))
+  );
   const tersWithHist=ters.filter(t=>S.historial.some(h=>h.territorio_id===t.id));
-  if(!tersWithHist.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin historial</div>`;return;}
+  if(!tersWithHist.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">${q?'Sin resultados':'Sin historial'}</div>`;return;}
   el.innerHTML=tersWithHist.map(t=>{
-    const hist=S.historial.filter(h=>h.territorio_id===t.id);
+    const hist=S.historial.filter(h=>h.territorio_id===t.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
     const last=hist[0];
-    return`<div class="tbl-row" style="grid-template-columns:72px 1fr 110px 90px 70px;cursor:pointer" onclick="openHistDetail(${t.id})">
-      <span style="font-family:var(--font-mono);font-size:11px;color:var(--t2)">${t.num}</span>
-      <span style="font-weight:600;font-size:13px">${t.nombre}</span>
-      <span style="font-size:12px;color:var(--t2)">${last?pubName(last.pub_id):'—'}</span>
-      <span style="font-size:12px;color:var(--t2)">${last?fmtDate(last.fecha_dev||last.fecha_asig):'—'}</span>
-      <span><span class="nav-badge">${hist.length}</span></span>
+    const lastPub=last?pubName(last.pub_id):'—';
+    const lastDate=last?fmtDate(last.fecha_dev||last.fecha_asig):'—';
+    const cnt=hist.length;
+    // Single layout that works for both mobile and desktop
+    return`<div onclick="openHistDetail(${t.id})" style="
+        display:grid;grid-template-columns:44px 1fr auto;
+        align-items:center;padding:10px 12px;cursor:pointer;
+        border-bottom:1px solid var(--border);min-height:54px;
+        transition:background .1s;
+      " onmouseenter="this.style.background='var(--s2)'" onmouseleave="this.style.background=''">
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);font-weight:600">${t.num}</span>
+      <span style="display:flex;flex-direction:column;gap:2px;overflow:hidden">
+        <span style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastPub}</span>
+        <span style="font-size:12px;color:var(--t2)">${lastDate}</span>
+      </span>
+      <span style="flex-shrink:0;padding-left:10px"><span class="nav-badge">${cnt}</span></span>
     </div>`;
   }).join('');
 }
@@ -1974,19 +2031,18 @@ function openHistDetail(terId){
   const hist=S.historial.filter(h=>h.territorio_id===terId);
   const panel=document.getElementById('histDetail');
   panel.style.display='';
-  document.getElementById('histDetailTitle').textContent=`${t.num} — ${t.nombre}`;
+  panel.classList.add('open');
+  document.getElementById('histDetailTitle').textContent=`${t?.num} — ${t?.nombre||''}`;
   if(!hist.length){document.getElementById('histDetailList').innerHTML='<div style="color:var(--t3);font-size:13px">Sin asignaciones</div>';return;}
   document.getElementById('histDetailList').innerHTML=hist.map(h=>{
     const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
     return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
       <div style="font-size:13px;font-weight:600;margin-bottom:6px">${pubName(h.pub_id)}</div>
       <div style="display:flex;gap:8px;margin-bottom:8px">
-        <div style="flex:1">
-          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Entrega</div>
+        <div style="flex:1"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Entrega</div>
           <input type="date" value="${h.fecha_asig||''}" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:var(--font);font-size:13px;color:var(--text);outline:none" onchange="editHistDate(${h.id},'fecha_asig',this.value,${terId})">
         </div>
-        <div style="flex:1">
-          <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Devolución</div>
+        <div style="flex:1"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Devolución</div>
           <input type="date" value="${h.fecha_dev||''}" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:var(--font);font-size:13px;color:var(--text);outline:none" onchange="editHistDate(${h.id},'fecha_dev',this.value,${terId})">
         </div>
       </div>
@@ -1996,6 +2052,12 @@ function openHistDetail(terId){
       </div>
     </div>`;
   }).join('');
+}
+
+function closeHistDetail(){
+  const panel=document.getElementById('histDetail');
+  panel.classList.remove('open');
+  panel.style.display='none';
 }
 
 async function editHistDate(histId, campo, valor, terId){
@@ -2024,6 +2086,7 @@ function openTerModal(){
   editingTId=null;
   document.getElementById('mTerTitle').textContent='Nuevo Territorio';
   document.getElementById('btnElimTer').style.display='none';
+  document.getElementById('btnCancelarAsig').style.display='none';
   ['t-num','t-nombre','t-desc','t-notas','t-dirs'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-tipo').value='Urbano';
   document.getElementById('t-esGrupo').checked=false;
@@ -2031,12 +2094,10 @@ function openTerModal(){
   document.getElementById('asig-fecha').value=today();
   document.getElementById('dev-fecha').value=today();
   document.getElementById('venc-fechaEntrega').value=today();
-  // New: show disponible panel
   showAsignarPanels('disponible');
   document.getElementById('asigStatus').innerHTML='';
   document.getElementById('terHistorial').innerHTML='<div style="color:var(--t3);font-size:13px;padding:8px">Sin historial previo</div>';
   document.getElementById('fileList').innerHTML='';
-  document.getElementById('shareBox').style.display='none';
   switchTabByName('mTer','asignar');
   openModal('mTer');
 }
@@ -2044,8 +2105,11 @@ function openTerModal(){
 async function openTerDetail(id){
   editingTId=id;
   const t=S.territorios.find(x=>x.id===id);
-  document.getElementById('mTerTitle').textContent=`${t.num} — ${t.nombre}`;
+  document.getElementById('mTerTitle').textContent=`Territorio ${t.num}`;
+  // Context-sensitive buttons
   document.getElementById('btnElimTer').style.display='';
+  document.getElementById('btnCancelarAsig').style.display=
+    (t.estado==='asignado'||t.estado==='vencido')?'':'none';
   document.getElementById('t-num').value=t.num;
   document.getElementById('t-nombre').value=t.nombre;
   document.getElementById('t-desc').value=t.descripcion||'';
@@ -2059,13 +2123,11 @@ async function openTerDetail(id){
   document.getElementById('dev-fecha').value=today();
   document.getElementById('venc-fechaEntrega').value=today();
   document.getElementById('shareBox').style.display='none';
-
-  // Show correct panel based on status
   const st=statusOf(t);
   showAsignarPanels(st);
   renderAsigStatus(t);
   renderTerHistorial(t);
-  switchTabByName('mTer','asignar'); // Always open on Asignación tab
+  switchTabByName('mTer','asignar');
   openModal('mTer');
   loadTerFiles(id);
 }
@@ -2135,14 +2197,34 @@ async function guardarTer(){
 }
 
 async function eliminarTer(){
-  if(!confirm('¿Eliminar permanentemente?')) return;
+  const t=S.territorios.find(x=>x.id===editingTId);
+  if(!t) return;
+  // Extra warning if has assignment
+  const msg = t.pub_id
+    ? `⚠️ ATENCIÓN: Esto eliminará el territorio ${t.num} PERMANENTEMENTE incluyendo todo su historial. Para cancelar solo la asignación usa "↩ Cancelar asignación".\n\n¿Seguro que quieres ELIMINAR el territorio completo?`
+    : `¿Eliminar permanentemente el territorio ${t.num}? Esto no se puede deshacer.`;
+  if(!confirm(msg)) return;
   setSyncStatus('syncing');
   try{
     await sbDelete('territorios',{id:editingTId});
     S.territorios=S.territorios.filter(x=>x.id!==editingTId);
     S.historial=S.historial.filter(x=>x.territorio_id!==editingTId);
     setSyncStatus('ok');closeModal('mTer');renderView(currentView);updateBadges();
-    toast('🗑 Eliminado');
+    toast('🗑 Territorio eliminado');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function cancelarAsignacion(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  if(!confirm(`¿Cancelar la asignación de ${t.num} a ${pubName(t.pub_id)}? El territorio quedará disponible sin añadir entrada al historial.`)) return;
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null});
+    Object.assign(t,rows[0]);
+    setSyncStatus('ok');
+    document.getElementById('btnCancelarAsig').style.display='none';
+    showAsignarPanels('disponible');renderAsigStatus(t);renderView(currentView);updateBadges();
+    toast('↩ Asignación cancelada','am');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
@@ -2151,13 +2233,16 @@ async function confirmarAsig(){
   const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
   const pubId=parseInt(document.getElementById('asig-pub').value);
   const fecha=document.getElementById('asig-fecha').value;
-  if(!pubId||!fecha){toast('⚠ Selecciona publicador y fecha','am');return;}
+  if(!pubId){toast('⚠ Selecciona un publicador','am');return;}
+  if(!fecha){toast('⚠ Indica la fecha de entrega','am');return;}
   const fechaVence=addDays(fecha,EXPIRY_DAYS);
   setSyncStatus('syncing');
   try{
     const rows=await sbPatch('territorios',{id:t.id},{estado:'asignado',pub_id:pubId,fecha_asig:fecha,fecha_vence:fechaVence,ultimo_trabajado:fecha});
     Object.assign(t,rows[0]);
-    setSyncStatus('ok');showAsignarPanels(statusOf(t));renderAsigStatus(t);renderView(currentView);updateBadges();
+    setSyncStatus('ok');
+    closeModal('mTer'); // close immediately — no need to "Guardar" separately
+    renderView(currentView);updateBadges();
     toast(`📌 Asignado a ${pubName(pubId)}`,'a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2178,8 +2263,9 @@ async function renovar(){
 async function devolverDesdeModal(){
   const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
   const fecha=document.getElementById('dev-fecha').value||today();
-  if(!confirm(`¿Devolver ${t.num} con fecha ${fmtDate(fecha)}?`)) return;
+  if(!confirm(`¿Marcar ${t.num} como devuelto el ${fmtDate(fecha)}?`)) return;
   await ejecutarDevolucion(t,fecha);
+  closeModal('mTer');
 }
 
 async function registrarDevolucionVencido(){
@@ -2187,6 +2273,7 @@ async function registrarDevolucionVencido(){
   const fecha=document.getElementById('venc-fechaEntrega').value||today();
   if(!confirm(`¿Registrar entrega de ${t.num} el ${fmtDate(fecha)}?`)) return;
   await ejecutarDevolucion(t,fecha);
+  closeModal('mTer');
 }
 
 async function ejecutarDevolucion(t,fecha){
@@ -2951,9 +3038,59 @@ function fillGrupoSel(selId,val=null){
   sel.innerHTML='<option value="">Sin grupo</option>'+S.grupos.sort((a,b)=>a.num-b.num).map(g=>`<option value="${g.id}"${g.id===val?' selected':''}>Grupo ${g.num}${g.nombre&&g.nombre!==`Grupo ${g.num}`?' — '+g.nombre:''}</option>`).join('');
 }
 function fillPubSel(selId,val=null){
+  if(selId==='asig-pub'){
+    const input=document.getElementById('asig-pub-input');
+    const hidden=document.getElementById('asig-pub');
+    if(val){const p=S.publicadores.find(x=>x.id===val);if(p){if(input)input.value=p.nombre;if(hidden)hidden.value=val;}}
+    else{if(input)input.value='';if(hidden)hidden.value='';}
+    return;
+  }
   const sel=document.getElementById(selId);
+  if(!sel) return;
   sel.innerHTML='<option value="">Seleccionar…</option>'+S.publicadores.map(p=>`<option value="${p.id}"${p.id===val?' selected':''}>${p.nombre}</option>`).join('');
 }
+
+// ── Publisher autocomplete ──
+let _acSel=-1;
+function pubAutocomplete(q){
+  const dd=document.getElementById('asig-pub-dropdown');
+  if(!q.trim()){dd.style.display='none';return;}
+  const matches=S.publicadores.filter(p=>p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,12);
+  if(!matches.length){dd.style.display='none';return;}
+  _acSel=-1;
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  dd.innerHTML=matches.map((p,i)=>{
+    const g=S.grupos.find(x=>x.id===p.grupo_id);
+    const hl=p.nombre.replace(re,m=>`<b style="color:var(--blue)">${m}</b>`);
+    return`<div data-id="${p.id}" data-idx="${i}"
+      style="padding:10px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"
+      onmousedown="selectPub(${p.id},this)" onmouseenter="hlAC(${i})">
+      <span>${hl}</span>${g?`<span style="font-size:11px;color:var(--t3)">G${g.num}</span>`:''}
+    </div>`;
+  }).join('');
+  dd.style.display='';
+}
+function hlAC(i){
+  _acSel=i;
+  document.querySelectorAll('#asig-pub-dropdown [data-idx]').forEach((el,j)=>el.style.background=j===i?'var(--s3)':'');
+}
+function selectPub(id,el){
+  document.getElementById('asig-pub-input').value=el.querySelector('span').textContent;
+  document.getElementById('asig-pub').value=id;
+  document.getElementById('asig-pub-dropdown').style.display='none';
+}
+function pubAutocompleteKey(e){
+  const items=[...document.querySelectorAll('#asig-pub-dropdown [data-idx]')];
+  if(e.key==='ArrowDown'){e.preventDefault();hlAC(Math.min(_acSel+1,items.length-1));}
+  else if(e.key==='ArrowUp'){e.preventDefault();hlAC(Math.max(_acSel-1,0));}
+  else if(e.key==='Enter'&&_acSel>=0){e.preventDefault();items[_acSel]?.dispatchEvent(new Event('mousedown'));}
+  else if(e.key==='Escape'){document.getElementById('asig-pub-dropdown').style.display='none';}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#asig-pub-input')&&!e.target.closest('#asig-pub-dropdown')){
+    const dd=document.getElementById('asig-pub-dropdown');if(dd)dd.style.display='none';
+  }
+});
 function fillSiervoSel(selId,grupoId,val=null){
   const sel=document.getElementById(selId);
   const pubs=grupoId?S.publicadores.filter(p=>p.grupo_id===grupoId):S.publicadores;
@@ -3244,8 +3381,16 @@ function cvDescargarJSON(){
   a.download='viviendas.json'; a.click();
 }
 
-// ══ INIT ══
-initApp();
+// ══ THEME ══
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  localStorage.setItem('ter_theme',isLight?'light':'dark');
+  document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
+}
+(function initTheme(){
+  const saved=localStorage.getItem('ter_theme');
+  if(saved==='light'){document.body.classList.add('light');const btn=document.getElementById('themeBtn');if(btn)btn.textContent='☀️';}
+})();
 </script>
 </body>
 </html>
