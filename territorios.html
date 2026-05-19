@@ -1003,10 +1003,15 @@ body.light{
         <button class="btn btn-ghost" onclick="verS13Preview()">👁 Vista previa</button>
       </div>
     </div>
-    <div id="s13Preview" style="display:none;margin-top:20px;max-width:900px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div id="s13Preview" style="display:none;margin-top:20px;max-width:960px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div style="font-size:14px;font-weight:700" id="s13PreviewLabel">Vista previa</div>
-        <button class="btn btn-ghost btn-xs" onclick="abrirS13Modal()">⛶ Ver en pantalla completa</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-ghost btn-xs" id="s13PrevBtn" onclick="s13PageNav(-1)">← Anterior</button>
+          <span id="s13PageInfo" style="font-size:12px;color:var(--t2);white-space:nowrap"></span>
+          <button class="btn btn-ghost btn-xs" id="s13NextBtn" onclick="s13PageNav(1)">Siguiente →</button>
+          <button class="btn btn-ghost btn-xs" onclick="abrirS13Modal()">⛶ Pantalla completa</button>
+        </div>
       </div>
       <div id="s13PreviewContent"></div>
     </div>
@@ -1709,21 +1714,28 @@ async function initMapView(){
 }
 
 function colorFor(t){
-  if(!t) return '#636366';
+  const isLight=document.body.classList.contains('light');
+  if(!t) return isLight?'#aeaeb2':'#636366';
   const st=statusOf(t);
-  if(st==='vencido') return '#ff453a';
-  if(st==='proximo') return '#ff9f0a';
-  if(st==='asignado') return '#0a84ff';
-  return '#30d158';
+  if(st==='vencido') return isLight?'#d00000':'#ff453a';
+  if(st==='proximo') return isLight?'#c96000':'#ff9f0a';
+  if(st==='asignado') return isLight?'#0055d4':'#0a84ff';
+  if(st==='grupo') return isLight?'#7a00d0':'#bf5af2';
+  return isLight?'#1a8a3e':'#30d158';
 }
 
 function styleGeoFeature(feature){
   const num=String(feature.properties.Name).trim();
   const t=S.territorios.find(x=>x.num===num);
   const col=colorFor(t);
+  const isLight=document.body.classList.contains('light');
   return{
-    fillColor:col,weight:1.5,opacity:.7,
-    color:'rgba(255,255,255,.3)',dashArray:'',fillOpacity:.55
+    fillColor:col,
+    weight:isLight?2:1.5,
+    opacity:1,
+    color:isLight?'rgba(0,0,0,.45)':'rgba(255,255,255,.5)',
+    dashArray:'',
+    fillOpacity:isLight?.5:.55
   };
 }
 
@@ -2814,12 +2826,11 @@ function buildS13Sheet(XLSX, territories, year){
       .filter(h=>h.territorio_id===t.id)
       .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
 
-    // S-13 only shows: last CLOSED assignment + current open assignment (if any)
-    // Not the full history — that would fill too many columns
+    // S-13: only last closed assignment + current active one (if any)
     const closed = allHist.filter(h=>h.fecha_dev);
     const open   = allHist.filter(h=>!h.fecha_dev);
-    const last3closed = closed.slice(-3); // up to 3 most recent closures
-    const hist = [...last3closed, ...open.slice(0,1)]; // + current if active
+    const lastClosed = closed.slice(-1); // ONLY the most recent closure
+    const hist = [...lastClosed, ...open.slice(0,1)]; // + current if active
 
     // Pad to 4
     while(hist.length<4) hist.push({pub_id:null, fecha_asig:'', fecha_dev:''});
@@ -2934,7 +2945,7 @@ function buildS13PreviewHTML(ters, year){
       .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
     const closed = allHist.filter(h=>h.fecha_dev);
     const open   = allHist.filter(h=>!h.fecha_dev);
-    const hist   = [...closed.slice(-3), ...open.slice(0,1)];
+    const hist   = [...closed.slice(-1), ...open.slice(0,1)];
     while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
 
     const td = `border:1px solid var(--border);text-align:center;padding:3px 5px`;
@@ -2961,6 +2972,22 @@ function buildS13PreviewHTML(ters, year){
   return html;
 }
 
+let _s13AllTers=[], _s13Year=2026, _s13Page=0;
+const S13_PAGE_SIZE=20;
+
+function s13PageNav(dir){
+  const pages=Math.ceil(_s13AllTers.length/S13_PAGE_SIZE);
+  _s13Page=Math.max(0,Math.min(pages-1,_s13Page+dir));
+  _renderS13Page();
+}
+function _renderS13Page(){
+  const pages=Math.ceil(_s13AllTers.length/S13_PAGE_SIZE);
+  const chunk=_s13AllTers.slice(_s13Page*S13_PAGE_SIZE,(_s13Page+1)*S13_PAGE_SIZE);
+  document.getElementById('s13PreviewContent').innerHTML=buildS13PreviewHTML(chunk,_s13Year);
+  document.getElementById('s13PageInfo').textContent='Pág. '+(_s13Page+1)+' / '+pages+' ('+_s13AllTers.length+' territ.)';
+  document.getElementById('s13PrevBtn').disabled=_s13Page===0;
+  document.getElementById('s13NextBtn').disabled=_s13Page>=pages-1;
+}
 function _getS13Ters(){
   const tipo = document.getElementById('s13Tipo').value;
   const year = parseInt(document.getElementById('s13Year').value);
@@ -2974,18 +3001,23 @@ function _getS13Ters(){
 }
 
 function abrirS13Modal(){
-  const {ters, year} = _getS13Ters();
-  document.getElementById('s13ModalContent').innerHTML = buildS13PreviewHTML(ters, year);
+  const {ters,year}=_getS13Ters();
+  let html='';
+  for(let i=0;i<ters.length;i+=S13_PAGE_SIZE){
+    const chunk=ters.slice(i,i+S13_PAGE_SIZE);
+    if(i>0) html+='<div style="height:32px;border-top:2px dashed var(--border);margin:24px 0;position:relative"><span style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--s1);padding:0 12px;font-size:11px;color:var(--t3)">— Hoja '+(Math.floor(i/S13_PAGE_SIZE)+1)+' —</span></div>';
+    html+=buildS13PreviewHTML(chunk,year);
+  }
+  document.getElementById('s13ModalContent').innerHTML=html;
   openModal('mS13');
 }
 
 async function verS13Preview(){
-  const {ters, year} = _getS13Ters();
-  const prev = document.getElementById('s13Preview');
-  prev.style.display='';
-  document.getElementById('s13PreviewLabel').textContent=`Vista previa — ${ters.length} territorios`;
-
-  document.getElementById('s13PreviewContent').innerHTML = buildS13PreviewHTML(ters, year);
+  const {ters,year}=_getS13Ters();
+  _s13AllTers=ters; _s13Year=year; _s13Page=0;
+  document.getElementById('s13Preview').style.display='';
+  document.getElementById('s13PreviewLabel').textContent='Vista previa';
+  _renderS13Page();
 }
 
 // ══ EXCEL EXPORTS — vistas ══
@@ -3506,6 +3538,8 @@ function toggleTheme(){
   const isLight=document.body.classList.toggle('light');
   localStorage.setItem('ter_theme',isLight?'light':'dark');
   document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
+  // Refresh map colors for new theme
+  updateMapColors();
 }
 (function initTheme(){
   const saved=localStorage.getItem('ter_theme');
