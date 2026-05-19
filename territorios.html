@@ -234,7 +234,7 @@ body.light{
 .overlay{
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  z-index:450;align-items:center;justify-content:center;
+  z-index:200;align-items:center;justify-content:center;
 }
 .overlay.on{display:flex;animation:fIn .18s}
 @keyframes fIn{from{opacity:0}to{opacity:1}}
@@ -425,13 +425,11 @@ body.light{
 .legend-item:last-child{margin-bottom:0}
 .legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .map-tooltip{
-  background:var(--s1)!important;border:1px solid var(--border2)!important;
+  background:rgba(28,28,30,.95)!important;border:1px solid var(--border2)!important;
   border-radius:10px!important;color:var(--text)!important;
   font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;
   padding:6px 10px!important;box-shadow:var(--sh)!important;
 }
-/* Leaflet default tooltip arrow — hide it for clean look */
-.map-tooltip::before{display:none!important}
 /* ── MAP SIDE PANEL ── */
 #mapPanel{
   position:absolute;top:0;right:0;width:320px;height:100%;
@@ -650,17 +648,11 @@ body.light{
 
   /* ── HISTORIAL ── */
   #histScrollArea{flex-direction:column!important}
-  #histDetail{
-    position:fixed!important;top:0!important;right:0!important;bottom:0!important;
-    width:100%!important;
+  #histDetail.open{
+    display:block!important;
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
     z-index:500!important;background:var(--bg)!important;
     overflow-y:auto!important;padding:16px!important;
-    transform:translateX(100%);
-    transition:transform .28s cubic-bezier(.4,0,.2,1);
-    display:block!important;
-  }
-  #histDetail.open{
-    transform:translateX(0)!important;
   }
   #histTblHead{display:none!important}
 
@@ -1007,7 +999,10 @@ body.light{
       </div>
     </div>
     <div id="s13Preview" style="display:none;margin-top:20px;max-width:900px">
-      <div style="font-size:14px;font-weight:700;margin-bottom:12px">Vista previa (primeros 20)</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700" id="s13PreviewLabel">Vista previa</div>
+        <button class="btn btn-ghost btn-xs" onclick="abrirS13Modal()">⛶ Ver en pantalla completa</button>
+      </div>
       <div id="s13PreviewContent"></div>
     </div>
 
@@ -1248,7 +1243,7 @@ body.light{
           <div class="fg"><label class="fl">Número de grupo</label><input class="fi" id="g-num" type="number" min="1" placeholder="1"></div>
           <div class="fg"><label class="fl">Nombre opcional</label><input class="fi" id="g-nombre" placeholder="Grupo Sur"></div>
         </div>
-        <div class="fg"><label class="fl">Siervo / Capitán</label><select class="fs" id="g-siervo"><option value="">Sin asignar</option></select></div>
+        <div class="fg"><label class="fl">Superintendente de grupo</label><select class="fs" id="g-siervo"><option value="">Sin asignar</option></select></div>
         <div class="factions">
           <button class="btn btn-danger btn-sm" id="btnElimGrupo" style="display:none" onclick="eliminarGrupo()">Eliminar</button>
           <div style="flex:1"></div>
@@ -1288,6 +1283,19 @@ body.light{
 <div id="lb" onclick="closeLb()"><button id="lbClose" onclick="closeLb()">✕</button><img id="lbImg" src="" alt=""></div>
 
 <div id="toast-wrap"></div>
+<!-- ═══ MODAL: S-13 VISTA COMPLETA ═══ -->
+<div class="overlay" id="mS13">
+  <div class="modal modal-lg" style="width:98vw;max-width:98vw;max-height:96vh">
+    <div class="mhead">
+      <div class="mtitle">Vista previa S-13 — todos los territorios</div>
+      <button class="xbtn" onclick="closeModal('mS13')">✕</button>
+    </div>
+    <div class="mbody" style="padding:12px;overflow-x:auto">
+      <div id="s13ModalContent"></div>
+    </div>
+  </div>
+</div>
+
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -2089,7 +2097,7 @@ function openHistDetail(terId){
   const t=S.territorios.find(x=>x.id===terId);
   const hist=S.historial.filter(h=>h.territorio_id===terId);
   const panel=document.getElementById('histDetail');
-  if(window.innerWidth>700) panel.style.display='';
+  panel.style.display='';
   panel.classList.add('open');
   document.getElementById('histDetailTitle').textContent=`${t?.num} — ${t?.nombre||''}`;
   if(!hist.length){document.getElementById('histDetailList').innerHTML='<div style="color:var(--t3);font-size:13px">Sin asignaciones</div>';return;}
@@ -2116,7 +2124,7 @@ function openHistDetail(terId){
 function closeHistDetail(){
   const panel=document.getElementById('histDetail');
   panel.classList.remove('open');
-  if(window.innerWidth>700) panel.style.display='none';
+  panel.style.display='none';
 }
 
 async function editHistDate(histId, campo, valor, terId){
@@ -2470,8 +2478,7 @@ function setGrupoFilter(el){
 }
 
 function renderGrupoTers(gId){
-  const gIdN=Number(gId);
-  let ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
+  let ters=S.territorios.filter(t=>t.grupo_id===gId);
   if(_grupoFiltro!=='todos') ters=ters.filter(t=>t.estado===_grupoFiltro||(statusOf(t)===_grupoFiltro));
   ters.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
   const el=document.getElementById('grupoTerList');
@@ -2489,12 +2496,10 @@ function renderGrupoTers(gId){
 }
 
 function renderGrupoStats(gId){
-  const gIdN = Number(gId); // ensure numeric comparison
+  const gIdN=Number(gId);
   const g=S.grupos.find(x=>Number(x.id)===gIdN);
   const ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
   const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gIdN);
-  const siervo=S.publicadores.find(p=>p.id===g?.siervo_id);
-  // historial entries where the territory belongs to this group
   const terIds=new Set(ters.map(t=>t.id));
   const hist=S.historial.filter(h=>terIds.has(h.territorio_id));
 
@@ -2504,23 +2509,22 @@ function renderGrupoStats(gId){
   const prox=ters.filter(t=>statusOf(t)==='proximo').length;
   const comp=hist.filter(h=>h.fecha_dev).length;
 
-  // Per-publisher analysis
+  // Per-publisher analysis — show ALL active territories, not just the first
   const pubAnalysis = pubs.map(p=>{
-    const terActivo = S.territorios.find(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+    const tersActivos = S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
     const histPub = S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev);
-    const lastDate = histPub.length ? histPub.sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev))[0].fecha_dev : null;
+    const lastDate = histPub.length ? histPub.slice().sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev))[0].fecha_dev : null;
     const daysSinceWork = lastDate ? daysSince(lastDate) : 9999;
-    return { p, terActivo, histPub, lastDate, daysSinceWork };
+    return { p, tersActivos, histPub, lastDate, daysSinceWork };
   }).sort((a,b)=>{
-    // Sorted: con territorio primero, luego sin territorio por días desde trabajo
-    if(!!a.terActivo !== !!b.terActivo) return a.terActivo ? -1 : 1;
+    if(!!a.tersActivos.length !== !!b.tersActivos.length) return a.tersActivos.length ? -1 : 1;
     return a.daysSinceWork - b.daysSinceWork;
   });
 
-  const conTer = pubAnalysis.filter(x=>x.terActivo);
-  const sinTer = pubAnalysis.filter(x=>!x.terActivo);
+  const conTer = pubAnalysis.filter(x=>x.tersActivos.length);
+  const sinTer = pubAnalysis.filter(x=>!x.tersActivos.length);
 
-  // Chart data
+  // Chart: completados por publicador del grupo
   const pubStats = pubs.map(p=>({
     nombre: p.nombre, cnt: hist.filter(h=>h.pub_id===p.id&&h.fecha_dev).length
   })).sort((a,b)=>b.cnt-a.cnt);
@@ -2537,28 +2541,32 @@ function renderGrupoStats(gId){
       <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${comp}</div><div class="grp-stat-lbl">Completados</div></div>
     </div>
 
-    <!-- Publishers WITH territory -->
+    <!-- Publishers WITH territory — show every territory -->
     <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">
-      Con territorio activo (${conTer.length})
+      Con territorio activo (${conTer.length} pub. · ${conTer.reduce((s,x)=>s+x.tersActivos.length,0)} territorios)
     </div>
-    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
-    ${conTer.length ? conTer.map(({p,terActivo})=>{
-      const st=statusOf(terActivo);
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+    ${conTer.length ? conTer.map(({p,tersActivos})=>{
       const isSiervo=p.id===g?.siervo_id;
-      const dv=terActivo.fecha_vence?daysUntil(terActivo.fecha_vence):null;
-      const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
-      const dvTxt=dv===null?'Sin vencimiento':dv<0?`Vencido hace ${-dv}d`:dv===0?'Vence hoy':`Vence en ${dv}d`;
-      return`<div style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;cursor:pointer" onclick="closeModal('mGrupo');openTerDetail(${terActivo.id})">
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px">
+      return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+        <div style="padding:9px 12px;display:flex;align-items:center;gap:8px;border-bottom:${tersActivos.length>1?'1px solid var(--border)':'none'}">
+          <div style="font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:5px">
             ${isSiervo?'<span style="color:var(--amber)">★</span>':''}${p.nombre}
           </div>
-          <div style="font-size:11px;color:var(--t2);margin-top:2px">Terr. ${terActivo.num} · ${fmtDate(terActivo.fecha_asig)}</div>
+          <span class="nav-badge a">${tersActivos.length} terr.</span>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          ${pillHtml(st,terActivo.es_grupo)}
-          <div style="font-size:11px;color:${dvCol};margin-top:3px">${dvTxt}</div>
-        </div>
+        ${tersActivos.map(ter=>{
+          const st=statusOf(ter);
+          const dv=ter.fecha_vence?daysUntil(ter.fecha_vence):null;
+          const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
+          const dvTxt=dv===null?'Sin venc.':dv<0?`Venc. hace ${-dv}d`:dv===0?'Vence hoy':\`\${dv}d\`;
+          return \`<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .1s" onclick="closeModal('mGrupo');openTerDetail(\${ter.id})" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">
+            <span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--blue);min-width:36px">\${ter.num}</span>
+            <span style="font-size:12px;color:var(--t2);flex:1">\${fmtDate(ter.fecha_asig)}</span>
+            \${pillHtml(st,ter.es_grupo)}
+            <span style="font-size:11px;color:\${dvCol};min-width:52px;text-align:right">\${dvTxt}</span>
+          </div>\`;
+        }).join('')}
       </div>`;
     }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Ningún publicador con territorio activo</div>'}
     </div>
@@ -2790,9 +2798,16 @@ function buildS13Sheet(XLSX, territories, year){
 
   // ── DATA ROWS ──
   for(const t of territories){
-    const hist = S.historial
+    const allHist = S.historial
       .filter(h=>h.territorio_id===t.id)
       .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+
+    // S-13 only shows: last CLOSED assignment + current open assignment (if any)
+    // Not the full history — that would fill too many columns
+    const closed = allHist.filter(h=>h.fecha_dev);
+    const open   = allHist.filter(h=>!h.fecha_dev);
+    const last3closed = closed.slice(-3); // up to 3 most recent closures
+    const hist = [...last3closed, ...open.slice(0,1)]; // + current if active
 
     // Pad to 4
     while(hist.length<4) hist.push({pub_id:null, fecha_asig:'', fecha_dev:''});
@@ -2872,18 +2887,10 @@ function buildS13Sheet(XLSX, territories, year){
   return ws;
 }
 
-async function verS13Preview(){
-  const tipo = document.getElementById('s13Tipo').value;
-  const year = parseInt(document.getElementById('s13Year').value);
-  let ters = [...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
-  if(tipo) ters = ters.filter(t=>t.tipo===tipo);
-  ters = ters.slice(0,20);
-
-  const prev = document.getElementById('s13Preview');
-  prev.style.display='';
-
+// Build the S-13 preview HTML table (shared by inline + modal)
+function buildS13PreviewHTML(ters, year){
   let html = `
-  <div style="overflow-x:auto;background:var(--s1);border:1px solid var(--border);border-radius:var(--r2)">
+  <div style="overflow-x:auto">
   <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px;min-width:900px;width:100%">
     <thead>
       <tr><th colspan="10" style="padding:10px;font-size:13px;font-weight:700;text-align:center;border:1px solid var(--border);background:var(--s2)">REGISTRO DE ASIGNACIÓN DE TERRITORIO</th></tr>
@@ -2910,9 +2917,12 @@ async function verS13Preview(){
     <tbody>`;
 
   for(const t of ters){
-    const hist = S.historial
+    const allHist = S.historial
       .filter(h=>h.territorio_id===t.id)
       .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+    const closed = allHist.filter(h=>h.fecha_dev);
+    const open   = allHist.filter(h=>!h.fecha_dev);
+    const hist   = [...closed.slice(-3), ...open.slice(0,1)];
     while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
 
     const td = `border:1px solid var(--border);text-align:center;padding:3px 5px`;
@@ -2936,9 +2946,34 @@ async function verS13Preview(){
       <tr><td colspan="10" style="padding:4px 10px;font-size:10px;border:1px solid var(--border)">S-13 1/22</td></tr>
     </tfoot>
   </table></div>`;
+  return html;
+}
 
-  if(ters.length===20) html+=`<div style="font-size:12px;color:var(--t3);margin-top:8px">Mostrando primeros 20. El Excel incluirá todos los territorios.</div>`;
-  document.getElementById('s13PreviewContent').innerHTML = html;
+function _getS13Ters(){
+  const tipo = document.getElementById('s13Tipo').value;
+  const year = parseInt(document.getElementById('s13Year').value);
+  const fromNum = document.getElementById('s13From').value.trim();
+  const toNum   = document.getElementById('s13To').value.trim();
+  let ters = [...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  if(tipo)    ters = ters.filter(t=>t.tipo===tipo);
+  if(fromNum) ters = ters.filter(t=>t.num.localeCompare(fromNum,undefined,{numeric:true})>=0);
+  if(toNum)   ters = ters.filter(t=>t.num.localeCompare(toNum,undefined,{numeric:true})<=0);
+  return {ters, year};
+}
+
+function abrirS13Modal(){
+  const {ters, year} = _getS13Ters();
+  document.getElementById('s13ModalContent').innerHTML = buildS13PreviewHTML(ters, year);
+  openModal('mS13');
+}
+
+async function verS13Preview(){
+  const {ters, year} = _getS13Ters();
+  const prev = document.getElementById('s13Preview');
+  prev.style.display='';
+  document.getElementById('s13PreviewLabel').textContent=`Vista previa — ${ters.length} territorios`;
+
+  document.getElementById('s13PreviewContent').innerHTML = buildS13PreviewHTML(ters, year);
 }
 
 // ══ EXCEL EXPORTS — vistas ══
