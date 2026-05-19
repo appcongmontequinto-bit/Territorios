@@ -1379,8 +1379,27 @@ async function initApp(){
     updateBadges();
     hideLoader();
   } catch(e) {
-    hideLoader(); setSyncStatus('error');
-    toast('Error al cargar: '+e.message,'r');
+    hideLoader();
+    setSyncStatus('error');
+    // Show error visibly on screen for debugging
+    const errMsg = `Error al cargar datos:\n${e.message}\n\nURL: ${SB_URL}\nKey starts: ${SB_KEY.substring(0,20)}...`;
+    console.error(errMsg);
+    // Show in a visible div
+    document.getElementById('app').innerHTML = `
+      <div style="padding:40px;max-width:600px;margin:0 auto;font-family:system-ui">
+        <div style="background:#2a1010;border:1px solid #ff4444;border-radius:12px;padding:24px;color:#ff8888">
+          <div style="font-size:18px;font-weight:700;margin-bottom:12px">⚠️ Error al conectar con Supabase</div>
+          <div style="font-size:13px;line-height:1.6;color:#ffaaaa;margin-bottom:16px"><b>Mensaje:</b> ${e.message}</div>
+          <div style="font-size:12px;color:#ff6666;background:#1a0a0a;border-radius:8px;padding:12px;font-family:monospace;word-break:break-all">
+            URL: ${SB_URL}<br>
+            Key: ${SB_KEY.substring(0,30)}...<br>
+            Error: ${e.stack||e.message}
+          </div>
+          <button onclick="location.reload()" style="margin-top:16px;padding:10px 20px;background:#3b82f6;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px">🔄 Reintentar</button>
+        </div>
+      </div>`;
+    document.getElementById('app').style.display='flex';
+    document.getElementById('app').style.flexDirection='column';
   }
 }
 async function loadGrupos(){S.grupos=await sbGet('grupos',{select:'*',order:'num.asc'});}
