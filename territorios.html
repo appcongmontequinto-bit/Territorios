@@ -613,7 +613,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
   /* Hide table header on mobile — info is inline in rows */
   #tblHead{display:none}
+  #pubTblHead{display:none}
   .tbl-body{max-height:calc(100dvh - 240px)!important}
+  /* Ensure text in rows doesn't overflow */
+  .tbl-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* ── CARD GRID ── */
   .card-grid{grid-template-columns:1fr}
@@ -899,7 +902,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
   </div>
   <div class="view-scroll">
     <div class="tbl-wrap">
-      <div class="tbl-head" style="grid-template-columns:1fr 130px 80px 110px 80px;display:grid;padding:0 10px">
+      <div class="tbl-head" id="pubTblHead" style="grid-template-columns:1fr 150px 60px 80px 60px;display:grid;padding:0 10px">
         <span>Nombre</span><span>Grupo</span><span>Activos</span><span>Completados</span><span></span>
       </div>
       <div id="pubTable" class="tbl-body" style="max-height:calc(100vh - 200px)"></div>
@@ -1482,30 +1485,51 @@ function renderListView(list){
   const body=document.getElementById('tbl-body');
   if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
   const mob=window.innerWidth<=700;
+
+  // Status color mapping
+  const stColor={
+    disponible:'var(--green)',
+    asignado:'var(--blue)',
+    vencido:'var(--red)',
+    proximo:'var(--amber)',
+    grupo:'var(--purple)'
+  };
+
   body.innerHTML=list.map(t=>{
     const st=statusOf(t); const g=grupoOf(t);
     const pub=pubName(t.pub_id);
-    const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const col=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${col}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
+    const col=stColor[st]||'var(--t2)';
+    const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const c=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${c}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
 
     if(mob){
-      // Mobile: num | publicador (o última fecha) | pill estado
-      const pubLine = t.pub_id ? pub : (t.ultimo_trabajado ? `Ult: ${fmtDate(t.ultimo_trabajado)}` : '—');
-      const dateLine = t.estado==='asignado'||t.estado==='vencido'
-        ? (t.fecha_vence ? (daysUntil(t.fecha_vence)<0 ? `Vencido hace ${-daysUntil(t.fecha_vence)}d` : `Vence en ${daysUntil(t.fecha_vence)}d`) : '')
-        : (t.ultimo_trabajado ? `Ult: ${fmtDate(t.ultimo_trabajado)}` : '');
+      // Línea principal: nombre del publicador (o "Disponible" si no tiene) con color del estado
+      // Línea secundaria: dato más relevante
+      const mainLine = t.pub_id ? pub : (st==='disponible' ? 'Disponible' : '—');
+      let subLine='';
+      if(t.estado==='asignado'||t.estado==='vencido'){
+        const d=daysUntil(t.fecha_vence);
+        subLine = d===null ? fmtDate(t.fecha_asig)
+          : d<0 ? `Vencido hace ${-d} días`
+          : d===0 ? 'Vence hoy'
+          : `Vence en ${d}d · ${fmtDate(t.fecha_vence)}`;
+      } else if(t.ultimo_trabajado){
+        subLine=`Último trabajo: ${fmtDate(t.ultimo_trabajado)}`;
+      }
+
       return`<div class="tbl-row" style="grid-template-columns:44px 1fr auto;gap:0;min-height:52px" onclick="openTerDetail(${t.id})">
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);padding-top:13px;font-weight:600">${t.num}</span>
-        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 6px;overflow:hidden">
-          <span style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pubLine}</span>
-          ${dateLine?`<span style="font-size:12px;color:var(--t2)">${dateLine}</span>`:''}
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);padding:14px 4px 0;font-weight:600">${t.num}</span>
+        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow:hidden;min-width:0">
+          <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
+          ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
         </span>
-        <span style="padding:10px 0 10px 6px;flex-shrink:0">${pillHtml(st,t.es_grupo)}</span>
+        <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,t.es_grupo)}</span>
       </div>`;
     }
-    // Desktop: num | publicador | tipo | grupo | asignado | vence | estado
+
+    // Desktop
     return`<div class="tbl-row tcols" onclick="openTerDetail(${t.id})">
       <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text)">${t.num}</span>
-      <span style="font-weight:600">${pub}</span>
+      <span style="font-weight:600;color:${col}">${t.pub_id?pub:(t.ultimo_trabajado?`Ult: ${fmtDate(t.ultimo_trabajado)}`:'—')}</span>
       <span style="color:var(--t2);font-size:12px">${t.tipo}</span>
       <span style="color:var(--t2);font-size:12px">${g?`G${g.num}`:'—'}</span>
       <span style="color:var(--t2);font-size:12px">${fmtDate(t.fecha_asig)}</span>
@@ -1800,12 +1824,29 @@ function barRow(label,val,max,unit='',override=null){
 function renderPublicadores(){
   const el=document.getElementById('pubTable');
   if(!S.publicadores.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin publicadores</div>`;return;}
+  const mob=window.innerWidth<=700;
   el.innerHTML=S.publicadores.map(p=>{
     const g=S.grupos.find(x=>x.id===p.grupo_id);
     const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')).length;
     const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
-    const grpLabel=g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'—';
-    return`<div class="tbl-row" style="grid-template-columns:1fr 130px 70px 90px 70px;cursor:pointer" onclick="openPubDetail(${p.id})">
+    const grpLabel=g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo';
+
+    if(mob){
+      // Mobile: full name + group on second line, badges on right, no delete
+      return`<div class="tbl-row" style="grid-template-columns:1fr auto;gap:0;min-height:52px;cursor:pointer" onclick="openPubDetail(${p.id})">
+        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;min-width:0;overflow:hidden">
+          <span style="font-weight:700;font-size:14px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</span>
+          <span style="font-size:12px;color:var(--t2)">${grpLabel}</span>
+        </span>
+        <span style="display:flex;align-items:center;gap:6px;padding:0 8px;flex-shrink:0">
+          ${act?`<span class="nav-badge a">${act}</span>`:''}
+          ${comp?`<span class="nav-badge">${comp}✓</span>`:''}
+        </span>
+      </div>`;
+    }
+
+    // Desktop
+    return`<div class="tbl-row" style="grid-template-columns:1fr 150px 60px 80px 60px;cursor:pointer" onclick="openPubDetail(${p.id})">
       <span style="font-weight:600;color:var(--blue)">${p.nombre}</span>
       <span style="color:var(--t2);font-size:12px">${grpLabel}</span>
       <span><span class="nav-badge ${act?'a':''}">${act}</span></span>
