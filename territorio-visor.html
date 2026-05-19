@@ -531,35 +531,36 @@ function renderImages(archs) {
   const strip=document.getElementById('thumbStrip');
   strip.innerHTML='';
 
-  // Also try direct path by territory number as fallback
   const t=territories[currentIdx];
-  const directUrl=t?`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${t.num.padStart(3,'0')}.jpg`:null;
+  if(!t) return;
 
-  const imgs=archs.filter(f=>f.tipo_mime?.startsWith('image/')||(!f.tipo_mime&&!f.nombre?.endsWith('.pdf')));
-  const pdfs=archs.filter(f=>f.tipo_mime?.includes('pdf')||f.nombre?.endsWith('.pdf'));
+  // Direct Storage URL by territory number (primary method)
+  const numPad=String(t.num).padStart(3,'0');
+  const directUrl=`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${numPad}.jpg`;
 
-  if(imgs.length){
-    const url=sbUrl(imgs[0].storage_path);
-    wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')"
-      onerror="this.onerror=null;this.src='${directUrl}';this.onerror=function(){this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'}">`;
-  } else if(directUrl){
-    // Try direct path
-    wrap.innerHTML=`<img src="${directUrl}" alt="Mapa" onclick="openLb('${directUrl}')"
-      onerror="this.onerror=null;this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'">`;
-  } else if(pdfs.length){
-    const url=sbUrl(pdfs[0].storage_path);
-    wrap.innerHTML=`<div class="no-map" style="cursor:pointer" onclick="window.open('${url}','_blank')"><span>📄</span>PDF — toca para abrir</div>`;
-  } else {
-    wrap.innerHTML='<div class="no-map"><span>📂</span>No hay mapa cargado</div>';
-    return;
-  }
+  // Also try archivos table entries
+  const imgs=(archs||[]).filter(f=>f.tipo_mime?.startsWith('image/')||
+    (!f.tipo_mime&&f.nombre&&!f.nombre.endsWith('.pdf')));
+  const pdfs=(archs||[]).filter(f=>f.tipo_mime?.includes('pdf')||f.nombre?.endsWith('.pdf'));
 
+  // Show main image: prefer archivos, fallback to direct URL
+  const mainUrl=imgs.length ? sbUrl(imgs[0].storage_path) : directUrl;
+  wrap.innerHTML=`<img src="${mainUrl}" alt="Mapa"
+    style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto"
+    onclick="openLb('${mainUrl}')"
+    onerror="this.onerror=null;
+      ${imgs.length ? `this.src='${directUrl}';this.onerror=function(){this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'}` :
+        `this.parentElement.innerHTML='<div class=no-map><span>📂</span>No hay mapa cargado</div>'`}">`;
+
+  // Thumbnails from archivos
   imgs.forEach((f,i)=>{
     const url=sbUrl(f.storage_path);
     const el=document.createElement('img');
-    el.className='thumb'+(i===0?' on':''); el.src=url; el.alt=f.nombre||'';
+    el.className='thumb'+(i===0?' on':'');
+    el.src=url; el.alt=f.nombre||'';
+    el.style.pointerEvents='auto';
     el.onclick=()=>{
-      wrap.innerHTML=`<img src="${url}" alt="Mapa" onclick="openLb('${url}')">`;
+      wrap.innerHTML=`<img src="${url}" alt="Mapa" style="width:100%;max-height:400px;object-fit:contain;cursor:zoom-in;display:block;pointer-events:auto" onclick="openLb('${url}')">`;
       strip.querySelectorAll('.thumb').forEach(x=>x.classList.remove('on'));
       el.classList.add('on');
     };
@@ -569,7 +570,8 @@ function renderImages(archs) {
     const url=sbUrl(f.storage_path);
     const el=document.createElement('div');
     el.style.cssText='width:58px;height:58px;flex-shrink:0;border-radius:8px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--s2);cursor:pointer;pointer-events:auto';
-    el.textContent='📄'; el.onclick=()=>window.open(url,'_blank');
+    el.textContent='📄';
+    el.onclick=()=>window.open(url,'_blank');
     strip.appendChild(el);
   });
 }
