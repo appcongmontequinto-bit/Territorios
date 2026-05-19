@@ -533,7 +533,7 @@ function renderImages(archs) {
 
   // Also try direct path by territory number as fallback
   const t=territories[currentIdx];
-  const directUrl=t?`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${t.num.padStart(3,'0')}.jpg`:null;
+  const directUrl=t?`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${t.num.padStart(4,'0')}.jpg`:null;
 
   const imgs=archs.filter(f=>f.tipo_mime?.startsWith('image/')||(!f.tipo_mime&&!f.nombre?.endsWith('.pdf')));
   const pdfs=archs.filter(f=>f.tipo_mime?.includes('pdf')||f.nombre?.endsWith('.pdf'));
