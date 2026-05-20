@@ -3042,10 +3042,15 @@ function buildS13CardsHTML(ters,year){
     const active=hist.filter(h=>h.pub_id);
     const rows=active.map(h=>{
       const isOpen=!h.fecha_dev;
+      const devColor=isOpen?'var(--amber)':'var(--t2)';
+      const devWeight=isOpen?'600':'400';
+      const devTxt=h.fecha_dev?fmtDate(h.fecha_dev):'En curso';
+      const pubTxt=h.pub_id?pubName(h.pub_id):'—';
+      const asigTxt=h.fecha_asig?fmtDate(h.fecha_asig):'—';
       return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:6px 10px;border-top:1px solid var(--border);font-size:12px">'
-        +'<div style="font-weight:600;color:var(--text)">'+(h.pub_id?pubName(h.pub_id):'—')+'</div>'
-        +'<div style="color:var(--t2)">'+(h.fecha_asig?fmtDate(h.fecha_asig):'—')+'</div>'
-        +'<div style="color:'+(isOpen?'var(--amber)':'var(--t2)');font-weight:'+(isOpen?'600':'400')+'">'+(h.fecha_dev?fmtDate(h.fecha_dev):'En curso')+'</div>'
+        +'<div style="font-weight:600;color:var(--text)">'+pubTxt+'</div>'
+        +'<div style="color:var(--t2)">'+asigTxt+'</div>'
+        +'<div style="color:'+devColor+';font-weight:'+devWeight+'">'+devTxt+'</div>'
         +'</div>';
     }).join('');
     const st=statusOf(t);
