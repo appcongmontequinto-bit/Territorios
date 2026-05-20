@@ -1,0 +1,3747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Territorios">
+<meta name="application-name" content="Territorios">
+<meta name="theme-color" content="#0a84ff">
+<meta name="description" content="Gestión de territorios de predicación">
+<meta name="msapplication-TileColor" content="#000000">
+<meta name="msapplication-TileImage" content="icons/icon-144x144.png">
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple touch icons — prevents browser badge overlay -->
+<link rel="apple-touch-icon" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="72x72" href="icons/icon-72x72.png">
+<link rel="apple-touch-icon" sizes="96x96" href="icons/icon-96x96.png">
+<link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512x512.png">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="shortcut icon" href="icons/icon-96x96.png">
+
+<title>Territorios · Congregación</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ── iOS SYSTEM FONT STACK ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --topbar-bg:rgba(28,28,30,.92);
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SF Mono", "Fira Code", "Menlo", monospace;
+
+  /* Dark palette */
+  --bg:#000;
+  --s1:#1c1c1e;--s2:#2c2c2e;--s3:#3a3a3c;--s4:#48484a;
+  --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.16);
+
+  /* iOS semantic colors */
+  --blue:#0a84ff;--blue-dim:rgba(10,132,255,.14);
+  --green:#30d158;--green-dim:rgba(48,209,88,.14);
+  --red:#ff453a;--red-dim:rgba(255,69,58,.14);
+  --amber:#ff9f0a;--amber-dim:rgba(255,159,10,.14);
+  --purple:#bf5af2;--purple-dim:rgba(191,90,242,.14);
+  --teal:#5ac8fa;--teal-dim:rgba(90,200,250,.14);
+
+  --text:#fff;--t2:rgba(255,255,255,.6);--t3:rgba(255,255,255,.3);
+
+  --r:12px;--r2:16px;--r3:20px;
+  --sh:0 8px 32px rgba(0,0,0,.6);
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;
+  padding-top:env(safe-area-inset-top);
+  transition:background .2s,color .2s;
+}
+
+/* ── LIGHT MODE ── */
+body.light{
+  --topbar-bg:rgba(255,255,255,.92);
+  --bg:#f2f2f7;--s1:#fff;--s2:#f2f2f7;--s3:#e5e5ea;--s4:#d1d1d6;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.16);
+  --text:#1c1c1e;--t2:#3c3c43;--t3:#8e8e93;
+  --blue:#007aff;--blue-dim:rgba(0,122,255,.12);
+  --green:#34c759;--green-dim:rgba(52,199,89,.12);
+  --red:#ff3b30;--red-dim:rgba(255,59,48,.12);
+  --amber:#ff9500;--amber-dim:rgba(255,149,0,.12);
+  --purple:#af52de;--purple-dim:rgba(175,82,222,.12);
+  --teal:#5ac8fa;--teal-dim:rgba(90,200,250,.12);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--s4);border-radius:99px}
+
+/* ── LOADER ── */
+#loader{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:500;
+  display:none;align-items:center;justify-content:center;flex-direction:column;
+  gap:14px;backdrop-filter:blur(8px);
+}
+#loader.on{display:flex}
+.spin{
+  width:36px;height:36px;border:3px solid var(--s3);
+  border-top-color:var(--blue);border-radius:50%;
+  animation:spin .65s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-msg{font-size:14px;color:var(--t2);font-weight:500}
+
+/* ── TOPBAR ── */
+#topbar{
+  height:52px;background:var(--topbar-bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:50;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.logo{
+  font-size:17px;font-weight:700;letter-spacing:-.4px;
+  display:flex;align-items:center;gap:8px;color:var(--text);
+}
+.logo-mark{
+  width:26px;height:26px;background:linear-gradient(135deg,var(--blue),var(--purple));
+  border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+.topbar-search{
+  flex:1;max-width:300px;display:flex;align-items:center;gap:7px;
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:0 11px;height:32px;
+}
+.topbar-search input{
+  background:none;border:none;outline:none;
+  font-family:var(--font);font-size:14px;color:var(--text);width:100%;
+}
+.topbar-search input::placeholder{color:var(--t3)}
+.topbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.sync-pill{
+  display:flex;align-items:center;gap:5px;
+  font-size:11px;color:var(--text);font-weight:500;
+}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.sync-dot.syncing{background:var(--amber);animation:pulse 1s ease-in-out infinite}
+.sync-dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ── LAYOUT ── */
+#app{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ── */
+#sidebar{
+  width:220px;background:var(--s1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:10px 8px;
+}
+.nav-sect{
+  font-size:11px;font-weight:600;color:var(--t3);
+  padding:8px 10px 4px;margin-top:6px;letter-spacing:.04em;text-transform:uppercase;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;
+  cursor:pointer;font-size:14px;font-weight:500;color:var(--t2);
+  transition:all .12s;user-select:none;
+}
+.nav-item:hover{background:var(--s2);color:var(--text)}
+.nav-item.on{background:var(--blue-dim);color:var(--blue)}
+.nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;font-size:11px;font-weight:600;
+  padding:2px 7px;border-radius:99px;
+  background:var(--s3);color:var(--t2);font-family:var(--font-mono);
+}
+.nav-badge.r{background:var(--red-dim);color:var(--red)}
+.nav-badge.g{background:var(--green-dim);color:var(--green)}
+.nav-badge.a{background:var(--blue-dim);color:var(--blue)}
+.nav-badge.am{background:var(--amber-dim);color:var(--amber)}
+.nav-badge.pu{background:var(--purple-dim);color:var(--purple)}
+
+/* ── MAIN ── */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.view{display:none;flex-direction:column;flex:1;overflow:hidden}
+.view.on{display:flex}
+.view-head{padding:16px 20px 0;flex-shrink:0}
+.view-title{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.view-sub{font-size:13px;color:var(--t2);margin-top:2px;font-weight:400}
+.view-scroll{flex:1;overflow-y:auto;padding:12px 20px 20px}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:10px;
+  font-family:var(--font);font-size:14px;font-weight:600;
+  cursor:pointer;border:none;transition:all .12s;white-space:nowrap;
+  letter-spacing:-.1px;
+}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--border)}.btn-ghost:hover{background:var(--s3);color:var(--text)}
+.btn-danger{background:var(--red-dim);color:var(--red)}.btn-danger:hover{background:rgba(255,69,58,.22)}
+.btn-success{background:var(--green-dim);color:var(--green)}.btn-success:hover{background:rgba(48,209,88,.22)}
+.btn-amber{background:var(--amber-dim);color:var(--amber)}.btn-amber:hover{background:rgba(255,159,10,.22)}
+.btn-share{background:var(--teal-dim);color:var(--teal)}.btn-share:hover{background:rgba(90,200,250,.22)}
+.btn-sm{padding:6px 12px;font-size:13px}.btn-xs{padding:4px 9px;font-size:12px}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 12px;align-items:center}
+.chip{
+  padding:5px 13px;border-radius:99px;font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:var(--s2);color:var(--t2);
+  transition:all .12s;letter-spacing:-.1px;
+}
+.chip:hover,.chip.on{border-color:var(--blue);color:var(--blue);background:var(--blue-dim)}
+.chip.pu.on{border-color:var(--purple);color:var(--purple);background:var(--purple-dim)}
+
+/* ── STATS ── */
+.stats-strip{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.stat-box{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);
+  padding:12px 16px;flex:1;min-width:100px;display:flex;align-items:center;gap:12px;
+}
+.stat-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.stat-val{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.stat-lbl{font-size:11px;color:var(--t2);margin-top:2px;font-weight:500}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden}
+.tbl-head{display:grid;background:var(--s2);border-bottom:1px solid var(--border);padding:0 10px}
+.tbl-head span{
+  font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;
+  padding:9px 6px;letter-spacing:.04em;
+}
+.tbl-body{overflow-y:auto}
+.tbl-row{
+  display:grid;padding:0 10px;border-bottom:1px solid var(--border);
+  cursor:pointer;transition:background .1s;align-items:center;
+}
+.tbl-row:last-child{border-bottom:none}
+.tbl-row:hover{background:var(--s2)}
+.tbl-row span{padding:10px 6px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcols{grid-template-columns:72px 1fr 80px 65px 90px 100px 105px}
+
+/* ── PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+.pill-disp{background:var(--green-dim);color:var(--green)}
+.pill-asig{background:var(--blue-dim);color:var(--blue)}
+.pill-venc{background:var(--red-dim);color:var(--red)}
+.pill-grup{background:var(--purple-dim);color:var(--purple)}
+.pill-prox{background:var(--amber-dim);color:var(--amber)}
+
+/* ── MODAL ── */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  z-index:500;align-items:center;justify-content:center;
+}
+.overlay.on{display:flex;animation:fIn .18s}
+@keyframes fIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--s1);border:1px solid var(--border2);border-radius:var(--r3);
+  width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;
+  animation:sUp .22s ease;box-shadow:var(--sh);
+}
+.modal-lg{width:840px}
+@keyframes sUp{from{transform:translateY(14px);opacity:0}to{transform:translateY(0);opacity:1}}
+.mhead{padding:20px 22px 0;display:flex;align-items:center;justify-content:space-between}
+.mtitle{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.mbody{padding:18px 22px 22px}
+.xbtn{
+  width:28px;height:28px;border-radius:8px;background:var(--s3);border:none;
+  cursor:pointer;color:var(--t2);font-size:14px;display:flex;align-items:center;justify-content:center;
+  transition:all .12s;
+}
+.xbtn:hover{background:var(--s4);color:var(--text)}
+
+/* ── FORM ── */
+.fg{margin-bottom:14px}
+.fl{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;display:block;letter-spacing:.01em}
+.fi,.fs,.ft{
+  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 12px;font-family:var(--font);font-size:15px;color:var(--text);
+  outline:none;transition:border-color .13s;
+}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--blue)}
+.ft{min-height:72px;resize:vertical}
+.fs option{background:var(--s2)}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.factions{
+  display:flex;gap:8px;justify-content:flex-end;
+  margin-top:18px;padding-top:14px;border-top:1px solid var(--border);
+}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{
+  padding:9px 16px;font-size:14px;font-weight:600;color:var(--t2);
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all .13s;letter-spacing:-.1px;
+}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-pane{display:none}.tab-pane.on{display:block}
+
+/* ── ASSIGN PANEL (iOS card style) ── */
+.asign-card{
+  background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);
+  overflow:hidden;margin-bottom:14px;
+}
+.asign-card-head{
+  padding:10px 14px;display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.asign-card-head .aci{font-size:16px}
+.asign-card-head .act{font-size:14px;font-weight:600}
+.asign-card-body{padding:14px}
+
+/* STATUS PILL LARGE */
+.status-large{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  border-radius:var(--r);font-size:14px;font-weight:600;margin-bottom:12px;
+}
+.sl-green{background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.2)}
+.sl-blue{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(10,132,255,.2)}
+.sl-red{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,69,58,.2)}
+.sl-amber{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,159,10,.2)}
+
+/* ── SHARE BOX ── */
+.share-box{
+  background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
+  padding:12px 14px;margin-top:12px;display:none;
+}
+.share-box-lbl{font-size:11px;font-weight:600;color:var(--t3);margin-bottom:8px;letter-spacing:.04em;text-transform:uppercase}
+.share-row{display:flex;gap:6px;align-items:center}
+.share-input{
+  flex:1;background:var(--s3);border:1px solid var(--border);border-radius:8px;
+  padding:7px 10px;font-family:var(--font-mono);font-size:11px;color:var(--t2);
+  outline:none;cursor:text;
+}
+.share-cp{
+  padding:7px 12px;background:var(--blue);color:#fff;border:none;border-radius:8px;
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0;
+  transition:opacity .13s;
+}
+.share-cp:hover{opacity:.85}
+.share-wa{
+  padding:7px 12px;background:rgba(37,211,102,.15);color:#25d366;
+  border:1px solid rgba(37,211,102,.25);border-radius:8px;
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;
+  text-decoration:none;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;
+}
+
+/* ── FILE UPLOAD ── */
+.upload-zone{
+  border:2px dashed var(--border2);border-radius:var(--r);padding:24px;
+  text-align:center;cursor:pointer;transition:all .13s;color:var(--t2);font-size:14px;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:var(--blue-dim);color:var(--blue)}
+.file-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.file-item{
+  display:flex;align-items:center;gap:10px;background:var(--s2);
+  border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;
+}
+.file-item .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── TIMELINE ── */
+.tl-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-top:2px}
+.tl-body{flex:1}
+.tl-title{font-size:14px;font-weight:600}
+.tl-meta{font-size:12px;color:var(--t2);margin-top:2px}
+
+/* ── CARDS ── */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tcard{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);
+  padding:14px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;
+}
+.tcard::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%}
+.tcard.disp::after{background:var(--green)}
+.tcard.asig::after{background:var(--blue)}
+.tcard.venc::after{background:var(--red)}
+.tcard.prox::after{background:var(--amber)}
+.tcard.grup::after{background:var(--purple)}
+.tcard:hover{border-color:var(--blue);transform:translateY(-2px);box-shadow:var(--sh)}
+.tcard-num{font-family:var(--font-mono);font-size:10px;color:var(--t3);margin-bottom:5px}
+.tcard-name{font-size:14px;font-weight:700;margin-bottom:3px;letter-spacing:-.2px}
+.tcard-meta{font-size:12px;color:var(--t2);line-height:1.7}
+.tcard-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)}
+
+/* ── PRIORITY LIST ── */
+.prio-item{
+  display:flex;align-items:center;gap:12px;background:var(--s1);
+  border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;
+  cursor:pointer;transition:all .12s;margin-bottom:8px;
+}
+.prio-item:hover{border-color:var(--blue);background:var(--s2)}
+.prio-rank{font-family:var(--font-mono);font-size:11px;color:var(--t3);width:28px;flex-shrink:0}
+.prio-info{flex:1}
+.prio-name{font-size:14px;font-weight:600;letter-spacing:-.2px}
+.prio-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.prio-days{font-family:var(--font-mono);font-size:12px;flex-shrink:0;margin-right:8px}
+.prio-last{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* ── CHARTS ── */
+.chart-wrap{display:flex;flex-direction:column;gap:8px}
+.cb-row{display:flex;align-items:center;gap:10px;font-size:13px}
+.cb-label{width:115px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;color:var(--t2)}
+.cb-track{flex:1;height:8px;background:var(--s3);border-radius:99px;overflow:hidden}
+.cb-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .4s ease}
+.cb-val{width:32px;text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--t2)}
+
+/* ── GROUPS ── */
+.grp-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+.grp-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.grp-stat{background:var(--s2);border-radius:var(--r);padding:10px 12px}
+.grp-stat-val{font-size:20px;font-weight:700;letter-spacing:-.4px}
+.grp-stat-lbl{font-size:11px;color:var(--t3);margin-top:2px;font-weight:500}
+.pub-row{font-size:13px;color:var(--t2);padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.pub-row:last-child{border-bottom:none}
+
+/* ── TOGGLE ── */
+.tgl-btn{
+  width:30px;height:30px;background:var(--s2);border:1px solid var(--border);
+  border-radius:9px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--t2);font-size:14px;transition:all .12s;
+}
+.tgl-btn.on,.tgl-btn:hover{background:var(--s3);color:var(--text)}
+
+/* ── MAP VIEW ── */
+#view-mapa{display:none;flex-direction:column;flex:1;overflow:hidden}
+#view-mapa.on{display:flex}
+#mapContainer{flex:1;position:relative}
+#leafletMapMain{position:absolute;inset:0}
+.map-legend{
+  position:absolute;bottom:16px;left:16px;z-index:400;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(12px);
+  border:1px solid rgba(0,0,0,.12);border-radius:var(--r2);padding:12px 16px;
+  font-size:12px;font-weight:500;color:#1c1c1e;box-shadow:0 2px 12px rgba(0,0,0,.15);
+}
+.legend-item{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.legend-item:last-child{margin-bottom:0}
+.legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.map-tooltip{
+  background:rgba(28,28,30,.92)!important;border:none!important;
+  border-radius:10px!important;color:#fff!important;
+  font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;
+  padding:6px 10px!important;box-shadow:0 2px 12px rgba(0,0,0,.3)!important;
+}
+.map-tooltip::before{display:none!important}
+/* ── MAP SIDE PANEL ── */
+#mapPanel{
+  position:absolute;top:0;right:0;width:320px;height:100%;
+  background:var(--topbar-bg);backdrop-filter:blur(20px);
+  border-left:1px solid var(--border2);z-index:400;
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+}
+#mapPanel.open{transform:translateX(0)}
+.mp-head{
+  padding:16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.mp-num{font-family:var(--font-mono);font-size:11px;color:var(--t3)}
+.mp-name{font-size:16px;font-weight:700;letter-spacing:-.3px;margin-top:2px}
+.mp-body{flex:1;overflow-y:auto;padding:14px}
+.mp-section{margin-bottom:16px}
+.mp-section-title{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+.mp-img{width:100%;border-radius:var(--r);object-fit:cover;cursor:zoom-in}
+.mp-field{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.mp-field:last-child{border-bottom:none}
+.mp-field span:first-child{color:var(--t2)}
+.mp-field span:last-child{font-weight:600;text-align:right;max-width:60%}
+.mp-actions{padding:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+
+/* ── TOAST ── */
+#toast-wrap{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:7px;z-index:999}
+.toast{
+  background:var(--s2);border:1px solid var(--border2);border-radius:14px;
+  padding:10px 16px;font-size:14px;font-weight:500;
+  display:flex;align-items:center;gap:9px;box-shadow:var(--sh);
+  animation:tIn .25s ease;max-width:320px;
+}
+@keyframes tIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ── VIEWER LIGHTBOX ── */
+#lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:600;align-items:center;justify-content:center;padding:16px}
+#lb.on{display:flex}
+#lb img{max-width:100%;max-height:90vh;border-radius:var(--r);object-fit:contain}
+#lbClose{position:absolute;top:14px;right:14px;width:36px;height:36px;background:rgba(255,255,255,.12);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+@media(max-width:900px){.tcols{grid-template-columns:60px 1fr 80px 110px 100px}.tbl-head span:nth-child(n+4),.tbl-row span:nth-child(n+4){display:none}}
+
+/* ══════════════════════════════════════
+   MOBILE UI — completo rediseño
+   ══════════════════════════════════════ */
+@media(max-width:700px){
+  /* Hide desktop sidebar */
+  #sidebar{display:none}
+  #main{padding-bottom:68px} /* space for bottom tab bar */
+  .frow,.frow3{grid-template-columns:1fr}
+
+  /* ── TOPBAR ── */
+  #topbar{padding:0 10px;gap:8px;height:54px;position:sticky;top:0;z-index:50}
+  .logo{font-size:16px}
+  .logo-mark{width:30px;height:30px;border-radius:8px}
+  .topbar-search{flex:1;min-width:0;height:36px}
+  .topbar-search input{font-size:14px}
+  .sync-pill{display:none}
+  .topbar-right .btn{display:none}
+  #menuBtn{display:flex!important}
+  #addTerBtn{display:flex!important}
+
+  /* ── MOBILE BOTTOM TAB BAR ── */
+  #mobileTabBar{
+    display:flex!important;
+    position:fixed;bottom:0;left:0;right:0;z-index:300;
+    height:68px;padding-bottom:env(safe-area-inset-bottom);
+    background:rgba(20,20,22,.97);
+    border-top:1px solid rgba(255,255,255,.1);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  }
+  .mtab{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:3px;cursor:pointer;
+    color:rgba(255,255,255,.45);font-size:10px;font-weight:600;
+    letter-spacing:.01em;transition:color .12s;position:relative;
+    padding-top:6px;
+  }
+  .mtab-icon{font-size:20px;line-height:1;margin-bottom:1px}
+  .mtab.on{color:var(--blue)}
+  .mtab-badge{
+    position:absolute;top:2px;right:calc(50% - 18px);
+    background:var(--red);color:#fff;
+    font-size:9px;font-weight:700;
+    min-width:16px;height:16px;border-radius:99px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px;border:2px solid rgba(20,20,22,.97);
+  }
+
+  /* ── DRAWER ── */
+  #mobileDrawer{position:fixed;inset:0;z-index:900;display:flex;pointer-events:none}
+  #mobileDrawer.open{pointer-events:all}
+  #drawerOverlay{position:absolute;inset:0;background:rgba(0,0,0,.6);opacity:0;transition:opacity .25s;backdrop-filter:blur(4px)}
+  #mobileDrawer.open #drawerOverlay{opacity:1}
+  #drawerPanel{
+    position:absolute;left:0;top:0;bottom:0;width:76%;max-width:300px;
+    background:var(--s1);border-right:1px solid var(--border2);
+    display:flex;flex-direction:column;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;
+  }
+  #mobileDrawer.open #drawerPanel{transform:translateX(0)}
+  .drawer-head{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .drawer-logo{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+  .drawer-close{margin-left:auto;width:28px;height:28px;background:var(--s3);border:none;border-radius:8px;color:var(--t2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .drawer-nav{padding:8px}
+
+  /* ── MAP PANEL ── */
+  #mapPanel{
+    width:100%;height:62%;top:auto;bottom:68px;right:0;
+    transform:translateY(110%);border-left:none;
+    border-top:1px solid var(--border2);border-radius:18px 18px 0 0;
+  }
+  #mapPanel.open{transform:translateY(0)}
+
+  /* ── MODAL ── */
+  .overlay{z-index:1000;align-items:flex-end}
+  .modal,.modal-lg{
+    width:100%!important;max-width:100%!important;max-height:92vh;
+    border-radius:20px 20px 0 0;margin:0;
+  }
+
+  /* ── VIEW HEAD — compact ── */
+  .view-head{padding:10px 14px 0}
+  .view-title{font-size:20px;letter-spacing:-.4px}
+  .view-sub{font-size:12px;margin-top:1px}
+  .view-scroll{padding:8px 12px 12px;overflow-y:auto}
+
+  /* ── STATS STRIP — horizontal scroll, compact pills ── */
+  .stats-strip{
+    display:flex!important;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    gap:8px;
+    padding:8px 0 4px;
+    margin:0 -12px;
+    padding-left:12px;
+    padding-right:12px;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+    flex:none;
+  }
+  .stats-strip::-webkit-scrollbar{display:none}
+  .stat-box{
+    flex:none;
+    min-width:110px;
+    padding:10px 12px;
+    border-radius:12px;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+  }
+  .stat-ico{width:24px;height:24px;font-size:13px;border-radius:6px;margin-bottom:2px}
+  .stat-val{font-size:20px;letter-spacing:-.4px}
+  .stat-lbl{font-size:10px}
+
+  /* ── FILTER BAR — horizontal scroll ── */
+  .filter-bar{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto;
+    gap:6px;
+    margin:6px -12px 8px;
+    padding:0 12px;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+  }
+  .filter-bar::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:6px 13px;font-size:13px;white-space:nowrap}
+  .filter-bar select{
+    flex:none;min-width:120px;padding:6px 10px;font-size:13px;
+    border-radius:99px;background:var(--s2);border:1px solid var(--border);
+    color:var(--text);font-family:var(--font);
+  }
+
+  /* ── SORT SELECT — inline with filters ── */
+  #fSort{min-width:140px!important}
+  #fGrupo{min-width:130px!important}
+
+  /* ── TABLE — 3 cols: num, nombre+estado, publicador ── */
+  .tcols{grid-template-columns:48px 1fr auto}
+  .tbl-head{padding:0 8px}
+  .tbl-head span{padding:8px 5px;font-size:10px}
+  .tbl-row{padding:0 8px}
+  .tbl-row span{padding:11px 5px;font-size:13px}
+  /* Show: num(1), nombre(2), estado(8) — hide rest */
+  .tbl-head span:nth-child(n+3):not(:last-child),
+  .tbl-row span:nth-child(n+3):not(:last-child){display:none}
+  /* Estado pill column */
+  .tbl-head span:last-child,.tbl-row span:last-child{display:flex;align-items:center}
+  /* Nombre with last-worked date inline */
+  .tbl-row span:nth-child(2){flex-direction:column;align-items:flex-start;gap:1px}
+
+  /* Hide table header on mobile — info is inline in rows */
+  #tblHead{display:none}
+  #pubTblHead{display:none}
+  .tbl-body{max-height:calc(100dvh - 240px)!important}
+  /* Ensure text in rows doesn't overflow */
+  .tbl-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* ── CARD GRID ── */
+  .card-grid{grid-template-columns:1fr}
+  .tcard{padding:12px}
+  .tcard-name{font-size:14px}
+
+  /* ── PRIO LIST ── */
+  .prio-item{padding:10px 12px;gap:8px}
+  .prio-name{font-size:13px}
+  .prio-sub{font-size:11px}
+  .prio-last{font-size:11px}
+  .prio-rank{width:24px;font-size:10px}
+
+  /* ── CHARTS ── */
+  #statGrid{grid-template-columns:1fr!important}
+
+  /* ── HISTORIAL ── */
+  #histScrollArea{flex-direction:column!important}
+  #histDetail.open{
+    display:block!important;
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
+    z-index:500!important;background:var(--bg)!important;
+    overflow-y:auto!important;padding:16px!important;
+  }
+  #histTblHead{display:none!important}
+
+  /* ── GRUPOS grid ── */
+  #gruposGrid{grid-template-columns:1fr!important}
+
+  /* ── MAP LEGEND ── */
+  .map-legend{font-size:11px;padding:8px 10px;bottom:76px;left:10px}
+
+  /* ── TOAST ── */
+  #toast-wrap{bottom:76px;right:12px}
+
+  /* ── TOGGLE BUTTONS ── */
+  .tgl-btn{width:34px;height:34px}
+
+  /* ── PRIORIDAD sort ── */
+  #prioSort{font-size:13px!important;padding:6px 10px!important;border-radius:99px!important}
+}
+
+/* Always hidden on mobile unless activated */
+#menuBtn{display:none}
+#addTerBtn{display:none}
+#mobileTabBar{display:none}
+
+@media(min-width:701px){
+  #mobileDrawer{display:none!important}
+  #mobileTabBar{display:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<!-- LOADER -->
+<div id="loader"><div class="spin"></div><div class="loader-msg" id="loaderMsg">Cargando…</div></div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <button id="menuBtn" onclick="toggleDrawer()" style="width:36px;height:36px;background:var(--s2);border:1px solid var(--border);border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0">☰</button>
+  <div class="logo"><div class="logo-mark"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
+  <div class="topbar-search">
+    <span style="color:var(--t3);font-size:14px">⌕</span>
+    <input id="gSearch" type="text" placeholder="Buscar territorio, publicador…" oninput="onSearch()">
+  </div>
+  <div class="topbar-right">
+    <div class="sync-pill"><div class="sync-dot" id="syncDot"></div><span id="syncTxt">Conectado</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="openTerModal()">＋ Territorio</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Publicador</button>
+    <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.25);border-radius:9px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:5px;flex-shrink:0">⬇ Instalar</button>
+    <button onclick="toggleTheme()" id="themeBtn" title="Cambiar tema" style="width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🌙</button>
+    <button id="addTerBtn" onclick="openTerModal()" style="width:36px;height:36px;background:var(--blue);border:none;border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff;flex-shrink:0">＋</button>
+  </div>
+</div>
+
+<div id="app">
+
+<!-- MOBILE BOTTOM TAB BAR -->
+<nav id="mobileTabBar">
+  <div class="mtab on" data-v="territorios" onclick="navTab(this)">
+    <div class="mtab-icon">📋</div>
+    <span>Territorios</span>
+    <span class="mtab-badge" id="mtb-venc" style="display:none">0</span>
+  </div>
+  <div class="mtab" data-v="mapa" onclick="navTab(this)">
+    <div class="mtab-icon">🗺</div>
+    <span>Mapa</span>
+  </div>
+  <div class="mtab" data-v="prioridad" onclick="navTab(this)">
+    <div class="mtab-icon">⏳</div>
+    <span>Pendiente</span>
+    <span class="mtab-badge" id="mtb-old" style="display:none">0</span>
+  </div>
+  <div class="mtab" data-v="publicadores" onclick="navTab(this)">
+    <div class="mtab-icon">👥</div>
+    <span>Hermanos</span>
+  </div>
+  <div class="mtab" data-v="grupos" onclick="navTab(this)">
+    <div class="mtab-icon" style="color:var(--purple)">⬟</div>
+    <span>Grupos</span>
+  </div>
+  <div class="mtab" data-v="__menu" onclick="toggleDrawer()">
+    <div class="mtab-icon">☰</div>
+    <span>Más</span>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div id="mobileDrawer">
+  <div id="drawerOverlay" onclick="toggleDrawer()"></div>
+  <div id="drawerPanel">
+    <div class="drawer-head">
+      <div class="drawer-logo"><div class="logo-mark" style="width:26px;height:26px"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
+      <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+    </div>
+    <div class="drawer-nav">
+      <div class="nav-sect">Vistas</div>
+      <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="dnb-grp">0</span></div>
+      <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📖</span>Historial</div>
+      <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
+      <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
+      <div class="nav-sect">Filtros rápidos</div>
+      <div class="nav-item" data-filter="disponible" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="dnb-disp">0</span></div>
+      <div class="nav-item" data-filter="asignado" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="dnb-asig">0</span></div>
+      <div class="nav-item" data-filter="vencido" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="dnb-venc">0</span></div>
+      <div class="nav-item" data-filter="proximo" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--amber)">●</span>Próx. vencer<span class="nav-badge am" id="dnb-prox">0</span></div>
+      <div class="nav-sect">Acciones</div>
+      <div class="nav-item" onclick="toggleDrawer();openTerModal()"><span class="nav-icon">➕</span>Nuevo territorio</div>
+      <div class="nav-item" onclick="toggleDrawer();openModal('mPub')"><span class="nav-icon">👤</span>Nuevo publicador</div>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="nav-sect">Principal</div>
+  <div class="nav-item on" data-v="territorios" onclick="nav(this)"><span class="nav-icon">📋</span>Territorios<span class="nav-badge a" id="nb-tot">0</span></div>
+  <div class="nav-item" data-v="mapa" onclick="nav(this)"><span class="nav-icon">🗺</span>Mapa<span class="nav-badge" id="nb-map">204</span></div>
+  <div class="nav-item" data-v="prioridad" onclick="nav(this)"><span class="nav-icon">⏳</span>Sin trabajar<span class="nav-badge am" id="nb-old">0</span></div>
+  <div class="nav-item" data-v="estadisticas" onclick="nav(this)"><span class="nav-icon">📊</span>Estadísticas</div>
+  <div class="nav-sect">Gestión</div>
+  <div class="nav-item" data-v="publicadores" onclick="nav(this)"><span class="nav-icon">👥</span>Publicadores<span class="nav-badge" id="nb-pub">0</span></div>
+  <div class="nav-item" data-v="grupos" onclick="nav(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="nb-grp">0</span></div>
+  <div class="nav-item" data-v="historial" onclick="nav(this)"><span class="nav-icon">📋</span>Historial</div>
+  <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
+  <div class="nav-sect">Estado rápido</div>
+  <div class="nav-item" data-filter="disponible" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="nb-disp">0</span></div>
+  <div class="nav-item" data-filter="asignado" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="nb-asig">0</span></div>
+  <div class="nav-item" data-filter="vencido" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="nb-venc">0</span></div>
+  <div class="nav-item" data-filter="proximo" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--amber)">●</span>Próx. vencer<span class="nav-badge am" id="nb-prox">0</span></div>
+  <div class="nav-item" data-filter="grupo" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--purple)">●</span>De grupo<span class="nav-badge pu" id="nb-grup">0</span></div>
+  <div style="padding:12px 10px 8px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);line-height:1.5;margin-top:8px">
+    Desarrollada por <span style="color:var(--t2);font-weight:600">Manuel Fernández</span><br>
+    para uso exclusivo de la congregación<br>
+    <span style="color:var(--t2);font-weight:600">Montequinto</span>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- VIEW: TERRITORIOS -->
+<div id="view-territorios" class="view on">
+  <div class="view-head" style="padding-bottom:0">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div class="view-title">Territorios</div><div class="view-sub" id="tbl-count"></div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="exportarVista()" title="Exportar vista actual a Excel">⬇ Excel</button>
+        <div class="tgl-btn on" id="tgl-list" onclick="setViewMode('list')" title="Lista">☰</div>
+        <div class="tgl-btn" id="tgl-card" onclick="setViewMode('card')" title="Tarjetas">⊞</div>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <div class="chip on" data-f="todos" onclick="setFilter(this)">Todos</div>
+      <div class="chip" data-f="disponible" onclick="setFilter(this)">Disponible</div>
+      <div class="chip" data-f="asignado" onclick="setFilter(this)">Asignado</div>
+      <div class="chip" data-f="vencido" onclick="setFilter(this)">Vencido</div>
+      <div class="chip" data-f="proximo" onclick="setFilter(this)">Próx. vencer</div>
+      <div class="chip pu" data-f="grupo" onclick="setFilter(this)">De grupo</div>
+      <select class="fi" id="fGrupo" style="width:auto;padding:5px 11px;font-size:13px" onchange="renderTerritorios()">
+        <option value="">Todos los grupos</option>
+      </select>
+      <select class="fi" id="fSort" style="width:auto;padding:5px 11px;font-size:13px" onchange="renderTerritorios()">
+        <option value="num">Por número</option>
+        <option value="vence_asc">Vence antes</option>
+        <option value="vence_desc">Vence después</option>
+        <option value="asig_desc">Asignado reciente</option>
+        <option value="ultimo_asc">Sin trabajar más tiempo</option>
+      </select>
+    </div>
+  </div>
+  <div class="view-scroll" style="padding-top:0">
+    <div class="stats-strip" id="statStrip"></div>
+    <div id="list-view">
+      <div class="tbl-wrap">
+        <div class="tbl-head tcols" id="tblHead">
+          <span>Nº</span><span>Publicador</span><span>Tipo</span><span>Grupo</span>
+          <span>Asignado</span><span>Vence</span><span>Estado</span>
+        </div>
+        <div class="tbl-body" id="tbl-body" style="max-height:calc(100dvh - 280px)"></div>
+      </div>
+    </div>
+    <div id="card-view" style="display:none" class="card-grid"></div>
+  </div>
+</div>
+
+<!-- VIEW: MAPA -->
+<div id="view-mapa" class="view">
+  <div id="mapContainer">
+    <div id="leafletMapMain"></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Disponible</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Asignado</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Próx. vencer</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Vencido</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Grupo <span style="font-size:9px;opacity:.7">(tono = estado)</span></div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--s4)"></div>Sin datos</div>
+    </div>
+    <!-- MAP SIDE PANEL -->
+    <div id="mapPanel">
+      <div class="mp-head">
+        <div>
+          <div class="mp-num" id="mpNum"></div>
+          <div class="mp-name" id="mpName"></div>
+        </div>
+        <button class="xbtn" onclick="closeMapPanel()">✕</button>
+      </div>
+      <div class="mp-body">
+        <div class="mp-section" id="mpImgSection" style="display:none">
+          <div class="mp-section-title">Mapa del territorio</div>
+          <img class="mp-img" id="mpImg" src="" onclick="openLb(this.src)">
+        </div>
+        <div class="mp-section">
+          <div class="mp-section-title">Estado actual</div>
+          <div id="mpStatus"></div>
+        </div>
+        <div class="mp-section">
+          <div class="mp-section-title">Información</div>
+          <div id="mpFields"></div>
+        </div>
+      </div>
+      <div class="mp-actions" id="mpActions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: PRIORIDAD -->
+<div id="view-prioridad" class="view">
+  <div class="view-head">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><div class="view-title">Sin trabajar</div><div class="view-sub">Disponibles ordenados por última fecha trabajada real</div></div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="exportarPrioridad()">⬇ Excel</button>
+        <select class="fi" id="prioSort" style="width:auto;padding:6px 12px;font-size:13px" onchange="renderPrioridad()">
+          <option value="antiguo">Más antiguos primero</option>
+          <option value="reciente">Más recientes primero</option>
+          <option value="num">Por número</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="view-scroll"><div id="prioList"></div></div>
+</div>
+
+<!-- VIEW: ESTADISTICAS -->
+<div id="view-estadisticas" class="view">
+  <div class="view-head">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div><div class="view-title">Estadísticas</div><div class="view-sub">Actividad y cobertura</div></div>
+      <div style="display:flex;gap:6px">
+        <div class="chip on" data-period="year" onclick="setPeriod(this)">Este año</div>
+        <div class="chip" data-period="6m" onclick="setPeriod(this)">6 meses</div>
+        <div class="chip" data-period="month" onclick="setPeriod(this)">Este mes</div>
+        <div class="chip" data-period="all" onclick="setPeriod(this)">Todo</div>
+      </div>
+    </div>
+  </div>
+  <div class="view-scroll">
+    <div class="stats-strip" id="statMain"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Territorios por grupo</div><div class="chart-wrap" id="chartGrupos"></div></div>
+      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Top publicadores</div><div class="chart-wrap" id="chartPubs"></div></div>
+      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Asignaciones por mes</div><div class="chart-wrap" id="chartMeses"></div></div>
+      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Más tiempo sin trabajar</div><div class="chart-wrap" id="chartOld"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: PUBLICADORES -->
+<div id="view-publicadores" class="view">
+  <div class="view-head">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div class="view-title">Publicadores</div><div class="view-sub">Todos los publicadores registrados</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="exportarPublicadores()">⬇ Excel</button>
+        <button class="btn btn-ghost btn-sm" id="toggleInactivosBtn" onclick="_showInactivos=!_showInactivos;document.getElementById('toggleInactivosBtn').textContent=_showInactivos?'👤 Activos':'📦 Inactivos';renderPublicadores()">📦 Inactivos</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Añadir</button>
+      </div>
+    </div>
+  </div>
+  <div class="view-scroll">
+    <div class="tbl-wrap">
+      <div class="tbl-head" id="pubTblHead" style="grid-template-columns:1fr 150px 60px 80px 60px;display:grid;padding:0 10px">
+        <span>Nombre</span><span>Grupo</span><span>Activos</span><span>Completados</span><span></span>
+      </div>
+      <div id="pubTable" class="tbl-body" style="max-height:calc(100vh - 200px)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: GRUPOS -->
+<div id="view-grupos" class="view">
+  <div class="view-head">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between">
+      <div><div class="view-title">Grupos</div><div class="view-sub">Organización por grupos y siervos</div></div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNuevoGrupo()">＋ Nuevo grupo</button>
+    </div>
+  </div>
+  <div class="view-scroll"><div id="gruposGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div></div>
+</div>
+
+<!-- VIEW: HISTORIAL -->
+<div id="view-historial" class="view">
+  <div class="view-head">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div><div class="view-title">Historial</div><div class="view-sub">Toca un territorio para ver sus asignaciones</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="exportarHistorial()">⬇ Excel</button>
+        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:160px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
+      </div>
+    </div>
+  </div>
+  <div class="view-scroll" id="histScrollArea" style="display:flex;gap:14px;padding-top:14px">
+    <!-- Territory list -->
+    <div id="histListCol" style="flex:1;min-width:0">
+      <div class="tbl-wrap">
+        <div class="tbl-head" id="histTblHead" style="grid-template-columns:60px 1fr 90px 60px;display:grid;padding:0 10px">
+          <span>Nº</span><span>Último pub.</span><span>Último</span><span>Nº</span>
+        </div>
+        <div id="histTable" class="tbl-body" style="max-height:calc(100dvh - 230px)"></div>
+      </div>
+    </div>
+    <!-- Detail panel -->
+    <div id="histDetail" style="width:320px;flex-shrink:0;display:none">
+      <div class="tbl-wrap" style="padding:16px;position:sticky;top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:14px;font-weight:700;letter-spacing:-.2px" id="histDetailTitle">Asignaciones</div>
+          <button class="xbtn" onclick="closeHistDetail()">✕</button>
+        </div>
+        <div id="histDetailList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW: S-13 -->
+<div id="view-s13" class="view">
+  <div class="view-head"><div class="view-title">Exportar S-13</div><div class="view-sub">Registro oficial de asignación de territorio</div></div>
+  <div class="view-scroll">
+    <div class="tbl-wrap" style="padding:24px;max-width:580px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px">Configurar exportación</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Año de servicio</label><input class="fi" id="s13Year" type="number" value="2026" min="2020" max="2040"></div>
+        <div class="fg"><label class="fl">Territorios por hoja</label><select class="fs" id="s13PerSheet"><option value="20">20 por hoja</option><option value="10">10 por hoja</option></select></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Desde (dejar vacío = todos)</label><input class="fi" id="s13From" type="text" placeholder="001"></div>
+        <div class="fg"><label class="fl">Hasta</label><input class="fi" id="s13To" type="text" placeholder="201"></div>
+      </div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="s13Tipo"><option value="">Todos</option><option value="Casa">Casa</option><option value="Bloque">Bloque</option><option value="Especial">Especial</option><option value="Negocio">Negocio</option></select></div>
+      <div style="background:var(--blue-dim);border:1px solid rgba(10,132,255,.2);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">
+        ℹ Genera el S-13 en formato Excel con el mismo diseño que el original, incluyendo publicadores y fechas de entrega/devolución.
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="exportarS13()">⬇ Descargar S-13 (.xlsx)</button>
+        <button class="btn btn-ghost" onclick="verS13Preview()">👁 Vista previa</button>
+      </div>
+    </div>
+    <div id="s13Preview" style="display:none;margin-top:20px;max-width:960px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:14px;font-weight:700" id="s13PreviewLabel">Vista previa</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn btn-ghost btn-xs" id="s13PrevBtn" onclick="s13PageNav(-1)">← Anterior</button>
+          <span id="s13PageInfo" style="font-size:12px;color:var(--t2);white-space:nowrap"></span>
+          <button class="btn btn-ghost btn-xs" id="s13NextBtn" onclick="s13PageNav(1)">Siguiente →</button>
+          <button class="btn btn-ghost btn-xs" onclick="abrirS13Modal()">⛶ Pantalla completa</button>
+        </div>
+      </div>
+      <div id="s13PreviewContent"></div>
+    </div>
+
+    <!-- CONTAR VIVIENDAS -->
+    <div class="tbl-wrap" style="padding:24px;max-width:580px;margin-top:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="font-size:15px;font-weight:700;letter-spacing:-.2px">🏠 Contar viviendas automáticamente</div>
+      </div>
+      <div style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:16px">
+        Consulta OpenStreetMap para contar las entradas y números de portal dentro de cada polígono de territorio.<br>
+        <span style="color:var(--t3)">Necesita internet. Procesa un territorio cada 2.5 segundos (~8 min para todos).</span>
+      </div>
+
+      <div class="frow" style="margin-bottom:14px">
+        <div class="fg"><label class="fl">Desde territorio</label><input class="fi" id="cvFrom" type="text" placeholder="001 (vacío = todos)"></div>
+        <div class="fg"><label class="fl">Hasta territorio</label><input class="fi" id="cvTo" type="text" placeholder="201"></div>
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label class="fl">Fuente de datos OSM</label>
+        <select class="fs" id="cvFuente">
+          <option value="both" selected>Portales + Entradas (recomendado)</option>
+          <option value="housenumber">Solo números de portal (addr:housenumber)</option>
+          <option value="entrance">Solo entradas de edificio (entrance=*)</option>
+          <option value="buildings">Edificios residenciales (building=residential/apartments)</option>
+        </select>
+      </div>
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.6">
+        💡 Si el resultado es 0, prueba con <b style="color:var(--t2)">Edificios residenciales</b> — es menos preciso pero siempre tiene datos en OSM. Después ajusta manualmente los territorios que no cuadren.
+      </div>
+
+      <!-- Progress area -->
+      <div id="cvProgress" style="display:none;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:8px">
+          <span id="cvProgressText">Iniciando…</span>
+          <span id="cvProgressPct" style="color:var(--blue)">0%</span>
+        </div>
+        <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
+          <div id="cvProgressBar" style="height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px;width:0%;transition:width .4s ease"></div>
+        </div>
+        <div id="cvLog" style="margin-top:10px;max-height:160px;overflow-y:auto;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-family:var(--font-mono);font-size:11px;color:var(--t2);line-height:1.8"></div>
+      </div>
+
+      <!-- Results -->
+      <div id="cvResults" style="display:none;margin-bottom:14px">
+        <div style="background:var(--green-dim);border:1px solid rgba(48,209,88,.2);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--green);font-weight:600;margin-bottom:10px" id="cvSummary"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-success btn-sm" onclick="cvGuardarEnBD()">💾 Guardar en Supabase</button>
+          <button class="btn btn-ghost btn-sm" onclick="cvDescargarSQL()">⬇ Descargar SQL</button>
+          <button class="btn btn-ghost btn-sm" onclick="cvDescargarJSON()">⬇ JSON</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="cvStartBtn" onclick="cvIniciar()">🔍 Iniciar conteo</button>
+        <button class="btn btn-danger btn-sm" id="cvStopBtn" style="display:none" onclick="cvDetener()">⏹ Detener</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<!-- ═══ MODAL: TERRITORIO ═══ -->
+<div class="overlay" id="mTer">
+  <div class="modal modal-lg">
+    <div class="mhead"><div class="mtitle" id="mTerTitle">Nuevo Territorio</div><button class="xbtn" onclick="closeModal('mTer')">✕</button></div>
+    <div class="mbody">
+      <div class="tabs" id="mTerTabs">
+        <div class="tab on" data-tp="asignar" onclick="switchTab('mTer',this)">Asignación</div>
+        <div class="tab" data-tp="datos" onclick="switchTab('mTer',this)">Datos</div>
+        <div class="tab" data-tp="archivos" onclick="switchTab('mTer',this)">Archivos</div>
+        <div class="tab" data-tp="terhist" onclick="switchTab('mTer',this)">Historial</div>
+      </div>
+
+      <!-- TAB: ASIGNACIÓN (PRIMERO) -->
+      <div class="tab-pane on" id="tp-asignar">
+        <div id="terImgPreview" style="display:none;margin-bottom:12px;border-radius:var(--r);overflow:hidden;cursor:pointer;position:relative;background:var(--s3)">
+          <img id="terImgThumb" src="" alt="Mapa del territorio"
+            style="width:100%;max-height:180px;object-fit:contain;display:block"
+            onclick="openLb(this.src)">
+          <div style="position:absolute;bottom:6px;right:8px;font-size:10px;background:rgba(0,0,0,.55);color:#fff;padding:2px 8px;border-radius:99px;pointer-events:none">🔍 Ver completa</div>
+        </div>
+        <div id="asigStatus" style="margin-bottom:14px"></div>
+
+        <!-- VENCIDO: fecha de recepción primero -->
+        <div id="vencidoPanel" style="display:none">
+          <div class="asign-card">
+            <div class="asign-card-head">
+              <span class="aci">📅</span>
+              <span class="act">Registrar fecha de entrega</span>
+            </div>
+            <div class="asign-card-body">
+              <div class="fg"><label class="fl">Fecha en que el publicador entregó el territorio</label>
+                <input class="fi" id="venc-fechaEntrega" type="date">
+              </div>
+              <button class="btn btn-success" style="width:100%;justify-content:center" onclick="registrarDevolucionVencido()">✅ Registrar entrega y liberar territorio</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DISPONIBLE: asignar directamente -->
+        <div id="disponiblePanel" style="display:none">
+          <div class="asign-card">
+            <div class="asign-card-head">
+              <span class="aci">📌</span>
+              <span class="act">Asignar territorio</span>
+            </div>
+            <div class="asign-card-body">
+              <div class="frow">
+                <div class="fg">
+                  <label class="fl">Publicador / Siervo</label>
+                  <div style="position:relative">
+                    <input class="fi" id="asig-pub-input" type="text" placeholder="Escribe el nombre…"
+                      autocomplete="off" oninput="pubAutocomplete(this.value)" onfocus="pubAutocomplete(this.value)"
+                      onkeydown="pubAutocompleteKey(event)">
+                    <div id="asig-pub-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;
+                      background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);
+                      max-height:220px;overflow-y:auto;box-shadow:var(--sh);margin-top:2px"></div>
+                  </div>
+                  <input type="hidden" id="asig-pub">
+                </div>
+                <div class="fg"><label class="fl">Fecha de entrega</label><input class="fi" id="asig-fecha" type="date"></div>
+              </div>
+              <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="confirmarAsig()">📌 Asignar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ASIGNADO: acciones secundarias -->
+        <div id="asignadoPanel" style="display:none">
+          <div class="asign-card">
+            <div class="asign-card-head">
+              <span class="aci">📌</span>
+              <span class="act">Territorio asignado</span>
+            </div>
+            <div class="asign-card-body">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+                <button class="btn btn-ghost btn-sm" id="btnRenovar" onclick="renovar()">🔄 Renovar (+4 meses)</button>
+              </div>
+              <div style="font-size:13px;color:var(--t2);margin-bottom:10px;font-weight:600">¿El hermano entregó el territorio?</div>
+              <div class="frow">
+                <div class="fg"><label class="fl">Fecha de devolución</label><input class="fi" id="dev-fecha" type="date"></div>
+                <div class="fg" style="display:flex;align-items:flex-end">
+                  <button class="btn btn-success" style="width:100%;justify-content:center" onclick="devolverDesdeModal()">✅ Marcar devuelto</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: DATOS -->
+      <div class="tab-pane" id="tp-datos">
+        <div class="frow3">
+          <div class="fg"><label class="fl">Número</label><input class="fi" id="t-num" placeholder="001"></div>
+          <div class="fg"><label class="fl">Nombre / Localidad</label><input class="fi" id="t-nombre" placeholder="Montequinto — 001"></div>
+          <div class="fg"><label class="fl">Tipo</label>
+            <select class="fs" id="t-tipo"><option>Casa</option><option>Bloque</option><option>Especial</option><option>Negocio</option></select>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Descripción / Calles</label><textarea class="ft" id="t-desc" placeholder="Calles, límites…"></textarea></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Grupo</label><select class="fs" id="t-grupo"><option value="">Sin grupo</option></select></div>
+          <div class="fg"><label class="fl">Nº de puertas</label><input class="fi" id="t-dirs" type="number" min="0" placeholder="80"></div>
+        </div>
+        <div class="fg"><label class="fl">Notas</label><input class="fi" id="t-notas" placeholder="Perros, acceso difícil…"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+          <input type="checkbox" id="t-esGrupo" style="accent-color:var(--purple);width:16px;height:16px">
+          <label for="t-esGrupo" style="font-size:14px;cursor:pointer;color:var(--t2)">Territorio de grupo <span style="color:var(--t3);font-size:12px">(se asigna al siervo del grupo)</span></label>
+        </div>
+      </div>
+
+      <!-- TAB: ARCHIVOS -->
+      <div class="tab-pane" id="tp-archivos">
+        <div class="upload-zone" id="dropzone" onclick="document.getElementById('fileInput').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+          <div style="font-size:30px;margin-bottom:8px">📁</div>
+          <div style="font-weight:600">Haz clic o arrastra el mapa / PDF</div>
+          <div style="font-size:12px;margin-top:4px;color:var(--t3)">PNG, JPG, PDF — máx 10 MB</div>
+        </div>
+        <input type="file" id="fileInput" style="display:none" multiple accept="image/*,.pdf" onchange="handleFiles(this.files)">
+        <div class="file-list" id="fileList"></div>
+      </div>
+
+      <!-- TAB: HISTORIAL -->
+      <div class="tab-pane" id="tp-terhist">
+        <div id="terHistorial"></div>
+      </div>
+
+      <div class="factions">
+        <!-- Context-sensitive bottom buttons -->
+        <div id="factionLeft" style="display:flex;gap:6px">
+          <button class="btn btn-danger btn-sm" id="btnElimTer" onclick="eliminarTer()" style="display:none">🗑 Eliminar territorio</button>
+          <button class="btn btn-amber btn-sm" id="btnCancelarAsig" onclick="cancelarAsignacion()" style="display:none">↩ Cancelar asignación</button>
+        </div>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" onclick="closeModal('mTer')">Cerrar</button>
+        <button class="btn btn-primary" id="btnGuardarDatos" onclick="guardarTer()">Guardar datos</button>
+      </div>
+    </div>
+    <div id="drawerInstallWrap" style="display:none;padding:10px 16px;border-top:1px solid var(--border)">
+      <button onclick="installPWA();toggleDrawer()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(48,209,88,.3);background:var(--green-dim);color:var(--green);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⬇ Instalar app en este dispositivo</button>
+    </div>
+    <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;margin-top:auto;border-top:1px solid var(--border)">
+      Desarrollada por <b style="color:var(--t2)">Manuel Fernández</b><br>
+      Congregación <b style="color:var(--t2)">Montequinto</b>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: PUBLICADOR ═══ -->
+<div class="overlay" id="mPub">
+  <div class="modal">
+    <div class="mhead"><div class="mtitle">Nuevo publicador</div><button class="xbtn" onclick="closeModal('mPub')">✕</button></div>
+    <div class="mbody">
+      <div class="frow">
+        <div class="fg"><label class="fl">Nombre completo</label><input class="fi" id="p-nombre" placeholder="Nombre completo"></div>
+        <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="p-tel" type="tel" placeholder="Opcional"></div>
+      </div>
+      <div class="fg"><label class="fl">Grupo</label><select class="fs" id="p-grupo"><option value="">Sin grupo</option></select></div>
+      <div class="factions">
+        <button class="btn btn-ghost" onclick="closeModal('mPub')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarPub()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: PUBLICADOR DETAIL ═══ -->
+<div class="overlay" id="mPubDet">
+  <div class="modal">
+    <div class="mhead"><div class="mtitle" id="mPubDetTitle">Publicador</div><button class="xbtn" onclick="closeModal('mPubDet')">✕</button></div>
+    <div class="mbody" id="mPubDetBody"></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: GRUPO ═══ -->
+<div class="overlay" id="mGrupo">
+  <div class="modal modal-lg">
+    <div class="mhead"><div class="mtitle" id="mGrupoTitle">Nuevo grupo</div><button class="xbtn" onclick="closeModal('mGrupo')">✕</button></div>
+    <div class="mbody">
+      <div class="tabs" id="mGrupoTabs">
+        <div class="tab on" data-tp="gedit" onclick="switchTab('mGrupo',this)">Editar</div>
+        <div class="tab" data-tp="gters" onclick="switchTab('mGrupo',this)" id="tabGTers" style="display:none">Territorios</div>
+        <div class="tab" data-tp="gstats" onclick="switchTab('mGrupo',this)" id="tabGStats" style="display:none">Estadísticas</div>
+      </div>
+
+      <!-- TAB: EDITAR -->
+      <div class="tab-pane on" id="tp-gedit">
+        <div class="frow">
+          <div class="fg"><label class="fl">Número de grupo</label><input class="fi" id="g-num" type="number" min="1" placeholder="1"></div>
+          <div class="fg"><label class="fl">Nombre opcional</label><input class="fi" id="g-nombre" placeholder="Grupo Sur"></div>
+        </div>
+        <div class="fg"><label class="fl">Superintendente de grupo</label><select class="fs" id="g-siervo"><option value="">Sin asignar</option></select></div>
+        <div class="factions">
+          <button class="btn btn-danger btn-sm" id="btnElimGrupo" style="display:none" onclick="eliminarGrupo()">Eliminar</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-ghost" onclick="closeModal('mGrupo')">Cancelar</button>
+          <button class="btn btn-primary" onclick="guardarGrupo()">Guardar</button>
+        </div>
+      </div>
+
+      <!-- TAB: TERRITORIOS DEL GRUPO -->
+      <div class="tab-pane" id="tp-gters">
+        <div class="filter-bar" style="margin-top:0">
+          <div class="chip on" data-gf="todos" onclick="setGrupoFilter(this)">Todos</div>
+          <div class="chip" data-gf="disponible" onclick="setGrupoFilter(this)">Disponible</div>
+          <div class="chip" data-gf="asignado" onclick="setGrupoFilter(this)">Asignado</div>
+          <div class="chip" data-gf="vencido" onclick="setGrupoFilter(this)">Vencido</div>
+        </div>
+        <div id="grupoTerList" style="max-height:400px;overflow-y:auto"></div>
+      </div>
+
+      <!-- TAB: ESTADÍSTICAS DEL GRUPO -->
+      <div class="tab-pane" id="tp-gstats">
+        <div id="grupoStats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: VIEWER ═══ -->
+<div class="overlay" id="mViewer">
+  <div class="modal modal-lg">
+    <div class="mhead"><div class="mtitle" id="viewerTitle">Archivo</div><button class="xbtn" onclick="closeModal('mViewer')">✕</button></div>
+    <div class="mbody" id="viewerBody" style="text-align:center"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lb" onclick="closeLb()"><button id="lbClose" onclick="closeLb()">✕</button><img id="lbImg" src="" alt=""></div>
+
+<div id="toast-wrap"></div>
+<!-- ═══ MODAL: S-13 VISTA COMPLETA ═══ -->
+<div class="overlay" id="mS13">
+  <div class="modal modal-lg" style="width:98vw;max-width:98vw;max-height:96vh">
+    <div class="mhead">
+      <div class="mtitle">Vista previa S-13 — todos los territorios</div>
+      <button class="xbtn" onclick="closeModal('mS13')">✕</button>
+    </div>
+    <div class="mbody" style="padding:12px;overflow-x:auto">
+      <div id="s13ModalContent"></div>
+    </div>
+  </div>
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════
+const SB_URL = 'https://iycqizsxmbaboaxveaeb.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5Y3FpenN4bWJhYm9heHZlYWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTM3MzQsImV4cCI6MjA5NDU4OTczNH0.-5jCFsD2WWEity7UDuEmpDqZvXrGLEiCg8fQWPZkOXE';
+const BUCKET = 'mapas-territorios';
+const EXPIRY_DAYS = 120;
+const WARN_DAYS = 20;
+const GEOJSON_URL = 'zonas.geojson'; // same folder as HTML
+const MAP_CENTER = [37.3355, -5.9282];
+const MAP_ZOOM = 15;
+
+const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+// ── SUPABASE REALTIME ──
+// sbClient is initialized lazily inside initRealtime() to ensure
+// the Supabase CDN script has fully loaded before use.
+let sbClient = null;
+
+function debounce(fn, ms){
+  let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
+}
+
+const _tableReloaders = {
+  territorios: async () => { await loadTerritorios(); await checkVencidos(); fillAllSels(); renderView(currentView); updateBadges(); },
+  publicadores: async () => { await loadPublicadores(); fillAllSels(); renderView(currentView); updateBadges(); },
+  historial:    async () => { await loadHistorial(); renderView(currentView); updateBadges(); },
+  grupos:       async () => { await loadGrupos(); fillAllSels(); renderView(currentView); },
+};
+
+const _debouncedReload = {
+  territorios: debounce(_tableReloaders.territorios, 400),
+  publicadores: debounce(_tableReloaders.publicadores, 400),
+  historial:   debounce(_tableReloaders.historial, 400),
+  grupos:      debounce(_tableReloaders.grupos, 400),
+};
+
+function initRealtime(){
+  try {
+    if(!window.supabase) { console.warn('Supabase CDN not loaded — realtime disabled'); return; }
+    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+    sbClient
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'territorios' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.territorios().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'publicadores' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.publicadores().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.historial().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.grupos().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .subscribe((status) => {
+        if(status === 'SUBSCRIBED') console.log('✓ Realtime conectado');
+        if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('Realtime desconectado, reintentando…');
+      });
+  } catch(e) {
+    console.warn('Realtime init failed:', e.message);
+  }
+}
+
+// ── SUPABASE API ──
+async function sbGet(table, params={}) {
+  const url = new URL(`${SB_URL}/rest/v1/${table}`);
+  // Extract limit separately (needs Range header, not query param)
+  const limit = params.limit ? parseInt(params.limit) : null;
+  const p = {...params};
+  delete p.limit;
+  Object.entries(p).forEach(([k,v]) => url.searchParams.set(k,v));
+  const headers = {...H};
+  if(limit) headers['Range'] = `0-${limit-1}`;
+  const r = await fetch(url, { headers });
+  if (!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  return r.json();
+}
+async function sbPost(table, body) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`, { method:'POST', headers:{...H,'Prefer':'return=representation'}, body:JSON.stringify(body) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbPatch(table, match, body) {
+  const url = new URL(`${SB_URL}/rest/v1/${table}`);
+  Object.entries(match).forEach(([k,v]) => url.searchParams.set(k,`eq.${v}`));
+  const r = await fetch(url, { method:'PATCH', headers:{...H,'Prefer':'return=representation'}, body:JSON.stringify(body) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function sbDelete(table, match) {
+  const url = new URL(`${SB_URL}/rest/v1/${table}`);
+  Object.entries(match).forEach(([k,v]) => url.searchParams.set(k,`eq.${v}`));
+  const r = await fetch(url, { method:'DELETE', headers:H });
+  if (!r.ok) throw new Error(await r.text());
+}
+async function sbStorageUpload(path, file) {
+  const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`, { method:'POST', headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':file.type,'x-upsert':'true'}, body:file });
+  if (!r.ok) throw new Error(await r.text());
+}
+function sbUrl(path) { return `${SB_URL}/storage/v1/object/public/${BUCKET}/${path}`; }
+async function sbStorageDelete(path) {
+  const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${path}`, { method:'DELETE', headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`} });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+// ══ STATE ══
+let S = { territorios:[], publicadores:[], grupos:[], historial:[] };
+let currentView='territorios', currentFilter='todos', currentPeriod='year';
+let viewMode='list', searchQ='', editingTId=null, editingGId=null;
+let leafletMap=null, geoLayer=null;
+
+// ══ SYNC ══
+function setSyncStatus(s) {
+  const dot=document.getElementById('syncDot'), txt=document.getElementById('syncTxt');
+  dot.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');
+  txt.textContent=s==='syncing'?'Guardando…':s==='error'?'Error':'Conectado';
+}
+
+// ══ LOADER ══
+function showLoader(msg='Cargando…'){document.getElementById('loader').classList.add('on');document.getElementById('loaderMsg').textContent=msg;}
+function hideLoader(){document.getElementById('loader').classList.remove('on');}
+
+// ══ UTILS ══
+function today(){return new Date().toISOString().split('T')[0];}
+function daysBetween(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+function daysSince(d){return d?daysBetween(d,today()):9999;}
+function daysUntil(d){return d?daysBetween(today(),d):null;}
+function fmtDate(s){if(!s)return'—';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`;}
+function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().split('T')[0];}
+function pubName(id){return id?S.publicadores.find(p=>p.id===id)?.nombre||'—':'—';}
+function grupoOf(t){return t.grupo_id?S.grupos.find(g=>g.id===t.grupo_id)||null:null;}
+function grupoLabel(t){const g=grupoOf(t);return g?`G${g.num}`:'—';}
+// Returns true if territory is currently assigned to a "Grupo X" publisher
+function isGrupo(t){
+  if(!t.pub_id) return false;
+  const pub=S.publicadores.find(p=>p.id===t.pub_id);
+  return pub ? /^grupo\s*\d/i.test(pub.nombre.trim()) : false;
+}
+function statusOf(t){
+  if(t.estado==='vencido') return 'vencido';
+  if(t.estado==='asignado'){if(t.fecha_vence&&daysUntil(t.fecha_vence)<=WARN_DAYS) return 'proximo'; return 'asignado';}
+  // "grupo" state: available territories assigned to a Grupo X publisher (es_grupo from runtime check)
+  if(isGrupo(t)) return 'grupo';
+  return 'disponible';
+}
+
+// ══ INIT ══
+async function initApp(){
+  showLoader('Cargando datos…');
+  try {
+    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial()]);
+    await checkVencidos();
+    fillAllSels();
+    renderView('territorios');
+    updateBadges();
+    hideLoader();
+    initRealtime(); // Start listening for changes from other users
+  } catch(e) {
+    hideLoader();
+    setSyncStatus('error');
+    console.error('initApp error:', e);
+    toast('Error al cargar: '+e.message,'r');
+  }
+}
+async function loadGrupos(){S.grupos=await sbGet('grupos',{select:'*',order:'num.asc'});}
+async function loadPublicadores(){S.publicadores=await sbGet('publicadores',{select:'*',order:'nombre.asc'});}
+async function loadTerritorios(){S.territorios=await sbGet('territorios',{select:'*',order:'num.asc'});}
+async function loadHistorial(){S.historial=await sbGet('historial',{select:'*',order:'created_at.desc',limit:2000});}
+async function checkVencidos(){
+  const venc=S.territorios.filter(t=>t.estado==='asignado'&&t.fecha_vence&&daysUntil(t.fecha_vence)<0);
+  for(const t of venc){await sbPatch('territorios',{id:t.id},{estado:'vencido'});t.estado='vencido';}
+}
+
+// ══ NAVIGATION ══
+function nav(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  el.classList.add('on');
+  showView(el.dataset.v);
+}
+function showView(v){
+  currentView=v;
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  document.getElementById('view-'+v).classList.add('on');
+  renderView(v);
+}
+function quickFilter(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  el.classList.add('on');
+  currentFilter=el.dataset.filter;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.f===currentFilter));
+  showView('territorios');
+}
+function renderView(v){
+  updateBadges();
+  if(v==='territorios') renderTerritorios();
+  else if(v==='mapa') initMapView();
+  else if(v==='prioridad') renderPrioridad();
+  else if(v==='estadisticas') renderStats();
+  else if(v==='publicadores') renderPublicadores();
+  else if(v==='grupos') renderGrupos();
+  else if(v==='historial') renderHistorial();
+}
+
+// ══ FILTERS ══
+function setFilter(elOrStr){
+  let f,el;
+  if(typeof elOrStr==='string'){f=elOrStr;el=document.querySelector(`.chip[data-f="${f}"]`);}
+  else{el=elOrStr;f=el?.dataset?.f||'todos';}
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  if(el) el.classList.add('on');
+  currentFilter=f;
+  // Smart default sort per filter
+  const sortSel=document.getElementById('fSort');
+  if(sortSel){
+    if(f==='disponible') sortSel.value='ultimo_asc';   // sin trabajar más tiempo primero
+    else if(f==='vencido'||f==='proximo'||f==='asignado') sortSel.value='vence_asc'; // vence antes
+    else sortSel.value='num';
+  }
+  renderTerritorios();
+}
+function onSearch(){
+  searchQ=document.getElementById('gSearch').value.toLowerCase();
+  // Sync local histSearch with global query for consistency
+  const hs=document.getElementById('histSearch');
+  if(hs&&currentView==='historial') hs.value=''; // clear local so global takes over
+  if(currentView==='territorios') renderTerritorios();
+  else if(currentView==='publicadores') renderPublicadores();
+  else if(currentView==='historial') renderHistorial();
+  else if(currentView==='prioridad') renderPrioridad();
+  // For other views switch to territorios to show results
+  else if(searchQ){ showView('territorios'); }
+}
+function setViewMode(m){
+  viewMode=m;
+  document.getElementById('tgl-list').classList.toggle('on',m==='list');
+  document.getElementById('tgl-card').classList.toggle('on',m==='card');
+  document.getElementById('list-view').style.display=m==='list'?'':'none';
+  document.getElementById('card-view').style.display=m==='card'?'':'none';
+  renderTerritorios();
+}
+
+// ══ RENDER TERRITORIOS ══
+function filteredList(){
+  const gFil=document.getElementById('fGrupo').value;
+  const sort=document.getElementById('fSort')?.value||'num';
+  let list=S.territorios.filter(t=>{
+    const st=statusOf(t);
+    const mF=currentFilter==='todos'||st===currentFilter||(currentFilter==='grupo'&&isGrupo(t))||(currentFilter==='disponible'&&t.estado==='disponible')||(currentFilter==='vencido'&&t.estado==='vencido')||(currentFilter==='asignado'&&t.estado==='asignado')||(currentFilter==='proximo'&&st==='proximo');
+    const mG=!gFil||String(t.grupo_id)===gFil;
+    const mS=!searchQ||t.num.toLowerCase().includes(searchQ)||t.nombre.toLowerCase().includes(searchQ)||pubName(t.pub_id).toLowerCase().includes(searchQ)||(t.descripcion||'').toLowerCase().includes(searchQ);
+    return mF&&mG&&mS;
+  });
+  if(sort==='vence_asc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return a.fecha_vence.localeCompare(b.fecha_vence);});
+  else if(sort==='vence_desc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return b.fecha_vence.localeCompare(a.fecha_vence);});
+  else if(sort==='asig_desc') list.sort((a,b)=>{if(!a.fecha_asig) return 1;if(!b.fecha_asig) return -1;return b.fecha_asig.localeCompare(a.fecha_asig);});
+  else if(sort==='ultimo_asc') list.sort((a,b)=>{if(!a.ultimo_trabajado) return -1;if(!b.ultimo_trabajado) return 1;return a.ultimo_trabajado.localeCompare(b.ultimo_trabajado);});
+  else list.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  return list;
+}
+
+function renderTerritorios(){
+  const list=filteredList();
+  document.getElementById('tbl-count').textContent=`${list.length} de ${S.territorios.length} territorios`;
+  renderStatsStrip(list);
+  if(viewMode==='list') renderListView(list); else renderCardView(list);
+}
+
+function renderStatsStrip(list){
+  const d=list.filter(t=>t.estado==='disponible').length;
+  const a=list.filter(t=>t.estado==='asignado').length;
+  const v=list.filter(t=>t.estado==='vencido').length;
+  const p=list.filter(t=>statusOf(t)==='proximo').length;
+  const mob=window.innerWidth<=700;
+
+  if(mob){
+    // Compact scrollable pills on mobile
+    document.getElementById('statStrip').innerHTML=`
+      <div class="stat-box" onclick="setFilter('todos')">
+        <div class="stat-ico" style="background:var(--blue-dim)">🗺</div>
+        <div><div class="stat-val">${list.length}</div><div class="stat-lbl">Total</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('disponible')">
+        <div class="stat-ico" style="background:var(--green-dim)">✓</div>
+        <div><div class="stat-val" style="color:var(--green)">${d}</div><div class="stat-lbl">Disponibles</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('asignado')">
+        <div class="stat-ico" style="background:var(--blue-dim)">📌</div>
+        <div><div class="stat-val" style="color:var(--blue)">${a}</div><div class="stat-lbl">Asignados</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('proximo')">
+        <div class="stat-ico" style="background:var(--amber-dim)">⚠</div>
+        <div><div class="stat-val" style="color:var(--amber)">${p}</div><div class="stat-lbl">Próx. vencer</div></div>
+      </div>
+      <div class="stat-box" onclick="setFilter('vencido')">
+        <div class="stat-ico" style="background:var(--red-dim)">🔴</div>
+        <div><div class="stat-val" style="color:var(--red)">${v}</div><div class="stat-lbl">Vencidos</div></div>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('statStrip').innerHTML=`
+    <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">🗺</div><div><div class="stat-val">${list.length}</div><div class="stat-lbl">Filtrados</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--green-dim)">✓</div><div><div class="stat-val" style="color:var(--green)">${d}</div><div class="stat-lbl">Disponibles</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">📌</div><div><div class="stat-val" style="color:var(--blue)">${a}</div><div class="stat-lbl">Asignados</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--amber-dim)">⚠</div><div><div class="stat-val" style="color:var(--amber)">${p}</div><div class="stat-lbl">Próx. vencer</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--red-dim)">🔴</div><div><div class="stat-val" style="color:var(--red)">${v}</div><div class="stat-lbl">Vencidos</div></div></div>`;
+}
+
+function renderListView(list){
+  const body=document.getElementById('tbl-body');
+  if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
+  const mob=window.innerWidth<=700;
+
+  // Status color mapping
+  const stColor={
+    disponible:'var(--green)',
+    asignado:'var(--blue)',
+    vencido:'var(--red)',
+    proximo:'var(--amber)',
+    grupo:'var(--purple)'
+  };
+
+  body.innerHTML=list.map(t=>{
+    const st=statusOf(t); const g=grupoOf(t);
+    const pub=pubName(t.pub_id);
+    const col=stColor[st]||'var(--t2)';
+    const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const c=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${c}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
+
+    if(mob){
+      // Línea principal: nombre del publicador (o "Disponible" si no tiene) con color del estado
+      // Línea secundaria: dato más relevante
+      const mainLine = t.pub_id ? pub : (st==='disponible' ? 'Disponible' : '—');
+      let subLine='';
+      if(t.estado==='asignado'||t.estado==='vencido'){
+        const d=daysUntil(t.fecha_vence);
+        subLine = d===null ? fmtDate(t.fecha_asig)
+          : d<0 ? `Vencido hace ${-d} días`
+          : d===0 ? 'Vence hoy'
+          : `Vence en ${d}d · ${fmtDate(t.fecha_vence)}`;
+      } else if(t.ultimo_trabajado){
+        subLine=`Último trabajo: ${fmtDate(t.ultimo_trabajado)}`;
+      }
+
+      return`<div class="tbl-row" style="grid-template-columns:44px 1fr auto;gap:0;min-height:52px" onclick="openTerDetail(${t.id})">
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);padding:14px 4px 0;font-weight:600">${t.num}</span>
+        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow:hidden;min-width:0">
+          <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
+          ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
+        </span>
+        <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,isGrupo(t))}</span>
+      </div>`;
+    }
+
+    // Desktop
+    return`<div class="tbl-row tcols" onclick="openTerDetail(${t.id})">
+      <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text)">${t.num}</span>
+      <span style="font-weight:600;color:${col}">${t.pub_id?pub:(t.ultimo_trabajado?`Ult: ${fmtDate(t.ultimo_trabajado)}`:'—')}</span>
+      <span style="color:var(--t2);font-size:12px">${t.tipo}</span>
+      <span style="color:var(--t2);font-size:12px">${g?`G${g.num}`:'—'}</span>
+      <span style="color:var(--t2);font-size:12px">${fmtDate(t.fecha_asig)}</span>
+      <span style="font-size:12px">${vH}</span>
+      <span>${pillHtml(st,isGrupo(t))}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCardView(list){
+  const body=document.getElementById('card-view');
+  if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);grid-column:1/-1">Sin resultados</div>`;return;}
+  body.innerHTML=list.map(t=>{
+    const st=statusOf(t);const cls=st==='proximo'?'prox':st==='asignado'?'asig':st==='vencido'?'venc':(isGrupo(t)?'grup':'disp');
+    const pub=pubName(t.pub_id);
+    const lastInfo=t.estado==='disponible'&&t.ultimo_trabajado?`📅 Ult: ${fmtDate(t.ultimo_trabajado)}<br>`:'';
+    return`<div class="tcard ${cls}" onclick="openTerDetail(${t.id})">
+      <div class="tcard-num">${t.num} · ${t.tipo} · ${grupoLabel(t)}</div>
+      <div class="tcard-name">${pub}</div>
+      <div class="tcard-meta">${lastInfo}${t.fecha_vence?`⏰ Vence ${fmtDate(t.fecha_vence)}<br>`:''}${t.num_dirs?`🏠 ${t.num_dirs} puertas`:''}</div>
+      <div class="tcard-foot">${pillHtml(st,isGrupo(t))}</div>
+    </div>`;
+  }).join('');
+}
+
+function pillHtml(st,esGrupo){
+  if(esGrupo&&st==='disponible') return`<span class="pill pill-grup">● Grupo</span>`;
+  const m={disponible:'pill-disp ● Disponible',asignado:'pill-asig ● Asignado',vencido:'pill-venc ● Vencido',proximo:'pill-prox ⚠ Próx. vencer',grupo:'pill-grup ● Grupo'};
+  const s=m[st]||m.disponible;const i=s.indexOf(' ');
+  return`<span class="pill ${s.slice(0,i)}">${s.slice(i+1)}</span>`;
+}
+
+// ══ BADGES ══
+function updateBadges(){
+  const t=S.territorios;
+  const disp=t.filter(x=>x.estado==='disponible').length;
+  const asig=t.filter(x=>x.estado==='asignado').length;
+  const venc=t.filter(x=>x.estado==='vencido').length;
+  const prox=t.filter(x=>statusOf(x)==='proximo').length;
+  const dispCount=disp;
+
+  // Sidebar badges
+  const sb=id=>document.getElementById(id);
+  if(sb('nb-tot')) sb('nb-tot').textContent=t.length;
+  if(sb('nb-pub')) sb('nb-pub').textContent=S.publicadores.length;
+  if(sb('nb-grp')) sb('nb-grp').textContent=S.grupos.length;
+  if(sb('nb-disp')) sb('nb-disp').textContent=disp;
+  if(sb('nb-asig')) sb('nb-asig').textContent=asig;
+  if(sb('nb-venc')) sb('nb-venc').textContent=venc;
+  if(sb('nb-prox')) sb('nb-prox').textContent=prox;
+  if(sb('nb-grup')) sb('nb-grup').textContent=t.filter(x=>isGrupo(x)).length;
+  if(sb('nb-old')) sb('nb-old').textContent=disp;
+
+  // Drawer badges
+  if(sb('dnb-grp')) sb('dnb-grp').textContent=S.grupos.length;
+  if(sb('dnb-disp')) sb('dnb-disp').textContent=disp;
+  if(sb('dnb-asig')) sb('dnb-asig').textContent=asig;
+  if(sb('dnb-venc')) sb('dnb-venc').textContent=venc;
+  if(sb('dnb-prox')) sb('dnb-prox').textContent=prox;
+
+  // Tab bar badges — show vencidos count on Territorios tab
+  const vencBadge=sb('mtb-venc');
+  if(vencBadge){ vencBadge.textContent=venc; vencBadge.style.display=venc>0?'flex':'none'; }
+  const oldBadge=sb('mtb-old');
+  if(oldBadge){ oldBadge.textContent=disp; oldBadge.style.display=disp>0?'flex':'none'; }
+
+  if(leafletMap) updateMapColors();
+}
+
+// ══ MAPA GEOJSON ══
+let mapInitialized=false;
+let selectedLayer=null;
+
+async function initMapView(){
+  if(mapInitialized){updateMapColors();return;}
+  setTimeout(()=>{
+    leafletMap=L.map('leafletMapMain').setView(MAP_CENTER,MAP_ZOOM);
+    setTimeout(()=>leafletMap.invalidateSize(),300);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+      maxZoom:19,attribution:'© OpenStreetMap · © CARTO'
+    }).addTo(leafletMap);
+
+    fetch(GEOJSON_URL)
+      .then(r=>r.json())
+      .then(data=>{
+        geoLayer=L.geoJson(data,{
+          style:styleGeoFeature,
+          onEachFeature:onEachGeoFeature
+        }).addTo(leafletMap);
+        leafletMap.setView(MAP_CENTER,MAP_ZOOM);
+        mapInitialized=true;
+      })
+      .catch(()=>{
+        // GeoJSON not available - show message
+        document.getElementById('mapContainer').innerHTML+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:300;pointer-events:none"><div style="background:rgba(28,28,30,.9);border:1px solid var(--border2);border-radius:16px;padding:20px 28px;text-align:center;color:var(--t2);font-size:14px">⚠ Coloca <b>zonas.geojson</b> en la misma carpeta que este archivo</div></div>';
+      });
+  },100);
+}
+
+function colorFor(t){
+  const isLight=document.body.classList.contains('light');
+  if(!t) return isLight?'#aeaeb2':'#636366';
+  const st=statusOf(t);
+  // Grupo territories always purple — shade varies by sub-state
+  if(isGrupo(t)){
+    if(st==='vencido') return isLight?'#6b0f9e':'#e879f9'; // bright/saturated = overdue
+    if(st==='proximo') return isLight?'#8b1fc0':'#c084fc'; // medium = warning
+    return isLight?'#7a00d0':'#bf5af2';                    // normal grupo purple
+  }
+  if(st==='vencido') return isLight?'#d00000':'#ff453a';
+  if(st==='proximo') return isLight?'#c96000':'#ff9f0a';
+  if(st==='asignado') return isLight?'#0055d4':'#0a84ff';
+  return isLight?'#1a8a3e':'#30d158';
+}
+
+function styleGeoFeature(feature){
+  const num=String(feature.properties.Name).trim();
+  const t=S.territorios.find(x=>x.num===num);
+  const col=colorFor(t);
+  return{
+    fillColor:col,
+    weight:0,
+    opacity:0,
+    color:'transparent',
+    fillOpacity:.65
+  };
+}
+
+function onEachGeoFeature(feature,layer){
+  const num=String(feature.properties.Name).trim();
+
+  layer.on({
+    mouseover:e=>{
+      if(selectedLayer!==e.target){
+        e.target.setStyle({weight:2.5,color:'rgba(255,255,255,.9)',fillOpacity:.82});
+        const t=S.territorios.find(x=>x.num===num);
+        layer.bindTooltip(`<b>${num}</b>${t?` · ${pubName(t.pub_id)}`:''}`,{className:'map-tooltip',sticky:true}).openTooltip();
+      }
+    },
+    mouseout:e=>{
+      if(selectedLayer!==e.target){geoLayer.resetStyle(e.target);}
+      layer.unbindTooltip();
+    },
+    click:()=>{
+      if(selectedLayer){geoLayer.resetStyle(selectedLayer);}
+      selectedLayer=layer;
+      layer.setStyle({weight:3,color:'#fff',fillOpacity:.8});
+      const t=S.territorios.find(x=>x.num===num);
+      openMapPanel(num,t);
+    }
+  });
+}
+
+function updateMapColors(){
+  if(!geoLayer) return;
+  geoLayer.eachLayer(layer=>{
+    const num=String(layer.feature.properties.Name).trim();
+    const t=S.territorios.find(x=>x.num===num);
+    if(layer!==selectedLayer) geoLayer.resetStyle(layer);
+    layer.setStyle({fillColor:colorFor(t)});
+  });
+}
+
+async function openMapPanel(num,t){
+  document.getElementById('mpNum').textContent=num;
+  document.getElementById('mpName').textContent=t?t.nombre:`Territorio ${num}`;
+  document.getElementById('mapPanel').classList.add('open');
+  setTimeout(()=>leafletMap.invalidateSize(),300);
+
+  // Status
+  let statusHtml='';
+  if(!t){
+    statusHtml=`<div class="status-large sl-green">⚠ Sin datos en la base de datos</div>`;
+  } else {
+    const st=statusOf(t);
+    const cls={disponible:'sl-green',asignado:'sl-blue',vencido:'sl-red',proximo:'sl-amber',grupo:'sl-blue'}[st]||'sl-green';
+    const ico={disponible:'✅',asignado:'📌',vencido:'⚠️',proximo:'⏳',grupo:'👥'}[st]||'✅';
+    const lbl={disponible:'Disponible',asignado:`Asignado a ${pubName(t.pub_id)}`,vencido:`Vencido — asignado a ${pubName(t.pub_id)}`,proximo:`Próx. vencer — ${pubName(t.pub_id)}`,grupo:`Territorio de grupo`}[st]||'Disponible';
+    statusHtml=`<div class="status-large ${cls}">${ico} ${lbl}</div>`;
+  }
+  document.getElementById('mpStatus').innerHTML=statusHtml;
+
+  // Fields
+  if(t){
+    const ds=daysSince(t.ultimo_trabajado);
+    document.getElementById('mpFields').innerHTML=`
+      <div class="mp-field"><span>Tipo</span><span>${t.tipo}</span></div>
+      <div class="mp-field"><span>Grupo</span><span>${grupoLabel(t)}</span></div>
+      <div class="mp-field"><span>Puertas</span><span>${t.num_dirs||'—'}</span></div>
+      <div class="mp-field"><span>Asignado</span><span>${fmtDate(t.fecha_asig)}</span></div>
+      <div class="mp-field"><span>Vence</span><span>${fmtDate(t.fecha_vence)}</span></div>
+      <div class="mp-field"><span>Último trabajo</span><span>${ds===9999?'Nunca':fmtDate(t.ultimo_trabajado)}</span></div>
+      ${t.notas?`<div class="mp-field"><span>Notas</span><span>${t.notas}</span></div>`:''}`;
+  } else {
+    document.getElementById('mpFields').innerHTML='<div style="color:var(--t3);font-size:13px">No encontrado en Supabase</div>';
+  }
+
+  // Image from Storage
+  const imgSection=document.getElementById('mpImgSection');
+  const img=document.getElementById('mpImg');
+  const imgUrl=sbUrl(`${num}/Territorio-${num.padStart(4,'0')}.jpg`);
+  img.onload=()=>{imgSection.style.display='';};
+  img.onerror=()=>{imgSection.style.display='none';};
+  img.src=imgUrl;
+
+  // Actions
+  const acts=document.getElementById('mpActions');
+  if(t){
+    acts.innerHTML=`<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openTerDetail(${t.id})">✏️ Gestionar territorio</button>`;
+  } else {
+    acts.innerHTML='';
+  }
+}
+
+function closeMapPanel(){
+  document.getElementById('mapPanel').classList.remove('open');
+  if(selectedLayer){geoLayer.resetStyle(selectedLayer);selectedLayer=null;}
+  setTimeout(()=>leafletMap&&leafletMap.invalidateSize(),300);
+}
+
+// ══ PRIORIDAD ══
+function renderPrioridad(){
+  // Get REAL last worked date from historial (more accurate than ultimo_trabajado field)
+  function realUltimo(t){
+    const hist=S.historial.filter(h=>h.territorio_id===t.id&&h.fecha_dev);
+    const fromHist=hist.length?hist.map(h=>h.fecha_dev).sort().slice(-1)[0]:null;
+    const candidates=[fromHist,t.ultimo_trabajado].filter(Boolean);
+    return candidates.length?candidates.sort().slice(-1)[0]:null;
+  }
+  const sortBy=document.getElementById('prioSort')?.value||'antiguo';
+  let list=S.territorios.filter(t=>t.estado==='disponible').map(t=>({...t,_ru:realUltimo(t)}));
+  if(sortBy==='antiguo'){
+    list.sort((a,b)=>{
+      if(!a._ru&&!b._ru) return a.num.localeCompare(b.num,undefined,{numeric:true});
+      if(!a._ru) return -1; if(!b._ru) return 1;
+      return a._ru.localeCompare(b._ru);
+    });
+  } else if(sortBy==='reciente'){
+    list.sort((a,b)=>{if(!a._ru) return 1;if(!b._ru) return -1;return b._ru.localeCompare(a._ru);});
+  } else {
+    list.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  }
+  const el=document.getElementById('prioList');
+  if(!list.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">No hay disponibles</div>`;return;}
+  el.innerHTML=list.map((t,i)=>{
+    const ds=t._ru?daysSince(t._ru):9999;
+    const col=ds===9999?'var(--red)':ds>365?'var(--red)':ds>180?'var(--amber)':ds>90?'var(--text)':'var(--t2)';
+    const lastDate=t._ru?`Último trabajo: ${fmtDate(t._ru)} · ${ds}d`:'Nunca trabajado';
+    return`<div class="prio-item" onclick="openTerDetail(${t.id})">
+      <div class="prio-rank">#${i+1}</div>
+      <div class="prio-info">
+        <div class="prio-name">${t.num} — ${t.nombre}</div>
+        <div class="prio-sub">${t.tipo} · ${grupoLabel(t)} · ${t.num_dirs||0} puertas</div>
+        <div class="prio-last" style="color:${col}">${lastDate}</div>
+      </div>
+      <button class="btn btn-success btn-xs" onclick="event.stopPropagation();openTerDetailTab(${t.id},'asignar')">Asignar</button>
+    </div>`;
+  }).join('');
+}
+
+// ══ ESTADISTICAS ══
+function setPeriod(el){document.querySelectorAll('[data-period]').forEach(c=>c.classList.remove('on'));el.classList.add('on');currentPeriod=el.dataset.period;renderStats();}
+function filterByPeriod(h){
+  const now=new Date();
+  return h.filter(x=>{
+    if(!x.fecha_dev) return false;const d=new Date(x.fecha_dev);
+    if(currentPeriod==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(currentPeriod==='6m') return(now-d)<=183*86400000;
+    if(currentPeriod==='year') return d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+function renderStats(){
+  const h=filterByPeriod(S.historial);const t=S.territorios;
+  const total=t.length,disp=t.filter(x=>x.estado==='disponible').length,asig=t.filter(x=>x.estado==='asignado').length,venc=t.filter(x=>x.estado==='vencido').length;
+  document.getElementById('statMain').innerHTML=`
+    <div class="stat-box"><div class="stat-ico" style="background:var(--green-dim)">✓</div><div><div class="stat-val" style="color:var(--green)">${h.length}</div><div class="stat-lbl">Completados</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">🗺</div><div><div class="stat-val">${total}</div><div class="stat-lbl">Total</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--purple-dim)">📌</div><div><div class="stat-val" style="color:var(--blue)">${asig}</div><div class="stat-lbl">En curso</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--red-dim)">🔴</div><div><div class="stat-val" style="color:var(--red)">${venc}</div><div class="stat-lbl">Vencidos</div></div></div>
+    <div class="stat-box"><div class="stat-ico" style="background:var(--amber-dim)">📊</div><div><div class="stat-val" style="color:var(--amber)">${disp}</div><div class="stat-lbl">Disponibles</div></div></div>`;
+  const maxG=Math.max(1,...S.grupos.map(g=>t.filter(x=>x.grupo_id===g.id).length));
+  document.getElementById('chartGrupos').innerHTML=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{const c=t.filter(x=>x.grupo_id===g.id).length;return barRow(`G${g.num}`,c,maxG);}).join('');
+  const pc=S.publicadores.map(p=>({name:p.nombre.split(' ')[0]+' '+(p.nombre.split(' ').slice(-1)[0]||''),cnt:S.historial.filter(x=>x.pub_id===p.id).length})).sort((a,b)=>b.cnt-a.cnt).slice(0,10);
+  const maxP=Math.max(1,...pc.map(x=>x.cnt));
+  document.getElementById('chartPubs').innerHTML=pc.map(x=>barRow(x.name,x.cnt,maxP)).join('');
+  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],yr=new Date().getFullYear();
+  const md=meses.map((m,i)=>({m,cnt:S.historial.filter(x=>{const d=new Date(x.fecha_dev||x.fecha_asig);return d.getFullYear()===yr&&d.getMonth()===i;}).length}));
+  const maxM=Math.max(1,...md.map(x=>x.cnt));
+  document.getElementById('chartMeses').innerHTML=md.map(x=>barRow(x.m,x.cnt,maxM)).join('');
+  const old=t.filter(x=>x.estado==='disponible').sort((a,b)=>daysSince(a.ultimo_trabajado)-daysSince(b.ultimo_trabajado)).slice(0,10);
+  const maxO=Math.max(1,...old.map(x=>daysSince(x.ultimo_trabajado)===9999?0:daysSince(x.ultimo_trabajado)));
+  document.getElementById('chartOld').innerHTML=old.map(x=>{const ds=daysSince(x.ultimo_trabajado);return barRow(x.num,ds===9999?0:ds,maxO,'d',ds===9999?'Nunca':null);}).join('');
+}
+function barRow(label,val,max,unit='',override=null){
+  const pct=Math.max(val===0?0:2,Math.round(val/max*100));const display=override||(val+unit);
+  return`<div class="cb-row"><div class="cb-label" title="${label}">${label}</div><div class="cb-track"><div class="cb-fill" style="width:${pct}%"></div></div><div class="cb-val">${display}</div></div>`;
+}
+
+// ══ PUBLICADORES ══
+let _showInactivos=false;
+function renderPublicadores(){
+  const el=document.getElementById('pubTable');
+  if(!S.publicadores.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin publicadores</div>`;return;}
+  const mob=window.innerWidth<=700;
+  const q=searchQ;
+  // Show active by default; show inactive when toggle is on
+  let pubs=[...S.publicadores].filter(p=>_showInactivos ? p.activo===false : p.activo!==false);
+  if(q) pubs=pubs.filter(p=>{
+    const g=S.grupos.find(x=>x.id===p.grupo_id);
+    return p.nombre.toLowerCase().includes(q)||(g?.nombre||'').toLowerCase().includes(q)||(`G${g?.num}`).toLowerCase().includes(q);
+  });
+  if(!pubs.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
+  el.innerHTML=pubs.map(p=>{
+    const g=S.grupos.find(x=>x.id===p.grupo_id);
+    const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')).length;
+    const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
+    const grpLabel=g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo';
+    if(mob){
+      return`<div class="tbl-row" style="grid-template-columns:1fr auto;min-height:52px;cursor:pointer" onclick="openPubDetail(${p.id})">
+        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;min-width:0;overflow:hidden">
+          <span style="font-weight:700;font-size:14px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</span>
+          <span style="font-size:12px;color:var(--t2)">${grpLabel}</span>
+        </span>
+        <span style="display:flex;align-items:center;gap:6px;padding:0 8px;flex-shrink:0">
+          ${act?`<span class="nav-badge a">${act}</span>`:''}
+          ${comp?`<span class="nav-badge">${comp}✓</span>`:''}
+        </span>
+      </div>`;
+    }
+    return`<div class="tbl-row" style="grid-template-columns:1fr 150px 60px 80px 60px;cursor:pointer" onclick="openPubDetail(${p.id})">
+      <span style="font-weight:600;color:var(--blue)">${p.nombre}</span>
+      <span style="color:var(--t2);font-size:12px">${grpLabel}</span>
+      <span><span class="nav-badge ${act?'a':''}">${act}</span></span>
+      <span><span class="nav-badge">${comp}</span></span>
+      <span>${p.activo===false
+        ? `<button class="btn btn-ghost btn-xs" title="Reactivar" onclick="event.stopPropagation();reactivarPub(${p.id})">↩</button>`
+        : `<button class="btn btn-danger btn-xs" title="Archivar" onclick="event.stopPropagation();archivarPub(${p.id})">📦</button>`
+      }</span>
+    </div>`;
+  }).join('');
+}
+
+function openPubDetail(id){
+  const p=S.publicadores.find(x=>x.id===id);
+  if(!p) return;
+  const g=S.grupos.find(x=>x.id===p.grupo_id);
+  const activos=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+  const hist=S.historial.filter(h=>h.pub_id===p.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
+  const base=location.href.replace(/[^/]*$/,'');
+  const enlacePub=`${base}territorio-visor.html?p=${p.id}`;
+  const grupoOpts=S.grupos.sort((a,b)=>a.num-b.num).map(gr=>`<option value="${gr.id}"${gr.id===p.grupo_id?' selected':''}>${gr.nombre||'Grupo '+gr.num}</option>`).join('');
+
+  document.getElementById('mPubDetTitle').textContent=p.nombre;
+  document.getElementById('mPubDetBody').innerHTML=`
+    <!-- EDIT FORM -->
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Editar datos</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Nombre</label><input class="fi" id="dpd-nombre" value="${p.nombre}"></div>
+        <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="dpd-tel" value="${p.tel||''}" type="tel"></div>
+      </div>
+      <div class="fg"><label class="fl">Grupo</label>
+        <select class="fs" id="dpd-grupo"><option value="">Sin grupo</option>${grupoOpts}</select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="guardarPubDesdeDetalle(${p.id})">💾 Guardar cambios</button>
+        ${p.activo===false
+          ? `<button class="btn btn-ghost btn-sm" onclick="reactivarPub(${p.id})">↩ Reactivar</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="archivarPub(${p.id})">📦 Archivar</button>`
+        }
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Grupo</div>
+        <div style="font-size:14px;font-weight:600">${g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo'}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Teléfono</div>
+        <div style="font-size:14px;font-weight:600">${p.tel||'—'}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Activos</div>
+        <div style="font-size:22px;font-weight:700;color:var(--blue)">${activos.length}</div>
+      </div>
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
+        <div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Completados</div>
+        <div style="font-size:22px;font-weight:700;color:var(--green)">${hist.filter(h=>h.fecha_dev).length}</div>
+      </div>
+    </div>
+
+    ${activos.length ? `
+    <!-- SHARE LINK -->
+    <div style="background:var(--blue-dim);border:1px solid rgba(10,132,255,.2);border-radius:var(--r2);padding:14px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px">🔗 Enlace del publicador</div>
+      <div style="font-size:12px;color:var(--t2);margin-bottom:10px">Un único enlace para todos sus territorios (${activos.length}). Se actualiza automáticamente.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <input id="pubShareInput_${p.id}" readonly value="${enlacePub}"
+          style="flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-family:var(--font-mono);font-size:11px;color:var(--t2);outline:none;cursor:text">
+        <button class="btn btn-primary btn-sm" onclick="navigator.clipboard.writeText('${enlacePub}').then(()=>toast('✓ Copiado','g'))">Copiar</button>
+        <a class="share-wa" style="padding:6px 12px;border-radius:8px" href="https://wa.me/?text=${encodeURIComponent(`${p.nombre}, este es el enlace a tu territorio.\n\n🔗 Enlace: ${enlacePub}\n\nGuarda este mensaje para acceder siempre que quieras.`)}" target="_blank">💬</a>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">TERRITORIOS ACTIVOS</div>
+    ${activos.map(t=>`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="closeModal('mPubDet');openTerDetail(${t.id})">
+      <div><div style="font-weight:600;font-size:13px">${t.num}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${fmtDate(t.fecha_asig)} → ${fmtDate(t.fecha_vence)}</div></div>
+      <span>${pillHtml(statusOf(t),isGrupo(t))}</span>
+    </div>`).join('')}` : '<div style="font-size:13px;color:var(--t3);margin-bottom:16px">Sin territorios activos.</div>'}
+
+    <!-- HISTORIAL -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">HISTORIAL (${hist.length})</div>
+    ${hist.length ? hist.slice(0,15).map(h=>{
+      const t=S.territorios.find(x=>x.id===h.territorio_id);
+      const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
+      return`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+        <div><div style="font-weight:500">${t?t.num:h.territorio_id}</div><div style="font-size:11px;color:var(--t2)">${fmtDate(h.fecha_asig)} → ${fmtDate(h.fecha_dev)}</div></div>
+        <span style="font-family:var(--font-mono);font-size:11px;color:var(--t3);align-self:center">${dias}d</span>
+      </div>`;
+    }).join('') : '<div style="color:var(--t3);font-size:13px">Sin historial</div>'}`;
+  openModal('mPubDet');
+}
+
+async function guardarPubDesdeDetalle(id){
+  const nombre=document.getElementById('dpd-nombre')?.value.trim();
+  const tel=document.getElementById('dpd-tel')?.value.trim();
+  const grupoId=parseInt(document.getElementById('dpd-grupo')?.value)||null;
+  if(!nombre){toast('El nombre es obligatorio','am');return;}
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPatch('publicadores',{id},{nombre,tel:tel||null,grupo_id:grupoId});
+    const p=S.publicadores.find(x=>x.id===id);
+    if(p){p.nombre=rows[0].nombre;p.tel=rows[0].tel;p.grupo_id=rows[0].grupo_id;}
+    setSyncStatus('ok');
+    toast('✓ Publicador actualizado','g');
+    closeModal('mPubDet');
+    renderView(currentView);
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+
+// ══ GRUPOS ══
+function renderGrupos(){
+  const el=document.getElementById('gruposGrid');
+  el.innerHTML=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{
+    const pubs=S.publicadores.filter(p=>p.grupo_id===g.id);
+    const ters=S.territorios.filter(t=>t.grupo_id===g.id);
+    const venc=ters.filter(t=>t.estado==='vencido').length;
+    const asig=ters.filter(t=>t.estado==='asignado').length;
+    const disp=ters.filter(t=>t.estado==='disponible').length;
+    const siervo=S.publicadores.find(p=>p.id===g.siervo_id);
+    // Publishers WITH active territory
+    const pubsConTer=pubs.filter(p=>S.territorios.some(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')));
+    return`<div class="grp-card" style="cursor:pointer;transition:border-color .15s" onclick="editarGrupo(${g.id})" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:19px;font-weight:700;letter-spacing:-.4px">Grupo ${g.num}</div>
+          <div style="font-size:13px;color:var(--t2);margin-top:2px">${g.nombre||''} ${siervo?'· <b>'+siervo.nombre+'</b>':''}</div>
+        </div>
+        <span class="nav-badge a" style="font-size:12px;padding:3px 9px">${pubs.length} hermanos</span>
+      </div>
+      <div class="grp-stats">
+        <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
+        <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
+        <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
+        <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} publicadores con territorio activo · Toca para ver detalles</div>
+    </div>`;
+  }).join('');
+}
+
+// ══ HISTORIAL ══
+function renderHistorial(){
+  const el=document.getElementById('histTable');
+  // Merge both local histSearch and global searchQ
+  const localQ=(document.getElementById('histSearch')?.value||'').toLowerCase();
+  const q=localQ||searchQ;
+  let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  if(q) ters=ters.filter(t=>
+    t.num.toLowerCase().includes(q)||
+    t.nombre.toLowerCase().includes(q)||
+    S.historial.some(h=>h.territorio_id===t.id&&pubName(h.pub_id).toLowerCase().includes(q))
+  );
+  const tersWithHist=ters.filter(t=>S.historial.some(h=>h.territorio_id===t.id));
+  if(!tersWithHist.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">${q?'Sin resultados':'Sin historial'}</div>`;return;}
+  el.innerHTML=tersWithHist.map(t=>{
+    const hist=S.historial.filter(h=>h.territorio_id===t.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
+    const last=hist[0];
+    const lastPub=last?pubName(last.pub_id):'—';
+    const lastDate=last?fmtDate(last.fecha_dev||last.fecha_asig):'—';
+    const cnt=hist.length;
+    // Single layout that works for both mobile and desktop
+    return`<div onclick="openHistDetail(${t.id})" style="
+        display:grid;grid-template-columns:44px 1fr auto;
+        align-items:center;padding:10px 12px;cursor:pointer;
+        border-bottom:1px solid var(--border);min-height:54px;
+        transition:background .1s;
+      " onmouseenter="this.style.background='var(--s2)'" onmouseleave="this.style.background=''">
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);font-weight:600">${t.num}</span>
+      <span style="display:flex;flex-direction:column;gap:2px;overflow:hidden">
+        <span style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastPub}</span>
+        <span style="font-size:12px;color:var(--t2)">${lastDate}</span>
+      </span>
+      <span style="flex-shrink:0;padding-left:10px"><span class="nav-badge">${cnt}</span></span>
+    </div>`;
+  }).join('');
+}
+
+function openHistDetail(terId){
+  const t=S.territorios.find(x=>x.id===terId);
+  const hist=S.historial.filter(h=>h.territorio_id===terId);
+  const panel=document.getElementById('histDetail');
+  panel.style.display='';
+  panel.classList.add('open');
+  document.getElementById('histDetailTitle').textContent=`${t?.num} — ${t?.nombre||''}`;
+  if(!hist.length){document.getElementById('histDetailList').innerHTML='<div style="color:var(--t3);font-size:13px">Sin asignaciones</div>';return;}
+  document.getElementById('histDetailList').innerHTML=hist.map(h=>{
+    const dias=h.fecha_dev?daysBetween(h.fecha_asig,h.fecha_dev):daysSince(h.fecha_asig);
+    return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">${pubName(h.pub_id)}</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div style="flex:1"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Entrega</div>
+          <input type="date" value="${h.fecha_asig||''}" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:var(--font);font-size:13px;color:var(--text);outline:none" onchange="editHistDate(${h.id},'fecha_asig',this.value,${terId})">
+        </div>
+        <div style="flex:1"><div style="font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Devolución</div>
+          <input type="date" value="${h.fecha_dev||''}" style="width:100%;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-family:var(--font);font-size:13px;color:var(--text);outline:none" onchange="editHistDate(${h.id},'fecha_dev',this.value,${terId})">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--t3)">${dias}d trabajado</span>
+        <button class="btn btn-danger btn-xs" onclick="eliminarHistEntry(${h.id},${terId})">🗑 Eliminar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function closeHistDetail(){
+  const panel=document.getElementById('histDetail');
+  panel.classList.remove('open');
+  panel.style.display='none';
+}
+
+async function editHistDate(histId, campo, valor, terId){
+  setSyncStatus('syncing');
+  try{
+    const body={};body[campo]=valor||null;
+    const rows=await sbPatch('historial',{id:histId},body);
+    const idx=S.historial.findIndex(x=>x.id===histId);
+    if(idx>=0) S.historial[idx]={...S.historial[idx],...rows[0]};
+    setSyncStatus('ok');toast('✓ Fecha actualizada','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function eliminarHistEntry(histId,terId){
+  if(!confirm('¿Eliminar esta asignación del historial?')) return;
+  setSyncStatus('syncing');
+  try{
+    await sbDelete('historial',{id:histId});
+    S.historial=S.historial.filter(x=>x.id!==histId);
+    setSyncStatus('ok');openHistDetail(terId);renderHistorial();toast('🗑 Eliminado');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+// ══ TERRITORY MODAL ══
+function openTerModal(){
+  editingTId=null;
+  document.getElementById('mTerTitle').textContent='Nuevo Territorio';
+  document.getElementById('btnElimTer').style.display='none';
+  document.getElementById('btnCancelarAsig').style.display='none';
+  ['t-num','t-nombre','t-desc','t-notas','t-dirs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('t-tipo').value='Casa';
+  document.getElementById('t-esGrupo').checked=false;
+  fillGrupoSel('t-grupo'); fillPubSel('asig-pub');
+  document.getElementById('asig-fecha').value=today();
+  document.getElementById('dev-fecha').value=today();
+  document.getElementById('venc-fechaEntrega').value=today();
+  showAsignarPanels('disponible');
+  document.getElementById('asigStatus').innerHTML='';
+  document.getElementById('terHistorial').innerHTML='<div style="color:var(--t3);font-size:13px;padding:8px">Sin historial previo</div>';
+  document.getElementById('fileList').innerHTML='';
+  switchTabByName('mTer','asignar');
+  openModal('mTer');
+}
+
+async function openTerDetail(id){
+  editingTId=id;
+  const t=S.territorios.find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('mTerTitle').textContent=`Territorio ${t.num}`;
+  document.getElementById('btnElimTer').style.display='';
+  document.getElementById('btnCancelarAsig').style.display=
+    (t.estado==='asignado'||t.estado==='vencido')?'':'none';
+  document.getElementById('t-num').value=t.num;
+  document.getElementById('t-nombre').value=t.nombre;
+  document.getElementById('t-desc').value=t.descripcion||'';
+  document.getElementById('t-tipo').value=t.tipo;
+  document.getElementById('t-dirs').value=t.num_dirs||'';
+  document.getElementById('t-notas').value=t.notas||'';
+  document.getElementById('t-esGrupo').checked=!!t.es_grupo;
+  fillGrupoSel('t-grupo',t.grupo_id);
+  fillPubSel('asig-pub',t.pub_id);
+  document.getElementById('asig-fecha').value=t.fecha_asig||today();
+  document.getElementById('dev-fecha').value=today();
+  document.getElementById('venc-fechaEntrega').value=today();
+  showAsignarPanels(statusOf(t));
+  renderAsigStatus(t);
+  renderTerHistorial(t);
+  switchTabByName('mTer','asignar');
+  openModal('mTer');
+  loadTerFiles(id);
+  loadTerImgPreview(t);
+}
+
+function showAsignarPanels(st){
+  document.getElementById('vencidoPanel').style.display=st==='vencido'?'':'none';
+  document.getElementById('disponiblePanel').style.display=(st==='disponible'||st==='grupo')?'':'none';
+  document.getElementById('asignadoPanel').style.display=(st==='asignado'||st==='proximo')?'':'none';
+}
+
+async function openTerDetailTab(id,tab){await openTerDetail(id);setTimeout(()=>switchTabByName('mTer',tab),50);}
+
+async function loadTerImgPreview(t){
+  const wrap=document.getElementById('terImgPreview');
+  const img=document.getElementById('terImgThumb');
+  if(!wrap||!img) return;
+  wrap.style.display='none';
+  // Try Storage direct path first (convention: {num}/Territorio-{num4}.jpg)
+  const directUrl=`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${t.num.padStart(4,'0')}.jpg`;
+  // Also check archivos table for an image
+  try{
+    const archs=await sbGet('archivos',{select:'*',territorio_id:`eq.${t.id}`});
+    const imgArch=archs.find(f=>f.tipo_mime?.startsWith('image/')||f.nombre?.match(/\.(jpg|jpeg|png|webp)$/i));
+    if(imgArch){
+      img.src=sbUrl(imgArch.storage_path);
+      wrap.style.display='';
+      return;
+    }
+  }catch(e){}
+  // Fall back to direct Storage path
+  img.onload=()=>{wrap.style.display='';};
+  img.onerror=()=>{wrap.style.display='none';};
+  img.src=directUrl;
+}
+
+function renderAsigStatus(t){
+  const st=statusOf(t);
+  const cls={disponible:'sl-green',asignado:'sl-blue',vencido:'sl-red',proximo:'sl-amber',grupo:'sl-blue'}[st]||'sl-green';
+  const ico={disponible:'✅',asignado:'📌',vencido:'⚠️',proximo:'⏳',grupo:'👥'}[st];
+  let msg='';
+  if(st==='disponible') msg='Disponible para asignar';
+  else if(st==='grupo') msg='Territorio de grupo — disponible';
+  else if(st==='asignado') msg=`Asignado a ${pubName(t.pub_id)} — ${fmtDate(t.fecha_asig)} · Vence ${fmtDate(t.fecha_vence)}`;
+  else if(st==='proximo') msg=`⚠ Próximo a vencer — ${pubName(t.pub_id)} · Vence en ${daysUntil(t.fecha_vence)} días (${fmtDate(t.fecha_vence)})`;
+  else if(st==='vencido'){
+    const d=daysUntil(t.fecha_vence);
+    msg=`Venció hace ${d?-d:'?'} días — ${pubName(t.pub_id)} · Asignado el ${fmtDate(t.fecha_asig)}`;
+  }
+  document.getElementById('asigStatus').innerHTML=`<div class="status-large ${cls}">${ico} ${msg}</div>`;
+}
+
+function renderTerHistorial(t){
+  const h=S.historial.filter(x=>x.territorio_id===t.id);
+  const el=document.getElementById('terHistorial');
+  if(!h.length){el.innerHTML='<div style="color:var(--t3);font-size:13px;padding:8px">Sin historial de asignaciones</div>';return;}
+  el.innerHTML=`<div style="display:flex;flex-direction:column">` + h.map(x=>{
+    const dias=x.fecha_dev?daysBetween(x.fecha_asig,x.fecha_dev):daysSince(x.fecha_asig);
+    return`<div class="tl-item"><div class="tl-dot" style="background:var(--green-dim);color:var(--green)">✓</div><div class="tl-body"><div class="tl-title">${pubName(x.pub_id)}</div><div class="tl-meta">${fmtDate(x.fecha_asig)} → ${fmtDate(x.fecha_dev)} · ${dias} días</div></div></div>`;
+  }).join('') + '</div>';
+}
+
+async function loadTerFiles(terId){
+  try{
+    const archivos=await sbGet('archivos',{select:'*',territorio_id:`eq.${terId}`});
+    renderFileList(archivos);
+  }catch(e){console.error('Files error:',e);}
+}
+
+async function guardarTer(){
+  const num=document.getElementById('t-num').value.trim();
+  const nombre=document.getElementById('t-nombre').value.trim();
+  if(!num||!nombre){toast('⚠ Número y nombre requeridos','am');return;}
+  const grupoId=document.getElementById('t-grupo').value?parseInt(document.getElementById('t-grupo').value):null;
+  const data={num,nombre,descripcion:document.getElementById('t-desc').value.trim(),tipo:document.getElementById('t-tipo').value,grupo_id:grupoId,num_dirs:parseInt(document.getElementById('t-dirs').value)||0,notas:document.getElementById('t-notas').value.trim(),es_grupo:document.getElementById('t-esGrupo').checked};
+  setSyncStatus('syncing');
+  try{
+    if(editingTId){
+      const rows=await sbPatch('territorios',{id:editingTId},data);
+      const idx=S.territorios.findIndex(x=>x.id===editingTId);
+      if(idx>=0) S.territorios[idx]={...S.territorios[idx],...rows[0]};
+      toast('✓ Guardado','g');
+    } else {
+      data.estado='disponible';
+      const rows=await sbPost('territorios',data);
+      S.territorios.push(rows[0]);
+      toast('✓ Territorio creado','g');
+    }
+    setSyncStatus('ok');closeModal('mTer');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function eliminarTer(){
+  const t=S.territorios.find(x=>x.id===editingTId);
+  if(!t) return;
+  // Extra warning if has assignment
+  const msg = t.pub_id
+    ? `⚠️ ATENCIÓN: Esto eliminará el territorio ${t.num} PERMANENTEMENTE incluyendo todo su historial. Para cancelar solo la asignación usa "↩ Cancelar asignación".\n\n¿Seguro que quieres ELIMINAR el territorio completo?`
+    : `¿Eliminar permanentemente el territorio ${t.num}? Esto no se puede deshacer.`;
+  if(!confirm(msg)) return;
+  setSyncStatus('syncing');
+  try{
+    await sbDelete('territorios',{id:editingTId});
+    S.territorios=S.territorios.filter(x=>x.id!==editingTId);
+    S.historial=S.historial.filter(x=>x.territorio_id!==editingTId);
+    setSyncStatus('ok');closeModal('mTer');reloadAndRender();
+    toast('🗑 Territorio eliminado');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function cancelarAsignacion(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  if(!confirm(`¿Cancelar la asignación de ${t.num} a ${pubName(t.pub_id)}? El territorio quedará disponible sin añadir entrada al historial.`)) return;
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,es_grupo:false});
+    Object.assign(t,rows[0]);
+    setSyncStatus('ok');
+    document.getElementById('btnCancelarAsig').style.display='none';
+    showAsignarPanels('disponible');renderAsigStatus(t);reloadAndRender();
+    toast('↩ Asignación cancelada','am');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+// ══ ASIGNACIÓN ══
+async function confirmarAsig(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  const pubId=parseInt(document.getElementById('asig-pub').value);
+  const fecha=document.getElementById('asig-fecha').value;
+  if(!pubId){toast('⚠ Selecciona un publicador','am');return;}
+  if(!fecha){toast('⚠ Indica la fecha de entrega','am');return;}
+  const fechaVence=addDays(fecha,EXPIRY_DAYS);
+  // Auto es_grupo: true if assigned publisher name starts with "Grupo" followed by a number
+  const pub=S.publicadores.find(p=>p.id===pubId);
+  const esGrupoAuto=pub?/^grupo\s*\d/i.test(pub.nombre.trim()):false;
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'asignado',pub_id:pubId,fecha_asig:fecha,fecha_vence:fechaVence,ultimo_trabajado:fecha,es_grupo:esGrupoAuto});
+    Object.assign(t,rows[0]);
+    setSyncStatus('ok');
+    closeModal('mTer');
+    reloadAndRender();
+    toast(`📌 Asignado a ${pubName(pubId)}`,'a');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function renovar(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  const base=t.fecha_vence&&daysUntil(t.fecha_vence)>-60?t.fecha_vence:today();
+  const nuevaVence=addDays(base,EXPIRY_DAYS);
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'asignado',fecha_vence:nuevaVence});
+    Object.assign(t,rows[0]);
+    setSyncStatus('ok');renderAsigStatus(t);reloadAndRender();
+    toast(`🔄 Renovado hasta ${fmtDate(nuevaVence)}`,'g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function devolverDesdeModal(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  const fecha=document.getElementById('dev-fecha').value||today();
+  if(!confirm(`¿Marcar ${t.num} como devuelto el ${fmtDate(fecha)}?`)) return;
+  await ejecutarDevolucion(t,fecha);
+  closeModal('mTer');
+}
+
+async function registrarDevolucionVencido(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  const fecha=document.getElementById('venc-fechaEntrega').value||today();
+  if(!confirm(`¿Registrar entrega de ${t.num} el ${fmtDate(fecha)}?`)) return;
+  await ejecutarDevolucion(t,fecha);
+  closeModal('mTer');
+}
+
+async function ejecutarDevolucion(t,fecha){
+  setSyncStatus('syncing');
+  try{
+    const hRow=await sbPost('historial',{territorio_id:t.id,pub_id:t.pub_id,fecha_asig:t.fecha_asig,fecha_dev:fecha});
+    S.historial.unshift(hRow[0]);
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha,es_grupo:false});
+    Object.assign(t,rows[0]);
+    setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);reloadAndRender();
+    toast('✅ Devuelto y disponible','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+// ══ SHARE ══
+function generarEnlace(){
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t||!t.pub_id) return;
+  const pub=S.publicadores.find(p=>p.id===t.pub_id);if(!pub) return;
+  const base=location.href.replace(/[^/]*$/,'');
+  const url=`${base}territorio-visor.html?p=${t.pub_id}`;
+  // Count active territories for this publisher
+  const activos=S.territorios.filter(x=>x.pub_id===t.pub_id&&(x.estado==='asignado'||x.estado==='vencido'));
+  document.getElementById('shareLinkInput').value=url;
+  // enlace generado — ya no hay shareBox en el modal del territorio
+  // El enlace se gestiona desde el perfil del publicador
+  const nombre=pub.nombre.split(' ')[0];
+  const listaTers=activos.map(x=>x.num).join(', ');
+  const msg=activos.length>1
+    ?`Hola ${nombre} 👋\n\nAquí tienes tus territorios (*${listaTers}*).\nPuedes verlos todos y cambiar entre ellos desde este enlace:\n${url}`
+    :`Hola ${nombre} 👋\n\nAquí tienes tu territorio *${t.num}*.\nMapa y días restantes:\n${url}`;
+  document.getElementById('shareWhatsapp').href=`https://wa.me/?text=${encodeURIComponent(msg)}`;
+  // Show info about how many territories
+  const infoEl=document.getElementById('shareInfo');
+  if(infoEl) infoEl.textContent=activos.length>1
+    ?`Este enlace incluye ${activos.length} territorios: ${listaTers}`
+    :`Enlace para el territorio ${t.num}`;
+}
+function copiarEnlace(){
+  const input=document.getElementById('shareLinkInput');
+  navigator.clipboard.writeText(input.value).then(()=>toast('✓ Enlace copiado','g')).catch(()=>{input.select();document.execCommand('copy');toast('✓ Copiado','g');});
+}
+
+// ══ FILES ══
+function dragOver(e){e.preventDefault();document.getElementById('dropzone').classList.add('drag');}
+function dragLeave(){document.getElementById('dropzone').classList.remove('drag');}
+function dropFile(e){e.preventDefault();dragLeave();handleFiles(e.dataTransfer.files);}
+async function handleFiles(files){
+  if(!editingTId){toast('Guarda el territorio primero','am');return;}
+  const t=S.territorios.find(x=>x.id===editingTId);if(!t) return;
+  for(const file of Array.from(files)){
+    if(file.size>10*1024*1024){toast(`${file.name}: demasiado grande`,'r');continue;}
+    const storagePath=`${t.num}/${file.name}`;
+    setSyncStatus('syncing');
+    try{
+      await sbStorageUpload(storagePath,file);
+      await sbPost('archivos',{territorio_id:t.id,nombre:file.name,tipo_mime:file.type,storage_path:storagePath});
+      setSyncStatus('ok');toast(`📎 ${file.name}`,'g');loadTerFiles(editingTId);
+    }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+  }
+}
+function renderFileList(archivos){
+  document.getElementById('fileList').innerHTML=(archivos||[]).map(f=>`
+    <div class="file-item">
+      <span style="font-size:16px">${f.tipo_mime?.includes('pdf')?'📄':'🖼'}</span>
+      <span class="fn">${f.nombre}</span>
+      <span style="color:var(--t3);font-size:11px;flex-shrink:0">${fmtDate(f.fecha_subida)}</span>
+      <button class="btn btn-ghost btn-xs" onclick="viewFile('${f.storage_path}','${f.nombre}','${f.tipo_mime||''}')">Ver</button>
+      <button class="btn btn-ghost btn-xs" onclick="dlFile('${sbUrl(f.storage_path)}','${f.nombre}')">⬇</button>
+      <button class="btn btn-danger btn-xs" onclick="delFile(${f.id},'${f.storage_path}')">✕</button>
+    </div>`).join('');
+}
+function viewFile(path,nombre,mime){
+  document.getElementById('viewerTitle').textContent=nombre;
+  const url=sbUrl(path);const body=document.getElementById('viewerBody');
+  if(mime?.includes('pdf')) body.innerHTML=`<embed src="${url}" type="application/pdf" width="100%" height="520px" style="border-radius:10px">`;
+  else body.innerHTML=`<img src="${url}" style="max-width:100%;max-height:520px;border-radius:10px;object-fit:contain">`;
+  openModal('mViewer');
+}
+function dlFile(url,nombre){const a=document.createElement('a');a.href=url;a.download=nombre;a.target='_blank';a.click();}
+async function delFile(id,sp){
+  if(!confirm('¿Eliminar?')) return;
+  try{await sbStorageDelete(sp);await sbDelete('archivos',{id});loadTerFiles(editingTId);toast('🗑 Eliminado');}
+  catch(e){toast('Error: '+e.message,'r');}
+}
+
+// ══ PUBLICADORES CRUD ══
+async function guardarPub(){
+  const nombre=document.getElementById('p-nombre').value.trim();
+  if(!nombre){toast('⚠ Ingresa un nombre','am');return;}
+  const grupoId=document.getElementById('p-grupo').value?parseInt(document.getElementById('p-grupo').value):null;
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPost('publicadores',{nombre,tel:document.getElementById('p-tel').value.trim(),grupo_id:grupoId});
+    S.publicadores.push(rows[0]);S.publicadores.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    setSyncStatus('ok');closeModal('mPub');fillAllSels();reloadAndRender();
+    toast('👤 Añadido','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+async function archivarPub(id){
+  const p=S.publicadores.find(x=>x.id===id);
+  if(!p) return;
+  if(S.territorios.some(t=>t.pub_id===id)){
+    toast('⚠ Tiene territorios asignados — devuélvelos primero','am'); return;
+  }
+  if(!confirm('¿Archivar a '+p.nombre+'? Su historial se conserva. Podrás reactivarlo cuando quieras.')) return;
+  setSyncStatus('syncing');
+  try{
+    await sbPatch('publicadores',{id},{activo:false});
+    const idx=S.publicadores.findIndex(x=>x.id===id);
+    if(idx>=0) S.publicadores[idx].activo=false;
+    setSyncStatus('ok'); renderPublicadores(); fillAllSels();
+    toast('📦 '+p.nombre+' archivado — historial conservado','a');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function reactivarPub(id){
+  const p=S.publicadores.find(x=>x.id===id);
+  if(!p) return;
+  setSyncStatus('syncing');
+  try{
+    await sbPatch('publicadores',{id},{activo:true});
+    const idx=S.publicadores.findIndex(x=>x.id===id);
+    if(idx>=0) S.publicadores[idx].activo=true;
+    setSyncStatus('ok'); renderPublicadores(); fillAllSels();
+    toast('✅ '+p.nombre+' reactivado','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+// ══ GRUPOS CRUD ══
+function abrirNuevoGrupo(){
+  editingGId=null;document.getElementById('mGrupoTitle').textContent='Nuevo grupo';
+  document.getElementById('btnElimGrupo').style.display='none';
+  document.getElementById('g-num').value='';document.getElementById('g-nombre').value='';
+  document.getElementById('tabGTers').style.display='none';
+  document.getElementById('tabGStats').style.display='none';
+  fillSiervoSel('g-siervo',null,null);switchTabByName('mGrupo','gedit');openModal('mGrupo');
+}
+
+function editarGrupo(id){
+  editingGId=id;const g=S.grupos.find(x=>x.id===id);
+  document.getElementById('mGrupoTitle').textContent=`Grupo ${g.num} — ${g.nombre||''}`;
+  document.getElementById('btnElimGrupo').style.display='';
+  document.getElementById('g-num').value=g.num;document.getElementById('g-nombre').value=g.nombre||'';
+  document.getElementById('tabGTers').style.display='';
+  document.getElementById('tabGStats').style.display='';
+  fillSiervoSel('g-siervo',g.id,g.siervo_id);
+  renderGrupoTers(id); renderGrupoStats(id);
+  switchTabByName('mGrupo','gstats'); // open on stats tab
+  openModal('mGrupo');
+}
+
+let _grupoFiltro='todos';
+function setGrupoFilter(el){
+  document.querySelectorAll('[data-gf]').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on'); _grupoFiltro=el.dataset.gf;
+  if(editingGId) renderGrupoTers(editingGId);
+}
+
+function renderGrupoTers(gId){
+  let ters=S.territorios.filter(t=>t.grupo_id===gId);
+  if(_grupoFiltro!=='todos') ters=ters.filter(t=>t.estado===_grupoFiltro||(statusOf(t)===_grupoFiltro));
+  ters.sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  const el=document.getElementById('grupoTerList');
+  if(!ters.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">Sin territorios con este filtro</div>`;return;}
+  el.innerHTML=ters.map(t=>{
+    const st=statusOf(t);
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="closeModal('mGrupo');openTerDetail(${t.id})">
+      <div>
+        <div style="font-size:13px;font-weight:600">${t.num} — ${t.nombre}</div>
+        <div style="font-size:11px;color:var(--t2);margin-top:2px">${pubName(t.pub_id)} · ${t.num_dirs||0} puertas ${t.fecha_vence?'· Vence '+fmtDate(t.fecha_vence):''}</div>
+      </div>
+      ${pillHtml(st,isGrupo(t))}
+    </div>`;
+  }).join('');
+}
+
+function renderGrupoStats(gId){
+  const gIdN=Number(gId);
+  const g=S.grupos.find(x=>Number(x.id)===gIdN);
+  const ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
+  const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gIdN);
+  const terIds=new Set(ters.map(t=>t.id));
+  const hist=S.historial.filter(h=>terIds.has(h.territorio_id));
+
+  const disp=ters.filter(t=>t.estado==='disponible').length;
+  const asig=ters.filter(t=>t.estado==='asignado').length;
+  const venc=ters.filter(t=>t.estado==='vencido').length;
+  const prox=ters.filter(t=>statusOf(t)==='proximo').length;
+  const comp=hist.filter(h=>h.fecha_dev).length;
+
+  // Per-publisher analysis — show ALL active territories, not just the first
+  const pubAnalysis = pubs.map(p=>{
+    const tersActivos = S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+    const histPub = S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev);
+    const lastDate = histPub.length ? histPub.slice().sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev))[0].fecha_dev : null;
+    const daysSinceWork = lastDate ? daysSince(lastDate) : 9999;
+    return { p, tersActivos, histPub, lastDate, daysSinceWork };
+  }).sort((a,b)=>{
+    if(!!a.tersActivos.length !== !!b.tersActivos.length) return a.tersActivos.length ? -1 : 1;
+    return a.daysSinceWork - b.daysSinceWork;
+  });
+
+  const conTer = pubAnalysis.filter(x=>x.tersActivos.length);
+  const sinTer = pubAnalysis.filter(x=>!x.tersActivos.length);
+
+  // Chart: completados por publicador del grupo
+  const pubStats = pubs.map(p=>({
+    nombre: p.nombre, cnt: hist.filter(h=>h.pub_id===p.id&&h.fecha_dev).length
+  })).sort((a,b)=>b.cnt-a.cnt);
+  const maxCnt = Math.max(1,...pubStats.map(x=>x.cnt));
+
+  document.getElementById('grupoStats').innerHTML=`
+    <!-- KPI Grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px">
+      <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--amber)">${prox}</div><div class="grp-stat-lbl">Próx. vencer</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${comp}</div><div class="grp-stat-lbl">Completados</div></div>
+    </div>
+
+    <!-- Publishers WITH territory — show every territory -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">
+      Con territorio activo (${conTer.length} pub. · ${conTer.reduce((s,x)=>s+x.tersActivos.length,0)} territorios)
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+    ${conTer.length ? conTer.map(({p,tersActivos})=>{
+      const isSiervo=p.id===g?.siervo_id;
+      const terRows=tersActivos.map(ter=>{
+        const st=statusOf(ter);
+        const dv=ter.fecha_vence?daysUntil(ter.fecha_vence):null;
+        const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
+        const dvTxt=dv===null?'Sin venc.':dv<0?('Venc. hace '+(-dv)+'d'):dv===0?'Vence hoy':(dv+'d');
+        const pill=pillHtml(st,isGrupo(ter));
+        return '<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .1s" onclick="closeModal(\'mGrupo\');openTerDetail('+ter.id+')" onmouseenter="this.style.background=\'var(--s3)\'" onmouseleave="this.style.background=\'\'">'
+          +'<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--blue);min-width:36px">'+ter.num+'</span>'
+          +'<span style="font-size:12px;color:var(--t2);flex:1">'+fmtDate(ter.fecha_asig)+'</span>'
+          +pill
+          +'<span style="font-size:11px;color:'+dvCol+';min-width:52px;text-align:right">'+dvTxt+'</span>'
+          +'</div>';
+      }).join('');
+      const border=tersActivos.length>1?'border-bottom:1px solid var(--border)':'';
+      return `<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+        <div style="padding:9px 12px;display:flex;align-items:center;gap:8px;${border}">
+          <div style="font-size:13px;font-weight:700;flex:1;display:flex;align-items:center;gap:5px">
+            ${isSiervo?'<span style="color:var(--amber)">★</span>':''}${p.nombre}
+          </div>
+          <span class="nav-badge a">${tersActivos.length} terr.</span>
+        </div>
+        ${terRows}
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Ningún publicador con territorio activo</div>'}
+    </div>
+
+    <!-- Publishers WITHOUT territory -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">
+      Sin territorio (${sinTer.length})
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
+    ${sinTer.length ? sinTer.map(({p,lastDate,daysSinceWork,histPub})=>{
+      const isSiervo=p.id===g?.siervo_id;
+      const dCol=daysSinceWork>365?'var(--red)':daysSinceWork>180?'var(--amber)':'var(--t2)';
+      const dTxt=daysSinceWork===9999?'Nunca ha trabajado':daysSinceWork>365?`Hace más de un año (${fmtDate(lastDate)})`:daysSinceWork>0?`Hace ${daysSinceWork} días (${fmtDate(lastDate)})`:'Hoy';
+      return`<div style="display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:5px">
+            ${isSiervo?'<span style="color:var(--amber)">★</span>':''}${p.nombre}
+          </div>
+          <div style="font-size:11px;color:${dCol};margin-top:2px">${dTxt}</div>
+        </div>
+        <div style="flex-shrink:0">
+          <span class="nav-badge">${histPub.length} complet.</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Todos tienen territorio asignado</div>'}
+    </div>
+
+    <!-- Activity chart -->
+    <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Actividad total por publicador</div>
+    <div class="chart-wrap">${pubStats.map(x=>barRow(x.nombre.split(' ')[0]+' '+x.nombre.split(' ').slice(-1)[0],x.cnt,maxCnt)).join('')}</div>
+    <div style="margin-top:14px;display:flex;gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="exportarGrupo(${gId})">⬇ Exportar grupo a Excel</button>
+    </div>`;
+}
+async function guardarGrupo(){
+  const num=parseInt(document.getElementById('g-num').value);
+  if(!num){toast('⚠ Ingresa número','am');return;}
+  const nombre=document.getElementById('g-nombre').value||`Grupo ${num}`;
+  const siervoId=document.getElementById('g-siervo').value?parseInt(document.getElementById('g-siervo').value):null;
+  setSyncStatus('syncing');
+  try{
+    if(editingGId){
+      const rows=await sbPatch('grupos',{id:editingGId},{num,nombre,siervo_id:siervoId});
+      const idx=S.grupos.findIndex(x=>x.id===editingGId);if(idx>=0) S.grupos[idx]=rows[0];
+    } else {
+      const rows=await sbPost('grupos',{num,nombre,siervo_id:siervoId});S.grupos.push(rows[0]);
+    }
+    editingGId=null;setSyncStatus('ok');closeModal('mGrupo');fillAllSels();reloadAndRender();
+    toast('✓ Grupo guardado','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+async function eliminarGrupo(){
+  if(!confirm('¿Eliminar grupo?')) return;
+  setSyncStatus('syncing');
+  try{
+    await sbDelete('grupos',{id:editingGId});
+    S.grupos=S.grupos.filter(x=>x.id!==editingGId);
+    S.publicadores.forEach(p=>{if(p.grupo_id===editingGId)p.grupo_id=null;});
+    S.territorios.forEach(t=>{if(t.grupo_id===editingGId)t.grupo_id=null;});
+    editingGId=null;setSyncStatus('ok');closeModal('mGrupo');fillAllSels();reloadAndRender();
+    toast('🗑 Eliminado');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+// ══ S-13 ══
+// ══ S-13 EXPORT — formato oficial exacto ══
+async function exportarS13(){
+  showLoader('Generando S-13…');
+  try{
+    await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+    const XLSX = window.XLSX;
+
+    const year     = parseInt(document.getElementById('s13Year').value);
+    const perSheet = parseInt(document.getElementById('s13PerSheet').value);
+    const tipo     = document.getElementById('s13Tipo').value;
+    const fromNum  = document.getElementById('s13From').value.trim();
+    const toNum    = document.getElementById('s13To').value.trim();
+
+    let ters = [...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+    if(tipo)    ters = ters.filter(t=>t.tipo===tipo);
+    if(fromNum) ters = ters.filter(t=>t.num.localeCompare(fromNum,undefined,{numeric:true})>=0);
+    if(toNum)   ters = ters.filter(t=>t.num.localeCompare(toNum,undefined,{numeric:true})<=0);
+
+    const wb = XLSX.utils.book_new();
+
+    for(let i=0; i<ters.length; i+=perSheet){
+      const chunk = ters.slice(i, i+perSheet);
+      const ws    = buildS13Sheet(XLSX, chunk, year);
+      const sheetName = chunk[0].num.replace(/[:\\/?*\[\]]/g,'').slice(0,31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    }
+
+    XLSX.writeFile(wb, `S-13_${year}.xlsx`);
+    hideLoader();
+    toast('✓ S-13 descargado','g');
+  }catch(e){ hideLoader(); toast('Error: '+e.message,'r'); console.error(e); }
+}
+
+function buildS13Sheet(XLSX, territories, year){
+  // SheetJS cell builder
+  const C = (v, t='s', style={}) => ({v, t, s: style});
+
+  // Styles
+  const STH = { // Section header (title row)
+    font:{bold:true, name:'Arial', sz:13},
+    alignment:{horizontal:'center', vertical:'center'},
+  };
+  const SYEAR = {
+    font:{bold:true, name:'Arial', sz:10, underline:true},
+    alignment:{horizontal:'left', vertical:'center'},
+  };
+  const SYEAR_LBL = {
+    font:{bold:true, name:'Arial', sz:10},
+    alignment:{horizontal:'left', vertical:'center'},
+  };
+  const SHD = { // Column header
+    font:{bold:true, name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center', wrapText:true},
+    fill:{fgColor:{rgb:'F2F2F2'}, patternType:'solid'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SHDL = { // Sub header (dates)
+    font:{bold:false, name:'Arial', sz:8},
+    alignment:{horizontal:'center', vertical:'center', wrapText:true},
+    fill:{fgColor:{rgb:'F2F2F2'}, patternType:'solid'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SNUM = { // Terr number cell
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SULT = { // Ultimo trabajado
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SPUB = { // Publicador name
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'thin'}, bottom:{style:'hair'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SDATE = { // Date cell
+    font:{name:'Arial', sz:9},
+    alignment:{horizontal:'center', vertical:'center'},
+    border:{
+      top:{style:'hair'}, bottom:{style:'thin'},
+      left:{style:'thin'}, right:{style:'thin'}
+    }
+  };
+  const SFOOTER = {
+    font:{italic:true, name:'Arial', sz:8},
+    alignment:{horizontal:'left', vertical:'center', wrapText:true},
+  };
+  const SFOOTER2 = {
+    font:{name:'Arial', sz:8},
+    alignment:{horizontal:'left', vertical:'center'},
+  };
+
+  // Build raw 2D array and then set cells manually for merging
+  const ws = {};
+  const merges = [];
+  let R = 0; // 0-indexed row
+
+  // Helper to set a cell
+  const set = (row, col, val, style) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = {v: val, t: typeof val==='number'?'n':'s', s: style};
+  };
+  const setNum = (row, col, val, style) => {
+    const addr = XLSX.utils.encode_cell({r:row, c:col});
+    ws[addr] = {v: val, t:'n', s: style};
+  };
+  const merge = (rs,cs,re,ce) => merges.push({s:{r:rs,c:cs},e:{r:re,c:ce}});
+
+  // ── ROW 0: Title ──
+  set(R, 0, 'REGISTRO DE ASIGNACIÓN DE TERRITORIO', STH);
+  merge(R,0, R,9); // A1:J1
+  R++;
+
+  // ── ROW 1: Year ──
+  set(R, 0, 'Año de servicio', SYEAR_LBL);
+  merge(R,0, R,2);
+  setNum(R, 3, year, SYEAR);
+  R++;
+
+  // ── ROW 2: blank ──
+  R++;
+
+  // ── ROWS 3-4: Headers ──
+  // Row 3 (index 3): Terr | Última fecha | Asignado a x4
+  set(R, 0, 'Terr.\nn.º', SHD);   merge(R,0, R+1,0);
+  set(R, 1, 'Última fecha\nen que se\ncompletó*', SHD); merge(R,1, R+1,1);
+  set(R, 2, 'Asignado a', SHD);  merge(R,2, R,3);
+  set(R, 4, 'Asignado a', SHD);  merge(R,4, R,5);
+  set(R, 6, 'Asignado a', SHD);  merge(R,6, R,7);
+  set(R, 8, 'Asignado a', SHD);  merge(R,8, R,9);
+  // Fill merged cells with empty so border renders
+  for(const c of [3,5,7,9]) set(R, c, '', SHD);
+  R++;
+
+  // Row 4 (index 4): sub-headers dates
+  set(R, 0, '', SHD);  // merged from above
+  set(R, 1, '', SHD);  // merged from above
+  set(R, 2, 'Fecha de\nentrega', SHDL);
+  set(R, 3, 'Fecha de\ndevolución', SHDL);
+  set(R, 4, 'Fecha de\nentrega', SHDL);
+  set(R, 5, 'Fecha de\ndevolución', SHDL);
+  set(R, 6, 'Fecha de\nentrega', SHDL);
+  set(R, 7, 'Fecha de\ndevolución', SHDL);
+  set(R, 8, 'Fecha de\nentrega', SHDL);
+  set(R, 9, 'Fecha de\ndevolución', SHDL);
+  R++;
+
+  // ── DATA ROWS ──
+  for(const t of territories){
+    const allHist = S.historial
+      .filter(h=>h.territorio_id===t.id)
+      .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+
+    // S-13: only last closed assignment + current active one (if any)
+    const closed = allHist.filter(h=>h.fecha_dev);
+    const open   = allHist.filter(h=>!h.fecha_dev);
+    const lastClosed = closed.slice(-1); // ONLY the most recent closure
+    const hist = [...lastClosed, ...open.slice(0,1)]; // + current if active
+
+    // Pad to 4
+    while(hist.length<4) hist.push({pub_id:null, fecha_asig:'', fecha_dev:''});
+
+    const rA = R, rB = R+1;
+
+    // Num — spans 2 rows
+    set(rA, 0, t.num, SNUM); merge(rA,0, rB,0);
+    // Ultimo — spans 2 rows
+    set(rA, 1, t.ultimo_trabajado ? fmtDate(t.ultimo_trabajado) : '', SULT); merge(rA,1, rB,1);
+    // Empty bottom of merged cells
+    set(rB, 0, '', SNUM);
+    set(rB, 1, '', SULT);
+
+    // 4 assignee groups
+    const pubCols = [[2,3],[4,5],[6,7],[8,9]];
+    for(let idx=0; idx<4; idx++){
+      const [cs, ce] = pubCols[idx];
+      const h = hist[idx];
+      const pName = h.pub_id ? pubName(h.pub_id) : '';
+
+      // Name row — spans 2 cols
+      set(rA, cs, pName, SPUB);
+      merge(rA, cs, rA, ce);
+      set(rA, ce, '', SPUB); // fill merged
+
+      // Date row
+      set(rB, cs, h.fecha_asig ? fmtDate(h.fecha_asig) : '', SDATE);
+      set(rB, ce, h.fecha_dev  ? fmtDate(h.fecha_dev)  : '', SDATE);
+    }
+
+    R += 2;
+  }
+
+  // ── FOOTER ──
+  set(R, 0, '**Cuando comience una nueva página, anote en esta columna la última fecha en que los territorios se completaron.', SFOOTER);
+  merge(R,0, R,9);
+  R++;
+  set(R, 0, 'S-13 1/22', SFOOTER2);
+  R++;
+
+  // ── Sheet metadata ──
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:R-1,c:9}});
+  ws['!merges'] = merges;
+
+  // Column widths (characters)
+  ws['!cols'] = [
+    {wch:7},   // A: Terr n.º
+    {wch:14},  // B: Último completado
+    {wch:19},  // C: Pub1 entrega
+    {wch:13},  // D: Pub1 devolución
+    {wch:19},  // E: Pub2 entrega
+    {wch:13},  // F: Pub2 devolución
+    {wch:19},  // G: Pub3 entrega
+    {wch:13},  // H: Pub3 devolución
+    {wch:19},  // I: Pub4 entrega
+    {wch:13},  // J: Pub4 devolución
+  ];
+
+  // Row heights
+  ws['!rows'] = [];
+  ws['!rows'][0] = {hpt:24};  // title
+  ws['!rows'][1] = {hpt:16};  // year
+  ws['!rows'][2] = {hpt:6};   // spacer
+  ws['!rows'][3] = {hpt:36};  // header 1
+  ws['!rows'][4] = {hpt:28};  // header 2
+
+  // Print landscape A4
+  ws['!pageSetup'] = {
+    orientation: 'landscape',
+    paperSize: 9,
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+  };
+
+  return ws;
+}
+
+// Build the S-13 preview HTML table (shared by inline + modal)
+function _getS13Hist(t){
+  const allHist=S.historial.filter(h=>h.territorio_id===t.id)
+    .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+  const closed=allHist.filter(h=>h.fecha_dev);
+  const open=allHist.filter(h=>!h.fecha_dev);
+  const hist=[...closed.slice(-1),...open.slice(0,1)];
+  while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
+  return hist;
+}
+
+// Desktop: classic table layout (scroll horizontally)
+function buildS13TableHTML(ters,year){
+  const bd='border:1px solid var(--border)';
+  const th=bd+';padding:5px 4px;text-align:center;background:var(--s3)';
+  const td=bd+';text-align:center;padding:3px 5px';
+  let rows='';
+  for(const t of ters){
+    const hist=_getS13Hist(t);
+    rows+='<tr>'
+      +'<td rowspan="2" style="'+td+';font-weight:700;font-size:13px">'+t.num+'</td>'
+      +'<td rowspan="2" style="'+td+';color:var(--t2);font-size:11px">'+fmtDate(t.ultimo_trabajado)+'</td>'
+      +hist.map(h=>'<td colspan="2" style="'+td+';font-size:11px">'+(h.pub_id?pubName(h.pub_id):'')+'</td>').join('')
+      +'</tr><tr>'
+      +hist.map(h=>'<td style="'+td+';color:var(--t2);font-size:10px">'+(h.fecha_asig?fmtDate(h.fecha_asig):'')+'</td><td style="'+td+';color:var(--t2);font-size:10px">'+(h.fecha_dev?fmtDate(h.fecha_dev):'')+'</td>').join('')
+      +'</tr>';
+  }
+  return '<div style="overflow-x:auto">'
+    +'<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px;min-width:860px;width:100%">'
+    +'<thead>'
+    +'<tr><th colspan="10" style="'+bd+';padding:10px;font-size:13px;font-weight:700;text-align:center;background:var(--s2)">REGISTRO DE ASIGNACIÓN DE TERRITORIO</th></tr>'
+    +'<tr><td colspan="2" style="'+bd+';padding:6px 10px;font-weight:700;background:var(--s2)">Año de servicio <u>'+year+'</u></td><td colspan="8" style="'+bd+';background:var(--s2)"></td></tr>'
+    +'<tr>'
+    +'<th rowspan="2" style="'+th+';width:52px">Terr.<br>n.º</th>'
+    +'<th rowspan="2" style="'+th+';width:90px">Última<br>completado*</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'</tr><tr>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td colspan="10" style="'+bd+';padding:5px 10px;font-size:10px;font-style:italic">*Cuando comience una nueva página, anote la última fecha en que los territorios se completaron.</td></tr>'
+    +'<tr><td colspan="10" style="'+bd+';padding:3px 10px;font-size:10px">S-13 1/22</td></tr></tfoot>'
+    +'</table></div>';
+}
+
+// Mobile: card layout — one card per territory, same data
+function buildS13CardsHTML(ters,year){
+  const cards=ters.map(t=>{
+    const hist=_getS13Hist(t);
+    const active=hist.filter(h=>h.pub_id);
+    const rows=active.map(h=>{
+      const isOpen=!h.fecha_dev;
+      const devColor=isOpen?'var(--amber)':'var(--t2)';
+      const devWeight=isOpen?'600':'400';
+      const devTxt=h.fecha_dev?fmtDate(h.fecha_dev):'En curso';
+      const pubTxt=h.pub_id?pubName(h.pub_id):'—';
+      const asigTxt=h.fecha_asig?fmtDate(h.fecha_asig):'—';
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:6px 10px;border-top:1px solid var(--border);font-size:12px">'
+        +'<div style="font-weight:600;color:var(--text)">'+pubTxt+'</div>'
+        +'<div style="color:var(--t2)">'+asigTxt+'</div>'
+        +'<div style="color:'+devColor+';font-weight:'+devWeight+'">'+devTxt+'</div>'
+        +'</div>';
+    }).join('');
+    const st=statusOf(t);
+    const stCol={vencido:'var(--red)',proximo:'var(--amber)',asignado:'var(--blue)',grupo:'var(--purple)',disponible:'var(--green)'}[st]||'var(--t3)';
+    return '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s3)">'
+      +'<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;min-width:36px;color:'+stCol+'">'+t.num+'</span>'
+      +'<span style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.nombre+'</span>'
+      +'<span style="font-size:11px;color:var(--t3)">Últ: '+(t.ultimo_trabajado?fmtDate(t.ultimo_trabajado):'—')+'</span>'
+      +'</div>'
+      +(active.length
+        ?'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:4px 10px 2px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em"><span>Publicador</span><span>Entrega</span><span>Devolución</span></div>'+rows
+        :'<div style="padding:8px 10px;font-size:12px;color:var(--t3)">Sin asignaciones registradas</div>')
+      +'</div>';
+  }).join('');
+  return '<div style="font-size:11px;color:var(--t3);margin-bottom:10px;font-weight:600">S-13 · Año '+year+' · '+ters.length+' territorios</div>'+cards;
+}
+
+// Unified entry: table on desktop, cards on mobile
+function buildS13PreviewHTML(ters,year){
+  const isMobile=window.innerWidth<=700;
+  return isMobile ? buildS13CardsHTML(ters,year) : buildS13TableHTML(ters,year);
+}
+
+let _s13AllTers=[], _s13Year=2026, _s13Page=0;
+const S13_PAGE_SIZE=20;
+
+function s13PageNav(dir){
+  const pages=Math.ceil(_s13AllTers.length/S13_PAGE_SIZE);
+  _s13Page=Math.max(0,Math.min(pages-1,_s13Page+dir));
+  _renderS13Page();
+}
+function _renderS13Page(){
+  const pages=Math.ceil(_s13AllTers.length/S13_PAGE_SIZE);
+  const chunk=_s13AllTers.slice(_s13Page*S13_PAGE_SIZE,(_s13Page+1)*S13_PAGE_SIZE);
+  document.getElementById('s13PreviewContent').innerHTML=buildS13PreviewHTML(chunk,_s13Year);
+  document.getElementById('s13PageInfo').textContent='Pág. '+(_s13Page+1)+' / '+pages+' ('+_s13AllTers.length+' territ.)';
+  document.getElementById('s13PrevBtn').disabled=_s13Page===0;
+  document.getElementById('s13NextBtn').disabled=_s13Page>=pages-1;
+}
+function _getS13Ters(){
+  const tipo = document.getElementById('s13Tipo').value;
+  const year = parseInt(document.getElementById('s13Year').value);
+  const fromNum = document.getElementById('s13From').value.trim();
+  const toNum   = document.getElementById('s13To').value.trim();
+  let ters = [...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  if(tipo)    ters = ters.filter(t=>t.tipo===tipo);
+  if(fromNum) ters = ters.filter(t=>t.num.localeCompare(fromNum,undefined,{numeric:true})>=0);
+  if(toNum)   ters = ters.filter(t=>t.num.localeCompare(toNum,undefined,{numeric:true})<=0);
+  return {ters, year};
+}
+
+function abrirS13Modal(){
+  const {ters,year}=_getS13Ters();
+  let html='';
+  for(let i=0;i<ters.length;i+=S13_PAGE_SIZE){
+    const chunk=ters.slice(i,i+S13_PAGE_SIZE);
+    if(i>0) html+='<div style="height:32px;border-top:2px dashed var(--border);margin:24px 0;position:relative"><span style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--s1);padding:0 12px;font-size:11px;color:var(--t3)">— Hoja '+(Math.floor(i/S13_PAGE_SIZE)+1)+' —</span></div>';
+    html+=buildS13PreviewHTML(chunk,year);
+  }
+  document.getElementById('s13ModalContent').innerHTML=html;
+  openModal('mS13');
+}
+
+async function verS13Preview(){
+  const {ters,year}=_getS13Ters();
+  _s13AllTers=ters; _s13Year=year; _s13Page=0;
+  document.getElementById('s13Preview').style.display='';
+  document.getElementById('s13PreviewLabel').textContent='Vista previa';
+  _renderS13Page();
+}
+
+// ══ EXCEL EXPORTS — vistas ══
+async function _loadXLSX(){
+  await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+  return window.XLSX;
+}
+
+function _xlsxDownload(XLSX, wb, filename){
+  XLSX.writeFile(wb, filename);
+}
+
+// Helper: create simple worksheet from array of row objects
+function _makeWS(XLSX, headers, rows){
+  const data = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  // Style header row
+  headers.forEach((_,ci)=>{
+    const addr=XLSX.utils.encode_cell({r:0,c:ci});
+    if(!ws[addr]) ws[addr]={};
+    ws[addr].s={font:{bold:true,name:'Arial',sz:10},fill:{fgColor:{rgb:'DDEEFF'},patternType:'solid'},alignment:{horizontal:'center'}};
+  });
+  // Auto column widths
+  ws['!cols'] = headers.map(h=>({wch:Math.max(12,(h||'').length+4)}));
+  return ws;
+}
+
+// 1. Territorios — vista actual filtrada
+async function exportarVista(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const list=filteredList();
+    const wb=XLSX.utils.book_new();
+    const headers=['Nº','Publicador','Tipo','Grupo','Estado','Asignado','Vence','Puertas','Notas'];
+    const rows=list.map(t=>[
+      t.num, pubName(t.pub_id), t.tipo, grupoLabel(t),
+      statusOf(t), fmtDate(t.fecha_asig), fmtDate(t.fecha_vence),
+      t.num_dirs||'', t.notas||''
+    ]);
+    const ws=_makeWS(XLSX,headers,rows);
+    const filterLabel=currentFilter==='todos'?'Todos':currentFilter;
+    XLSX.utils.book_append_sheet(wb,ws,filterLabel.slice(0,31));
+    _xlsxDownload(XLSX,wb,`territorios_${filterLabel}.xlsx`);
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 2. Prioridad — sin trabajar
+async function exportarPrioridad(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    function realUltimo(t){
+      const hist=S.historial.filter(h=>h.territorio_id===t.id&&h.fecha_dev);
+      const fromHist=hist.length?hist.map(h=>h.fecha_dev).sort().slice(-1)[0]:null;
+      const candidates=[fromHist,t.ultimo_trabajado].filter(Boolean);
+      return candidates.length?candidates.sort().slice(-1)[0]:null;
+    }
+    const list=S.territorios.filter(t=>t.estado==='disponible')
+      .map(t=>({...t,_ru:realUltimo(t)}))
+      .sort((a,b)=>{if(!a._ru&&!b._ru) return 0;if(!a._ru) return -1;if(!b._ru) return 1;return a._ru.localeCompare(b._ru);});
+    const wb=XLSX.utils.book_new();
+    const headers=['Nº','Nombre','Tipo','Grupo','Último trabajo','Días sin trabajar','Puertas'];
+    const rows=list.map((t,i)=>[
+      t.num, t.nombre, t.tipo, grupoLabel(t),
+      t._ru?fmtDate(t._ru):'Nunca',
+      t._ru?daysSince(t._ru):'∞',
+      t.num_dirs||''
+    ]);
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,headers,rows),'Sin trabajar');
+    _xlsxDownload(XLSX,wb,'territorios_sin_trabajar.xlsx');
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 3. Publicadores
+async function exportarPublicadores(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const wb=XLSX.utils.book_new();
+    const headers=['Nombre','Teléfono','Grupo','Territorios activos','Completados','Territorio actual','Estado actual'];
+    const rows=S.publicadores.map(p=>{
+      const g=S.grupos.find(x=>x.id===p.grupo_id);
+      const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+      const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
+      const ter=act[0];
+      return[
+        p.nombre, p.tel||'', g?`Grupo ${g.num} — ${g.nombre||''}`:'Sin grupo',
+        act.length, comp,
+        ter?`${ter.num} — ${ter.nombre}`:'',
+        ter?statusOf(ter):''
+      ];
+    });
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,headers,rows),'Publicadores');
+    _xlsxDownload(XLSX,wb,'publicadores.xlsx');
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 4. Historial
+async function exportarHistorial(){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const wb=XLSX.utils.book_new();
+    const headers=['Nº','Territorio','Publicador','Grupo','Fecha entrega','Fecha devolución','Días'];
+    const rows=S.historial.filter(h=>h.fecha_dev).map(h=>{
+      const t=S.territorios.find(x=>x.id===h.territorio_id);
+      const dias=daysBetween(h.fecha_asig,h.fecha_dev);
+      return[t?.num||'',t?.nombre||'',pubName(h.pub_id),t?grupoLabel(t):'',fmtDate(h.fecha_asig),fmtDate(h.fecha_dev),dias];
+    });
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,headers,rows),'Historial');
+    _xlsxDownload(XLSX,wb,'historial.xlsx');
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+// 5. Grupo específico
+async function exportarGrupo(gId){
+  showLoader('Generando Excel…');
+  try{
+    const XLSX=await _loadXLSX();
+    const g=S.grupos.find(x=>x.id===gId);
+    const wb=XLSX.utils.book_new();
+
+    // Sheet 1: Territorios del grupo
+    const ters=S.territorios.filter(t=>t.grupo_id===gId).sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+    const terHeaders=['Nº','Nombre','Publicador','Estado','Asignado','Vence','Puertas'];
+    const terRows=ters.map(t=>[t.num,t.nombre,pubName(t.pub_id),statusOf(t),fmtDate(t.fecha_asig),fmtDate(t.fecha_vence),t.num_dirs||'']);
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,terHeaders,terRows),'Territorios');
+
+    // Sheet 2: Publicadores del grupo con estado
+    const pubs=S.publicadores.filter(p=>p.grupo_id===gId);
+    const pubHeaders=['Nombre','Con territorio','Territorio','Estado','Asignado','Último trabajo','Completados'];
+    const pubRows=pubs.map(p=>{
+      const act=S.territorios.find(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+      const hist=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev));
+      return[p.nombre,act?'Sí':'No',act?act.num:'—',act?statusOf(act):'',fmtDate(act?.fecha_asig),fmtDate(hist[0]?.fecha_dev),hist.length];
+    });
+    XLSX.utils.book_append_sheet(wb,_makeWS(XLSX,pubHeaders,pubRows),'Publicadores');
+
+    _xlsxDownload(XLSX,wb,`grupo_${g?.num||gId}.xlsx`);
+    hideLoader(); toast('✓ Descargado','g');
+  }catch(e){hideLoader();toast('Error: '+e.message,'r');}
+}
+
+async function reloadAndRender(){
+  setSyncStatus('syncing');
+  try{
+    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial()]);
+    await checkVencidos();
+    fillAllSels();
+    renderView(currentView);
+    updateBadges();
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('error');console.error(e);}
+}
+async function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+
+// ══ SELECT HELPERS ══
+function fillGrupoSel(selId,val=null){
+  const sel=document.getElementById(selId);
+  sel.innerHTML='<option value="">Sin grupo</option>'+S.grupos.sort((a,b)=>a.num-b.num).map(g=>`<option value="${g.id}"${g.id===val?' selected':''}>Grupo ${g.num}${g.nombre&&g.nombre!==`Grupo ${g.num}`?' — '+g.nombre:''}</option>`).join('');
+}
+function fillPubSel(selId,val=null){
+  if(selId==='asig-pub'){
+    const input=document.getElementById('asig-pub-input');
+    const hidden=document.getElementById('asig-pub');
+    if(val){const p=S.publicadores.find(x=>x.id===val);if(p){if(input)input.value=p.nombre;if(hidden)hidden.value=val;}}
+    else{if(input)input.value='';if(hidden)hidden.value='';}
+    return;
+  }
+  const sel=document.getElementById(selId);
+  if(!sel) return;
+  sel.innerHTML='<option value="">Seleccionar…</option>'+S.publicadores.filter(p=>p.activo!==false).map(p=>`<option value="${p.id}"${p.id===val?' selected':''}>${p.nombre}</option>`).join('');
+}
+
+// ── Publisher autocomplete ──
+let _acSel=-1;
+function pubAutocomplete(q){
+  const dd=document.getElementById('asig-pub-dropdown');
+  if(!q.trim()){dd.style.display='none';return;}
+  const matches=S.publicadores.filter(p=>p.activo!==false&&p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,12);
+  if(!matches.length){dd.style.display='none';return;}
+  _acSel=-1;
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  dd.innerHTML=matches.map((p,i)=>{
+    const g=S.grupos.find(x=>x.id===p.grupo_id);
+    const hl=p.nombre.replace(re,m=>`<b style="color:var(--blue)">${m}</b>`);
+    return`<div data-id="${p.id}" data-idx="${i}"
+      style="padding:10px 12px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"
+      onmousedown="selectPub(${p.id},this)" onmouseenter="hlAC(${i})">
+      <span>${hl}</span>${g?`<span style="font-size:11px;color:var(--t3)">G${g.num}</span>`:''}
+    </div>`;
+  }).join('');
+  dd.style.display='';
+}
+function hlAC(i){
+  _acSel=i;
+  document.querySelectorAll('#asig-pub-dropdown [data-idx]').forEach((el,j)=>el.style.background=j===i?'var(--s3)':'');
+}
+function selectPub(id,el){
+  document.getElementById('asig-pub-input').value=el.querySelector('span').textContent;
+  document.getElementById('asig-pub').value=id;
+  document.getElementById('asig-pub-dropdown').style.display='none';
+}
+function pubAutocompleteKey(e){
+  const items=[...document.querySelectorAll('#asig-pub-dropdown [data-idx]')];
+  if(e.key==='ArrowDown'){e.preventDefault();hlAC(Math.min(_acSel+1,items.length-1));}
+  else if(e.key==='ArrowUp'){e.preventDefault();hlAC(Math.max(_acSel-1,0));}
+  else if(e.key==='Enter'&&_acSel>=0){e.preventDefault();items[_acSel]?.dispatchEvent(new Event('mousedown'));}
+  else if(e.key==='Escape'){document.getElementById('asig-pub-dropdown').style.display='none';}
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#asig-pub-input')&&!e.target.closest('#asig-pub-dropdown')){
+    const dd=document.getElementById('asig-pub-dropdown');if(dd)dd.style.display='none';
+  }
+});
+function fillSiervoSel(selId,grupoId,val=null){
+  const sel=document.getElementById(selId);
+  const pubs=grupoId?S.publicadores.filter(p=>p.grupo_id===grupoId):S.publicadores;
+  sel.innerHTML='<option value="">Sin asignar</option>'+pubs.map(p=>`<option value="${p.id}"${p.id===val?' selected':''}>${p.nombre}</option>`).join('');
+}
+function fillGroupFilter(){
+  const fg=document.getElementById('fGrupo');const prev=fg.value;
+  fg.innerHTML='<option value="">Todos los grupos</option>'+S.grupos.sort((a,b)=>a.num-b.num).map(g=>`<option value="${g.id}"${String(g.id)===prev?' selected':''}>Grupo ${g.num}</option>`).join('');
+}
+function fillAllSels(){fillGrupoSel('p-grupo');fillGrupoSel('t-grupo');fillGroupFilter();}
+
+// ══ MOBILE TAB BAR ══
+function navTab(el) {
+  const v = el.dataset.v;
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  // Sync sidebar
+  document.querySelectorAll('#sidebar .nav-item[data-v]').forEach(n =>
+    n.classList.toggle('on', n.dataset.v === v));
+  showView(v);
+}
+
+// ══ MOBILE DRAWER ══
+let drawerOpen = false;
+function toggleDrawer() {
+  drawerOpen = !drawerOpen;
+  document.getElementById('mobileDrawer').classList.toggle('open', drawerOpen);
+}
+function navDrawer(el) {
+  const v = el.dataset.v;
+  document.querySelectorAll('#drawerPanel .nav-item').forEach(n => n.classList.remove('on'));
+  document.querySelectorAll('#sidebar .nav-item[data-v]').forEach(n => n.classList.toggle('on', n.dataset.v === v));
+  el.classList.add('on');
+  toggleDrawer();
+  showView(v);
+}
+function quickFilterDrawer(el) {
+  currentFilter = el.dataset.filter;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.f === currentFilter));
+  toggleDrawer();
+  showView('territorios');
+}
+
+// ══ MODAL HELPERS ══
+function openModal(id){
+  // Close map panel first so modal appears on top on mobile
+  if (document.getElementById('mapPanel')?.classList.contains('open')) closeMapPanel();
+  document.getElementById(id).classList.add('on');
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('on');
+  if(id==='mPub'){['p-nombre','p-tel'].forEach(x=>document.getElementById(x).value='');document.getElementById('p-grupo').value='';}
+  if(id==='mGrupo'){editingGId=null;document.getElementById('btnElimGrupo').style.display='none';document.getElementById('mGrupoTitle').textContent='Nuevo grupo';}
+}
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('on');}));
+
+// ══ TABS ══
+function switchTab(modalId,el){
+  const modal=document.getElementById(modalId);
+  modal.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  modal.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));
+  el.classList.add('on');
+  const pane=document.getElementById('tp-'+el.dataset.tp);
+  if(pane) pane.classList.add('on');
+}
+function switchTabByName(modalId,name){
+  const modal=document.getElementById(modalId);
+  const tab=modal.querySelector(`.tab[data-tp="${name}"]`);
+  if(tab) switchTab(modalId,tab);
+}
+
+// ══ LIGHTBOX ══
+function openLb(src){document.getElementById('lbImg').src=src;document.getElementById('lb').classList.add('on');}
+function closeLb(){document.getElementById('lb').classList.remove('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLb();closeMapPanel();}});
+
+// ══ TOAST ══
+function toast(msg,type='',dur=3500){
+  const c=document.getElementById('toast-wrap');const el=document.createElement('div');
+  el.className='toast';
+  const col={g:'var(--green)',r:'var(--red)',am:'var(--amber)',a:'var(--blue)'}[type]||'var(--t2)';
+  el.innerHTML=`<span style="color:${col}">●</span> ${msg}`;
+  c.appendChild(el);setTimeout(()=>el.remove(),3500);
+}
+
+// ══ SERVICE WORKER REGISTRATION ══
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('[PWA] Service Worker registered:', reg.scope);
+        // Check for updates every 30 minutes
+        setInterval(() => reg.update(), 30 * 60 * 1000);
+        reg.addEventListener('updatefound', () => {
+          const newSW = reg.installing;
+          newSW.addEventListener('statechange', () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available — show update toast
+              toast('🔄 Nueva versión disponible — recarga para actualizar', 'a');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[PWA] SW registration failed:', err));
+  });
+}
+
+// ══ PWA INSTALL PROMPT ══
+let _installPrompt = null;
+
+// Show install UI as soon as page loads if not already installed
+function _showInstallUI(){
+  const btn = document.getElementById('installBtn');
+  const dw  = document.getElementById('drawerInstallWrap');
+  if(btn) btn.style.display = 'flex';
+  if(dw)  dw.style.display  = '';
+}
+function _hideInstallUI(){
+  const btn = document.getElementById('installBtn');
+  const dw  = document.getElementById('drawerInstallWrap');
+  if(btn) btn.style.display = 'none';
+  if(dw)  dw.style.display  = 'none';
+}
+
+// Show install button unless already running as installed PWA
+if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
+  // Already installed — keep hidden
+} else {
+  // Show after a short delay so page has rendered
+  setTimeout(_showInstallUI, 1500);
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  _showInstallUI();
+});
+
+function installPWA(){
+  if(_installPrompt){
+    // Native prompt available
+    _installPrompt.prompt();
+    _installPrompt.userChoice.then(result => {
+      if(result.outcome === 'accepted'){ toast('✓ App instalada','g'); _hideInstallUI(); }
+      _installPrompt = null;
+    });
+  } else {
+    // No native prompt — show manual instructions
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const msg = isIOS
+      ? 'En Safari: toca el botón Compartir (□↑) y selecciona "Añadir a pantalla de inicio"'
+      : 'En Chrome: abre el menú ⋮ y selecciona "Instalar app" o "Añadir a pantalla de inicio"';
+    toast('📲 ' + msg, 'a', 6000);
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  toast('✓ Territorios instalado como app','g');
+  _installPrompt = null;
+  _hideInstallUI();
+});
+
+// ══ CONTAR VIVIENDAS ══
+const OVERPASS_SERVERS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+];
+let _cvRunning=false, _cvStop=false, _cvResults={}, _cvGeoJSON=null;
+
+async function cvCargarGeoJSON(){
+  if(_cvGeoJSON) return _cvGeoJSON;
+  const r=await fetch(GEOJSON_URL);
+  _cvGeoJSON=await r.json();
+  return _cvGeoJSON;
+}
+function cvPolyStr(coords){
+  return coords.slice(0,-1).map(c=>`${c[1].toFixed(6)} ${c[0].toFixed(6)}`).join(' ');
+}
+async function cvQuery(polyStr,fuente,serverIdx=0){
+  const server=OVERPASS_SERVERS[serverIdx%OVERPASS_SERVERS.length];
+  
+  // Spain: addr:housenumber is mostly on WAYS (building outlines), not nodes
+  // entrance nodes exist but are less common
+  // We query nodes+ways and use "out count" for efficiency
+  let parts='';
+  if(fuente==='entrance'||fuente==='both'){
+    parts+=`\n  node["entrance"]["entrance"!~"no|emergency"](poly:"${polyStr}");`;
+  }
+  if(fuente==='housenumber'||fuente==='both'){
+    // Both nodes AND ways - critical for Spanish buildings
+    parts+=`\n  node["addr:housenumber"](poly:"${polyStr}");`;
+    parts+=`\n  way["addr:housenumber"](poly:"${polyStr}");`;
+  }
+  if(fuente==='buildings'){
+    // Count residential/apartment buildings as proxy for door count
+    parts+=`\n  way["building"~"residential|apartments|house|terrace|detached|semidetached_house|dormitory|bungalow"](poly:"${polyStr}");`;
+    parts+=`\n  relation["building"~"residential|apartments|house"](poly:"${polyStr}");`;
+  }
+  
+  const q=`[out:json][timeout:30];\n(\n${parts}\n);\nout count;`;
+  
+  const body=new URLSearchParams({data:q});
+  const r=await fetch(server,{
+    method:'POST',body,
+    headers:{'Content-Type':'application/x-www-form-urlencoded'}
+  });
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  const data=await r.json();
+  
+  // "out count" returns: {elements:[{type:"count",tags:{nodes:"N",ways:"W",relations:"R",total:"T"}}]}
+  const el=data.elements?.[0];
+  if(el?.type==='count'){
+    // Sum nodes + ways (total tag may double-count in some Overpass versions)
+    const nodes=parseInt(el.tags?.nodes||'0');
+    const ways=parseInt(el.tags?.ways||'0');
+    const total=parseInt(el.tags?.total||'0');
+    // Use total if it looks right, otherwise sum manually
+    return total > 0 ? total : (nodes + ways);
+  }
+  // Fallback if server doesn't support count
+  return data.elements?.length||0;
+}
+function cvLog(msg,color='var(--t2)'){
+  const log=document.getElementById('cvLog');
+  const line=document.createElement('div');
+  line.style.color=color; line.textContent=msg;
+  log.appendChild(line); log.scrollTop=log.scrollHeight;
+}
+async function cvIniciar(){
+  if(_cvRunning) return;
+  const fuente=document.getElementById('cvFuente').value;
+  const fromTer=document.getElementById('cvFrom').value.trim();
+  const toTer=document.getElementById('cvTo').value.trim();
+  let gj;
+  try{ gj=await cvCargarGeoJSON(); }
+  catch(e){ toast('⚠ No se encontró zonas.geojson en la misma carpeta','r'); return; }
+  let features=[...gj.features];
+  if(fromTer) features=features.filter(f=>f.properties.Name.localeCompare(fromTer,undefined,{numeric:true})>=0);
+  if(toTer)   features=features.filter(f=>f.properties.Name.localeCompare(toTer,undefined,{numeric:true})<=0);
+  if(!features.length){ toast('Sin territorios en ese rango','am'); return; }
+  _cvRunning=true; _cvStop=false; _cvResults={};
+  document.getElementById('cvStartBtn').style.display='none';
+  document.getElementById('cvStopBtn').style.display='';
+  document.getElementById('cvProgress').style.display='';
+  document.getElementById('cvResults').style.display='none';
+  document.getElementById('cvLog').innerHTML='';
+  const total=features.length; let done=0, errors=0;
+  for(let i=0;i<features.length;i++){
+    if(_cvStop){ cvLog('⏹ Detenido por el usuario.','var(--amber)'); break; }
+    const feat=features[i];
+    const name=feat.properties.Name;
+    const poly=cvPolyStr(feat.geometry.coordinates[0]);
+    const pct=Math.round(i/total*100);
+    document.getElementById('cvProgressPct').textContent=pct+'%';
+    document.getElementById('cvProgressBar').style.width=pct+'%';
+    document.getElementById('cvProgressText').textContent=`Procesando ${name} (${i+1}/${total})…`;
+    let count=-1;
+    for(let srv=0;srv<OVERPASS_SERVERS.length;srv++){
+      try{ count=await cvQuery(poly,fuente,srv); break; }
+      catch(e){
+        if(srv===OVERPASS_SERVERS.length-1){ cvLog(`✗ ${name}: ${e.message}`,'var(--red)'); errors++; }
+        else await new Promise(r=>setTimeout(r,1500));
+      }
+    }
+    if(count>=0){
+      _cvResults[name]=count; done++;
+      const existing=S.territorios.find(t=>t.num===name);
+      const prev=existing?.num_dirs?` (antes: ${existing.num_dirs})`:'';
+      cvLog(`✓ ${name}: ${count} entradas${prev}`, count>0?'var(--green)':'var(--t3)');
+    }
+    if(i<features.length-1) await new Promise(r=>setTimeout(r,2500));
+  }
+  _cvRunning=false;
+  document.getElementById('cvStartBtn').style.display='';
+  document.getElementById('cvStopBtn').style.display='none';
+  document.getElementById('cvProgressPct').textContent='100%';
+  document.getElementById('cvProgressBar').style.width='100%';
+  document.getElementById('cvProgressText').textContent='Completado';
+  const totalDoors=Object.values(_cvResults).filter(v=>v>=0).reduce((a,b)=>a+b,0);
+  const avg=done>0?Math.round(totalDoors/done):0;
+  document.getElementById('cvSummary').textContent=`✓ ${done} territorios · ${totalDoors.toLocaleString()} entradas · Media: ${avg}${errors?` · ${errors} errores`:''}`;
+  document.getElementById('cvResults').style.display='';
+}
+function cvDetener(){ _cvStop=true; }
+async function cvGuardarEnBD(){
+  const entries=Object.entries(_cvResults).filter(([,v])=>v>=0);
+  if(!entries.length){ toast('Sin datos','am'); return; }
+  showLoader(`Guardando ${entries.length} territorios…`);
+  setSyncStatus('syncing');
+  let ok=0,fail=0;
+  for(const [num,count] of entries){
+    const t=S.territorios.find(x=>x.num===num);
+    if(!t) continue;
+    try{ await sbPatch('territorios',{id:t.id},{num_dirs:count}); t.num_dirs=count; ok++; }
+    catch{ fail++; }
+  }
+  hideLoader(); setSyncStatus(fail?'error':'ok');
+  toast(`✓ ${ok} actualizados${fail?` · ${fail} errores`:''}`,fail?'am':'g');
+  renderView(currentView);
+}
+function cvDescargarSQL(){
+  const lines=['-- Conteo viviendas por territorio\n',
+    ...Object.entries(_cvResults).filter(([,v])=>v>=0)
+      .sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}))
+      .map(([n,c])=>`UPDATE territorios SET num_dirs = ${c} WHERE num = '${n}';`),
+    '\nSELECT num, nombre, num_dirs FROM territorios ORDER BY num;'];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
+  a.download='viviendas.sql'; a.click();
+}
+function cvDescargarJSON(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(_cvResults,null,2)],{type:'application/json'}));
+  a.download='viviendas.json'; a.click();
+}
+
+// ══ THEME ══
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  localStorage.setItem('ter_theme',isLight?'light':'dark');
+  document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
+  // Refresh map colors for new theme
+  updateMapColors();
+}
+(function initTheme(){
+  const saved=localStorage.getItem('ter_theme');
+  if(saved==='light'){document.body.classList.add('light');const btn=document.getElementById('themeBtn');if(btn)btn.textContent='☀️';}
+})();
+
+// ══ INIT ══
+initApp();
+</script>
+</body>
+</html>
