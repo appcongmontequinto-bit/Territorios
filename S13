@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>S-13 · Registro de Territorios</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1c1c1e">
+<style>
+/* ── VARIABLES ── */
+:root{
+  --font:-apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',sans-serif;
+  --mono:'SF Mono','Fira Code',monospace;
+  --r:10px;
+  --topbar-bg:rgba(28,28,30,.95);
+}
+body{
+  --bg:#1c1c1e;--s1:#2c2c2e;--s2:#3a3a3c;--s3:#48484a;--s4:#636366;
+  --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.16);
+  --text:#fff;--t2:rgba(255,255,255,.7);--t3:rgba(255,255,255,.4);
+  --blue:#0a84ff;--green:#30d158;--amber:#ff9f0a;--red:#ff453a;--purple:#bf5af2;
+  --topbar-bg:rgba(28,28,30,.95);
+  margin:0;font-family:var(--font);background:var(--bg);color:var(--text);
+  min-height:100dvh;
+}
+body.light{
+  --bg:#f2f2f7;--s1:#fff;--s2:#f2f2f7;--s3:#e5e5ea;--s4:#d1d1d6;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.16);
+  --text:#1c1c1e;--t2:#3c3c43;--t3:#8e8e93;
+  --blue:#007aff;--green:#34c759;--amber:#ff9500;--red:#ff3b30;--purple:#af52de;
+  --topbar-bg:rgba(255,255,255,.95);
+}
+
+/* ── TOPBAR ── */
+#topbar{
+  position:sticky;top:0;z-index:100;
+  height:52px;background:var(--topbar-bg);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:10px;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.logo{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px}
+.logo-mark{
+  width:26px;height:26px;border-radius:7px;
+  background:linear-gradient(135deg,#0a84ff,#bf5af2);
+  display:flex;align-items:center;justify-content:center;
+}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{
+  padding:6px 12px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--s2);color:var(--text);font-family:var(--font);
+  font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;
+  transition:background .15s;
+}
+.btn:hover{background:var(--s3)}
+.btn-blue{background:var(--blue);color:#fff;border-color:transparent}
+.btn-blue:hover{opacity:.9}
+
+/* ── FILTERS ── */
+#filterBar{
+  padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  border-bottom:1px solid var(--border);background:var(--s1);
+}
+.fi{
+  padding:6px 10px;border-radius:8px;border:1px solid var(--border);
+  background:var(--s2);color:var(--text);font-family:var(--font);
+  font-size:13px;cursor:pointer;
+}
+.fi-label{font-size:12px;color:var(--t3);font-weight:600;align-self:center}
+#yearInput{width:70px;text-align:center}
+#pageInfo{font-size:12px;color:var(--t2);padding:0 4px;white-space:nowrap}
+
+/* ── LOADER / ERROR ── */
+#loader{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;
+  backdrop-filter:blur(8px);
+}
+#loader.hide{display:none}
+.spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.2);border-top-color:#0a84ff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-msg{font-size:14px;color:rgba(255,255,255,.8)}
+
+/* ── MAIN CONTENT ── */
+#content{padding:16px;max-width:1100px;margin:0 auto}
+
+/* ── S-13 TABLE (desktop) ── */
+.s13-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);margin-bottom:24px}
+.s13-table{
+  border-collapse:collapse;
+  font-family:'Arial Narrow',Arial,sans-serif;
+  font-size:11.5px;min-width:860px;width:100%;
+  background:var(--s1);
+}
+.s13-table th,.s13-table td{border:1px solid var(--border2);padding:0}
+.s13-title{
+  padding:10px;font-size:14px;font-weight:700;text-align:center;
+  background:var(--s2);letter-spacing:.02em;
+}
+.s13-sub{padding:7px 10px;font-weight:600;background:var(--s2);font-size:12px}
+.s13-head{background:var(--s3);font-weight:600;text-align:center;padding:5px 4px;font-size:11px}
+.s13-head-sub{background:var(--s3);text-align:center;padding:4px;font-size:10px;font-weight:400;color:var(--t2)}
+.s13-num{text-align:center;padding:4px;font-weight:700;font-size:13px;font-family:var(--mono);vertical-align:middle}
+.s13-ult{text-align:center;padding:4px;font-size:10px;color:var(--t2);vertical-align:middle}
+.s13-pub{text-align:center;padding:4px 6px;font-size:11px;vertical-align:top}
+.s13-date{text-align:center;padding:3px 4px;font-size:10px;color:var(--t2);vertical-align:top}
+.s13-foot{padding:6px 10px;font-size:10px;font-style:italic;color:var(--t3);background:var(--s2)}
+.s13-ref{padding:3px 10px;font-size:10px;color:var(--t3);background:var(--s2)}
+.s13-sep{height:20px;background:var(--bg);border:none!important}
+
+/* ── S-13 CARDS (mobile) ── */
+.s13-cards{display:none}
+.s13-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--r);
+  margin-bottom:10px;overflow:hidden;
+}
+.s13-card-head{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  background:var(--s2);border-bottom:1px solid var(--border);
+}
+.s13-card-num{font-family:var(--mono);font-size:16px;font-weight:700;min-width:40px}
+.s13-card-name{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s13-card-ult{font-size:11px;color:var(--t3);white-space:nowrap}
+.s13-card-cols{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  padding:4px 12px 2px;font-size:10px;font-weight:700;
+  color:var(--t3);text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--border);
+}
+.s13-card-row{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  padding:7px 12px;font-size:12px;border-top:1px solid var(--border);
+}
+.s13-card-empty{padding:10px 12px;font-size:12px;color:var(--t3)}
+
+/* Estado color stripes */
+.stripe-asig{border-left:3px solid var(--blue)}
+.stripe-venc{border-left:3px solid var(--red)}
+.stripe-prox{border-left:3px solid var(--amber)}
+.stripe-grup{border-left:3px solid var(--purple)}
+.stripe-disp{border-left:3px solid var(--green)}
+
+/* ── PAGE NAV ── */
+#pageNav{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:16px 0 24px;flex-wrap:wrap;
+}
+.page-btn{
+  padding:7px 16px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--s2);color:var(--text);font-family:var(--font);
+  font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;
+}
+.page-btn:hover:not(:disabled){background:var(--s3)}
+.page-btn:disabled{opacity:.35;cursor:default}
+#pageInfo2{font-size:13px;color:var(--t2);font-weight:500}
+
+/* ── CREDIT ── */
+#credit{text-align:center;font-size:11px;color:var(--t3);padding:12px 0 24px;line-height:1.7}
+
+/* ── RESPONSIVE ── */
+@media(max-width:700px){
+  .s13-wrap{display:none}
+  .s13-cards{display:block}
+  #filterBar{gap:6px}
+  .fi{font-size:12px;padding:5px 8px}
+}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="spin"></div><div class="loader-msg">Cargando S-13…</div></div>
+
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="14" height="16" viewBox="0 0 14 16" fill="none"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg>
+    </div>
+    S-13 · Territorios
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-blue" onclick="exportarExcel()">⬇ Excel</button>
+    <button class="btn" onclick="toggleTheme()" id="themeBtn">☀️</button>
+    <a class="btn" href="territorios.html">← App</a>
+  </div>
+</div>
+
+<div id="filterBar">
+  <span class="fi-label">Año</span>
+  <input class="fi" id="yearInput" type="number" value="2026" min="2020" max="2035" onchange="renderS13()">
+  <span class="fi-label">Tipo</span>
+  <select class="fi" id="tipoSel" onchange="renderS13()">
+    <option value="">Todos</option>
+    <option value="Casa">Casa</option>
+    <option value="Bloque">Bloque</option>
+    <option value="Especial">Especial</option>
+    <option value="Negocio">Negocio</option>
+  </select>
+  <span class="fi-label">Desde</span>
+  <input class="fi" id="fromNum" type="text" placeholder="001" style="width:56px" onchange="renderS13()">
+  <span class="fi-label">Hasta</span>
+  <input class="fi" id="toNum" type="text" placeholder="215" style="width:56px" onchange="renderS13()">
+  <span class="fi-label">Hoja</span>
+  <select class="fi" id="perPage" onchange="renderS13()">
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="50">50</option>
+    <option value="9999">Todos</option>
+  </select>
+  <span id="pageInfo" style="margin-left:4px"></span>
+</div>
+
+<div id="content">
+  <div id="s13Output"></div>
+  <div id="pageNav">
+    <button class="page-btn" id="prevBtn" onclick="pageNav(-1)" disabled>← Anterior</button>
+    <span id="pageInfo2"></span>
+    <button class="page-btn" id="nextBtn" onclick="pageNav(1)" disabled>Siguiente →</button>
+  </div>
+  <div id="credit">
+    Desarrollada por <strong>Manuel Fernández</strong><br>
+    para uso exclusivo de la congregación <strong>Montequinto</strong>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ──
+const SB_URL='https://iycqizsxmbaboaxveaeb.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5Y3FpenN4bWJhYm9heHZlYWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTM3MzQsImV4cCI6MjA5NDU4OTczNH0.-5jCFsD2WWEity7UDuEmpDqZvXrGLEiCg8fQWPZkOXE';
+const H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+// ── STATE ──
+const S={territorios:[],publicadores:[],historial:[]};
+let _page=0, _allTers=[], _year=2026;
+
+// ── SUPABASE ──
+async function sbGet(table,params={}){
+  const url=new URL(SB_URL+'/rest/v1/'+table);
+  Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+  const r=await fetch(url,{headers:{...H,'Accept':'application/json'}});
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ── DATE UTILS ──
+function fmtDate(d){
+  if(!d) return '';
+  const [y,m,dy]=d.split('-');
+  return dy+'/'+m+'/'+y.slice(2);
+}
+function pubName(id){return id?S.publicadores.find(p=>p.id===id)?.nombre||'—':'—';}
+
+// ── HIST FOR TERRITORY ──
+function getHist(t){
+  const all=S.historial.filter(h=>h.territorio_id===t.id)
+    .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+  const closed=all.filter(h=>h.fecha_dev);
+  const open=all.filter(h=>!h.fecha_dev);
+  const hist=[...closed.slice(-1),...open.slice(0,1)];
+  while(hist.length<4) hist.push({pub_id:null,fecha_asig:null,fecha_dev:null});
+  return hist;
+}
+
+// ── STATUS ──
+function statusOf(t){
+  if(!t.pub_id) return 'disponible';
+  const pub=S.publicadores.find(p=>p.id===t.pub_id);
+  if(pub&&/^grupo\s*\d/i.test(pub.nombre.trim())) return 'grupo';
+  if(t.estado==='vencido') return 'vencido';
+  return t.estado||'disponible';
+}
+function stripeClass(t){
+  const s=statusOf(t);
+  return {vencido:'stripe-venc',proximo:'stripe-prox',asignado:'stripe-asig',grupo:'stripe-grup',disponible:'stripe-disp'}[s]||'stripe-disp';
+}
+
+// ── FILTER + PAGINATE ──
+function filteredTers(){
+  const tipo=document.getElementById('tipoSel').value;
+  const from=document.getElementById('fromNum').value.trim();
+  const to=document.getElementById('toNum').value.trim();
+  let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  if(tipo) ters=ters.filter(t=>t.tipo===tipo);
+  if(from) ters=ters.filter(t=>t.num.localeCompare(from,undefined,{numeric:true})>=0);
+  if(to)   ters=ters.filter(t=>t.num.localeCompare(to,undefined,{numeric:true})<=0);
+  return ters;
+}
+function pageNav(dir){
+  const perPage=parseInt(document.getElementById('perPage').value);
+  const pages=Math.ceil(_allTers.length/perPage);
+  _page=Math.max(0,Math.min(pages-1,_page+dir));
+  renderPage();
+}
+
+// ── RENDER ──
+function renderS13(){
+  _year=parseInt(document.getElementById('yearInput').value)||2026;
+  _allTers=filteredTers();
+  _page=0;
+  renderPage();
+}
+
+function renderPage(){
+  const perPage=parseInt(document.getElementById('perPage').value);
+  const pages=Math.max(1,Math.ceil(_allTers.length/perPage));
+  const chunk=perPage>=9999?_allTers:_allTers.slice(_page*perPage,(_page+1)*perPage);
+
+  document.getElementById('pageInfo').textContent=_allTers.length+' territorios';
+  document.getElementById('pageInfo2').textContent='Pág. '+(_page+1)+' / '+pages;
+  document.getElementById('prevBtn').disabled=_page===0;
+  document.getElementById('nextBtn').disabled=_page>=pages-1||perPage>=9999;
+
+  const isMobile=window.innerWidth<=700;
+  document.getElementById('s13Output').innerHTML=isMobile
+    ? buildCards(chunk)
+    : buildTable(chunk);
+}
+
+// ── TABLE (desktop) ──
+function buildTable(ters){
+  const bd='border:1px solid var(--border2)';
+  let rows='';
+  for(const t of ters){
+    const hist=getHist(t);
+    const stCol={vencido:'var(--red)',proximo:'var(--amber)',asignado:'var(--blue)',grupo:'var(--purple)',disponible:'var(--green)'}[statusOf(t)]||'var(--t3)';
+    rows+='<tr>'
+      +'<td class="s13-num" rowspan="2" style="color:'+stCol+'">'+t.num+'</td>'
+      +'<td class="s13-ult" rowspan="2">'+fmtDate(t.ultimo_trabajado)+'</td>'
+      +hist.map(h=>'<td class="s13-pub" colspan="2">'+pubName(h.pub_id)+'</td>').join('')
+      +'</tr><tr>'
+      +hist.map(h=>'<td class="s13-date">'+fmtDate(h.fecha_asig)+'</td><td class="s13-date">'+fmtDate(h.fecha_dev)+'</td>').join('')
+      +'</tr>';
+  }
+  return '<div class="s13-wrap"><table class="s13-table">'
+    +'<thead>'
+    +'<tr><th colspan="10" class="s13-title">REGISTRO DE ASIGNACIÓN DE TERRITORIO — S-13</th></tr>'
+    +'<tr><td colspan="2" class="s13-sub">Año de servicio: <u>'+_year+'</u></td><td colspan="8" style="'+bd+';background:var(--s2)"></td></tr>'
+    +'<tr>'
+    +'<th class="s13-head" rowspan="2" style="width:52px">Terr.<br>n.º</th>'
+    +'<th class="s13-head" rowspan="2" style="width:80px">Últ.<br>completado</th>'
+    +'<th class="s13-head" colspan="2">Asignado a</th>'
+    +'<th class="s13-head" colspan="2">Asignado a</th>'
+    +'<th class="s13-head" colspan="2">Asignado a</th>'
+    +'<th class="s13-head" colspan="2">Asignado a</th>'
+    +'</tr><tr>'
+    +'<th class="s13-head-sub" style="width:110px">Entrega</th><th class="s13-head-sub" style="width:90px">Devolución</th>'
+    +'<th class="s13-head-sub" style="width:110px">Entrega</th><th class="s13-head-sub" style="width:90px">Devolución</th>'
+    +'<th class="s13-head-sub" style="width:110px">Entrega</th><th class="s13-head-sub" style="width:90px">Devolución</th>'
+    +'<th class="s13-head-sub" style="width:110px">Entrega</th><th class="s13-head-sub" style="width:90px">Devolución</th>'
+    +'</tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot>'
+    +'<tr><td colspan="10" class="s13-foot">*Al comenzar una nueva página, anote la última fecha en que los territorios se completaron.</td></tr>'
+    +'<tr><td colspan="10" class="s13-ref">S-13 1/22 · Congregación Montequinto</td></tr>'
+    +'</tfoot>'
+    +'</table></div>';
+}
+
+// ── CARDS (mobile) ──
+function buildCards(ters){
+  return '<div class="s13-cards" style="display:block">'
+    +ters.map(t=>{
+      const hist=getHist(t);
+      const active=hist.filter(h=>h.pub_id);
+      const stCol={vencido:'var(--red)',proximo:'var(--amber)',asignado:'var(--blue)',grupo:'var(--purple)',disponible:'var(--green)'}[statusOf(t)]||'var(--t3)';
+      const rows=active.map(h=>{
+        const isOpen=!h.fecha_dev;
+        const devColor=isOpen?'var(--amber)':'var(--t2)';
+        const devTxt=h.fecha_dev?fmtDate(h.fecha_dev):'En curso';
+        return '<div class="s13-card-row">'
+          +'<div style="font-weight:600">'+pubName(h.pub_id)+'</div>'
+          +'<div style="color:var(--t2)">'+fmtDate(h.fecha_asig)+'</div>'
+          +'<div style="color:'+devColor+';font-weight:'+(isOpen?'600':'400')+'">'+devTxt+'</div>'
+          +'</div>';
+      }).join('');
+      return '<div class="s13-card '+stripeClass(t)+'">'
+        +'<div class="s13-card-head">'
+        +'<span class="s13-card-num" style="color:'+stCol+'">'+t.num+'</span>'
+        +'<span class="s13-card-name">'+t.nombre+'</span>'
+        +'<span class="s13-card-ult">'+fmtDate(t.ultimo_trabajado)+'</span>'
+        +'</div>'
+        +(active.length
+          ?'<div class="s13-card-cols"><span>Publicador</span><span>Entrega</span><span>Devolución</span></div>'+rows
+          :'<div class="s13-card-empty">Sin asignaciones</div>')
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+
+// ── EXCEL EXPORT ──
+async function exportarExcel(){
+  if(!window.XLSX){
+    const s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js';
+    document.head.appendChild(s);
+    await new Promise(r=>s.onload=r);
+  }
+  const perPage=20;
+  const wb=XLSX.utils.book_new();
+  for(let i=0;i<_allTers.length;i+=perPage){
+    const chunk=_allTers.slice(i,i+perPage);
+    const sheetName='Hoja '+(Math.floor(i/perPage)+1);
+    const rows=[
+      [{v:'REGISTRO DE ASIGNACIÓN DE TERRITORIO',t:'s'}],
+      [{v:'Año de servicio: '+_year,t:'s'}],
+      [{v:'Terr. n.º',t:'s'},{v:'Últ. completado',t:'s'},
+       {v:'Publicador',t:'s'},{v:'Entrega',t:'s'},{v:'Devolución',t:'s'},
+       {v:'Publicador',t:'s'},{v:'Entrega',t:'s'},{v:'Devolución',t:'s'}],
+    ];
+    for(const t of chunk){
+      const hist=getHist(t);
+      const h1=hist[0],h2=hist[1];
+      rows.push([
+        {v:t.num,t:'s'},{v:t.ultimo_trabajado?fmtDate(t.ultimo_trabajado):'',t:'s'},
+        {v:pubName(h1.pub_id),t:'s'},{v:h1.fecha_asig?fmtDate(h1.fecha_asig):'',t:'s'},{v:h1.fecha_dev?fmtDate(h1.fecha_dev):'',t:'s'},
+        {v:pubName(h2.pub_id),t:'s'},{v:h2.fecha_asig?fmtDate(h2.fecha_asig):'',t:'s'},{v:h2.fecha_dev?fmtDate(h2.fecha_dev):'',t:'s'},
+      ]);
+    }
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb,ws,sheetName);
+  }
+  XLSX.writeFile(wb,'S13_Montequinto_'+_year+'.xlsx');
+}
+
+// ── THEME ──
+function toggleTheme(){
+  const isLight=document.body.classList.toggle('light');
+  localStorage.setItem('ter_theme',isLight?'light':'dark');
+  document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
+}
+(function(){
+  const saved=localStorage.getItem('ter_theme');
+  if(saved!=='dark'){
+    document.body.classList.add('light');
+    document.getElementById('themeBtn').textContent='☀️';
+  }
+})();
+
+// ── INIT ──
+async function init(){
+  try{
+    const [ters,pubs,hist]=await Promise.all([
+      sbGet('territorios',{select:'*',order:'num.asc'}),
+      sbGet('publicadores',{select:'*',order:'nombre.asc'}),
+      sbGet('historial',{select:'*',order:'created_at.desc',limit:5000}),
+    ]);
+    S.territorios=ters; S.publicadores=pubs; S.historial=hist;
+    document.getElementById('loader').classList.add('hide');
+    renderS13();
+  }catch(e){
+    document.getElementById('loader').innerHTML='<div style="color:#ff453a;font-size:14px">Error al cargar: '+e.message+'</div>';
+  }
+}
+
+window.addEventListener('resize',()=>renderPage());
+init();
+</script>
+</body>
+</html>
