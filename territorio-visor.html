@@ -750,20 +750,48 @@ document.addEventListener('contextmenu',e=>e.preventDefault());
 // ══ SW ──
 // ══ PWA INSTALL ══
 let _visorInstallPrompt=null;
+
+function _visorShowInstall(){
+  const btn=document.getElementById('visorInstallBtn');
+  if(btn) btn.style.display='flex';
+}
+function _visorHideInstall(){
+  const btn=document.getElementById('visorInstallBtn');
+  if(btn) btn.style.display='none';
+}
+
+// Show unless already installed
+if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone){
+  // already installed
+} else {
+  setTimeout(_visorShowInstall, 1500);
+}
+
 window.addEventListener('beforeinstallprompt',e=>{
   e.preventDefault();
   _visorInstallPrompt=e;
-  const btn=document.getElementById('visorInstallBtn');
-  if(btn) btn.style.display='flex';
+  _visorShowInstall();
 });
+
 function installVisorPWA(){
-  if(!_visorInstallPrompt) return;
-  _visorInstallPrompt.prompt();
-  _visorInstallPrompt.userChoice.then(()=>{ _visorInstallPrompt=null; document.getElementById('visorInstallBtn').style.display='none'; });
+  if(_visorInstallPrompt){
+    _visorInstallPrompt.prompt();
+    _visorInstallPrompt.userChoice.then(r=>{
+      if(r.outcome==='accepted') _visorHideInstall();
+      _visorInstallPrompt=null;
+    });
+  } else {
+    const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+    const msg=isIOS
+      ?'En Safari: toca Compartir (□↑) y "Añadir a pantalla de inicio"'
+      :'En Chrome: abre el menú ⋮ y selecciona "Instalar app"';
+    alert('📲 ' + msg);
+  }
 }
+
 window.addEventListener('appinstalled',()=>{
-  const btn=document.getElementById('visorInstallBtn');
-  if(btn) btn.style.display='none';
+  _visorInstallPrompt=null;
+  _visorHideInstall();
 });
 
 // ══ THEME ══
