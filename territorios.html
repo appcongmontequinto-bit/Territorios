@@ -425,11 +425,12 @@ body.light{
 .legend-item:last-child{margin-bottom:0}
 .legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .map-tooltip{
-  background:rgba(28,28,30,.95)!important;border:1px solid var(--border2)!important;
-  border-radius:10px!important;color:var(--text)!important;
+  background:rgba(28,28,30,.92)!important;border:none!important;
+  border-radius:10px!important;color:#fff!important;
   font-family:var(--font)!important;font-size:13px!important;font-weight:600!important;
-  padding:6px 10px!important;box-shadow:var(--sh)!important;
+  padding:6px 10px!important;box-shadow:0 2px 12px rgba(0,0,0,.3)!important;
 }
+.map-tooltip::before{display:none!important}
 /* ── MAP SIDE PANEL ── */
 #mapPanel{
   position:absolute;top:0;right:0;width:320px;height:100%;
@@ -994,7 +995,7 @@ body.light{
         <div class="fg"><label class="fl">Desde (dejar vacío = todos)</label><input class="fi" id="s13From" type="text" placeholder="001"></div>
         <div class="fg"><label class="fl">Hasta</label><input class="fi" id="s13To" type="text" placeholder="201"></div>
       </div>
-      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="s13Tipo"><option value="">Todos</option><option value="Urbano">Urbano</option><option value="Comercial">Comercial</option><option value="Especial">Especiales</option></select></div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fs" id="s13Tipo"><option value="">Todos</option><option value="Casa">Casa</option><option value="Bloque">Bloque</option><option value="Especial">Especial</option><option value="Negocio">Negocio</option></select></div>
       <div style="background:var(--blue-dim);border:1px solid rgba(10,132,255,.2);border-radius:var(--r);padding:12px 14px;font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.6">
         ℹ Genera el S-13 en formato Excel con el mismo diseño que el original, incluyendo publicadores y fechas de entrega/devolución.
       </div>
@@ -1165,7 +1166,7 @@ body.light{
           <div class="fg"><label class="fl">Número</label><input class="fi" id="t-num" placeholder="001"></div>
           <div class="fg"><label class="fl">Nombre / Localidad</label><input class="fi" id="t-nombre" placeholder="Montequinto — 001"></div>
           <div class="fg"><label class="fl">Tipo</label>
-            <select class="fs" id="t-tipo"><option>Urbano</option><option>Rural</option><option>Comercial</option><option>Apartamentos</option><option>Especial</option><option>Mixto</option></select>
+            <select class="fs" id="t-tipo"><option>Casa</option><option>Bloque</option><option>Especial</option><option>Negocio</option></select>
           </div>
         </div>
         <div class="fg"><label class="fl">Descripción / Calles</label><textarea class="ft" id="t-desc" placeholder="Calles, límites…"></textarea></div>
@@ -1785,14 +1786,12 @@ function styleGeoFeature(feature){
   const num=String(feature.properties.Name).trim();
   const t=S.territorios.find(x=>x.num===num);
   const col=colorFor(t);
-  const isLight=document.body.classList.contains('light');
   return{
     fillColor:col,
-    weight:isLight?2:1.5,
-    opacity:1,
-    color:isLight?'rgba(0,0,0,.45)':'rgba(255,255,255,.5)',
-    dashArray:'',
-    fillOpacity:isLight?.5:.55
+    weight:0,
+    opacity:0,
+    color:'transparent',
+    fillOpacity:.65
   };
 }
 
@@ -1802,7 +1801,7 @@ function onEachGeoFeature(feature,layer){
   layer.on({
     mouseover:e=>{
       if(selectedLayer!==e.target){
-        e.target.setStyle({weight:3,color:'rgba(255,255,255,.8)',fillOpacity:.75});
+        e.target.setStyle({weight:2.5,color:'rgba(255,255,255,.9)',fillOpacity:.82});
         const t=S.territorios.find(x=>x.num===num);
         layer.bindTooltip(`<b>${num}</b>${t?` · ${pubName(t.pub_id)}`:''}`,{className:'map-tooltip',sticky:true}).openTooltip();
       }
@@ -2233,7 +2232,7 @@ function openTerModal(){
   document.getElementById('btnElimTer').style.display='none';
   document.getElementById('btnCancelarAsig').style.display='none';
   ['t-num','t-nombre','t-desc','t-notas','t-dirs'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('t-tipo').value='Urbano';
+  document.getElementById('t-tipo').value='Casa';
   document.getElementById('t-esGrupo').checked=false;
   fillGrupoSel('t-grupo'); fillPubSel('asig-pub');
   document.getElementById('asig-fecha').value=today();
@@ -2362,7 +2361,7 @@ async function cancelarAsignacion(){
   if(!confirm(`¿Cancelar la asignación de ${t.num} a ${pubName(t.pub_id)}? El territorio quedará disponible sin añadir entrada al historial.`)) return;
   setSyncStatus('syncing');
   try{
-    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null});
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,es_grupo:false});
     Object.assign(t,rows[0]);
     setSyncStatus('ok');
     document.getElementById('btnCancelarAsig').style.display='none';
@@ -2379,12 +2378,15 @@ async function confirmarAsig(){
   if(!pubId){toast('⚠ Selecciona un publicador','am');return;}
   if(!fecha){toast('⚠ Indica la fecha de entrega','am');return;}
   const fechaVence=addDays(fecha,EXPIRY_DAYS);
+  // Auto es_grupo: true if assigned publisher name starts with "Grupo" followed by a number
+  const pub=S.publicadores.find(p=>p.id===pubId);
+  const esGrupoAuto=pub?/^grupo\s*\d/i.test(pub.nombre.trim()):false;
   setSyncStatus('syncing');
   try{
-    const rows=await sbPatch('territorios',{id:t.id},{estado:'asignado',pub_id:pubId,fecha_asig:fecha,fecha_vence:fechaVence,ultimo_trabajado:fecha});
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'asignado',pub_id:pubId,fecha_asig:fecha,fecha_vence:fechaVence,ultimo_trabajado:fecha,es_grupo:esGrupoAuto});
     Object.assign(t,rows[0]);
     setSyncStatus('ok');
-    closeModal('mTer'); // close immediately — no need to "Guardar" separately
+    closeModal('mTer');
     reloadAndRender();
     toast(`📌 Asignado a ${pubName(pubId)}`,'a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
@@ -2424,7 +2426,7 @@ async function ejecutarDevolucion(t,fecha){
   try{
     const hRow=await sbPost('historial',{territorio_id:t.id,pub_id:t.pub_id,fecha_asig:t.fecha_asig,fecha_dev:fecha});
     S.historial.unshift(hRow[0]);
-    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha});
+    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha,es_grupo:false});
     Object.assign(t,rows[0]);
     setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);reloadAndRender();
     toast('✅ Devuelto y disponible','g');
