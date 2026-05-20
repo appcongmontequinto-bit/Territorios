@@ -843,6 +843,7 @@ body.light{
       <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Asignado</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Próx. vencer</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Vencido</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Grupo <span style="font-size:9px;opacity:.7">(tono = estado)</span></div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--s4)"></div>Sin datos</div>
     </div>
     <!-- MAP SIDE PANEL -->
@@ -1782,10 +1783,15 @@ function colorFor(t){
   const isLight=document.body.classList.contains('light');
   if(!t) return isLight?'#aeaeb2':'#636366';
   const st=statusOf(t);
+  // Grupo territories always purple — shade varies by sub-state
+  if(isGrupo(t)){
+    if(st==='vencido') return isLight?'#6b0f9e':'#e879f9'; // bright/saturated = overdue
+    if(st==='proximo') return isLight?'#8b1fc0':'#c084fc'; // medium = warning
+    return isLight?'#7a00d0':'#bf5af2';                    // normal grupo purple
+  }
   if(st==='vencido') return isLight?'#d00000':'#ff453a';
   if(st==='proximo') return isLight?'#c96000':'#ff9f0a';
   if(st==='asignado') return isLight?'#0055d4':'#0a84ff';
-  if(st==='grupo'||isGrupo(t)) return isLight?'#7a00d0':'#bf5af2';
   return isLight?'#1a8a3e':'#30d158';
 }
 
