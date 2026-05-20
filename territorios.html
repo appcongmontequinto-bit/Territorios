@@ -1334,15 +1334,15 @@ const MAP_ZOOM = 15;
 
 const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
 
-// ── SUPABASE REALTIME CLIENT ──
-const sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+// ── SUPABASE REALTIME ──
+// sbClient is initialized lazily inside initRealtime() to ensure
+// the Supabase CDN script has fully loaded before use.
+let sbClient = null;
 
-// Debounce helper: avoid reloading multiple times if several changes arrive at once
 function debounce(fn, ms){
   let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); };
 }
 
-// What to reload per table
 const _tableReloaders = {
   territorios: async () => { await loadTerritorios(); await checkVencidos(); fillAllSels(); renderView(currentView); updateBadges(); },
   publicadores: async () => { await loadPublicadores(); fillAllSels(); renderView(currentView); updateBadges(); },
@@ -1358,35 +1358,34 @@ const _debouncedReload = {
 };
 
 function initRealtime(){
-  sbClient
-    .channel('db-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'territorios' }, () => {
-      setSyncStatus('syncing');
-      _debouncedReload.territorios().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'publicadores' }, () => {
-      setSyncStatus('syncing');
-      _debouncedReload.publicadores().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, () => {
-      setSyncStatus('syncing');
-      _debouncedReload.historial().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => {
-      setSyncStatus('syncing');
-      _debouncedReload.grupos().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
-    })
-    .subscribe((status) => {
-      if(status === 'SUBSCRIBED'){
-        console.log('✓ Realtime conectado');
-        // Show a subtle live indicator in sync status
-        const el = document.getElementById('syncStatus');
-        if(el) el.title = 'Sincronización en tiempo real activa';
-      }
-      if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
-        console.warn('Realtime desconectado, reintentando…');
-      }
-    });
+  try {
+    if(!window.supabase) { console.warn('Supabase CDN not loaded — realtime disabled'); return; }
+    sbClient = window.supabase.createClient(SB_URL, SB_KEY);
+    sbClient
+      .channel('db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'territorios' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.territorios().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'publicadores' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.publicadores().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'historial' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.historial().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'grupos' }, () => {
+        setSyncStatus('syncing');
+        _debouncedReload.grupos().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
+      })
+      .subscribe((status) => {
+        if(status === 'SUBSCRIBED') console.log('✓ Realtime conectado');
+        if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('Realtime desconectado, reintentando…');
+      });
+  } catch(e) {
+    console.warn('Realtime init failed:', e.message);
+  }
 }
 
 // ── SUPABASE API ──
