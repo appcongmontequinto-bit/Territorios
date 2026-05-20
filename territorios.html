@@ -3458,7 +3458,7 @@ function closeLb(){document.getElementById('lb').classList.remove('on');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLb();closeMapPanel();}});
 
 // ══ TOAST ══
-function toast(msg,type=''){
+function toast(msg,type='',dur=3500){
   const c=document.getElementById('toast-wrap');const el=document.createElement('div');
   el.className='toast';
   const col={g:'var(--green)',r:'var(--red)',am:'var(--amber)',a:'var(--blue)'}[type]||'var(--t2)';
@@ -3490,34 +3490,57 @@ if ('serviceWorker' in navigator) {
 
 // ══ PWA INSTALL PROMPT ══
 let _installPrompt = null;
+
+// Show install UI as soon as page loads if not already installed
+function _showInstallUI(){
+  const btn = document.getElementById('installBtn');
+  const dw  = document.getElementById('drawerInstallWrap');
+  if(btn) btn.style.display = 'flex';
+  if(dw)  dw.style.display  = '';
+}
+function _hideInstallUI(){
+  const btn = document.getElementById('installBtn');
+  const dw  = document.getElementById('drawerInstallWrap');
+  if(btn) btn.style.display = 'none';
+  if(dw)  dw.style.display  = 'none';
+}
+
+// Show install button unless already running as installed PWA
+if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
+  // Already installed — keep hidden
+} else {
+  // Show after a short delay so page has rendered
+  setTimeout(_showInstallUI, 1500);
+}
+
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _installPrompt = e;
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'flex';
-  // Also show in mobile drawer
-  const dw = document.getElementById('drawerInstallWrap');
-  if (dw) dw.style.display = '';
+  _showInstallUI();
 });
 
-function installPWA() {
-  if (!_installPrompt) return;
-  _installPrompt.prompt();
-  _installPrompt.userChoice.then(result => {
-    if (result.outcome === 'accepted') {
-      toast('✓ App instalada', 'g');
-      const btn = document.getElementById('installBtn');
-      if (btn) btn.style.display = 'none';
-    }
-    _installPrompt = null;
-  });
+function installPWA(){
+  if(_installPrompt){
+    // Native prompt available
+    _installPrompt.prompt();
+    _installPrompt.userChoice.then(result => {
+      if(result.outcome === 'accepted'){ toast('✓ App instalada','g'); _hideInstallUI(); }
+      _installPrompt = null;
+    });
+  } else {
+    // No native prompt — show manual instructions
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const msg = isIOS
+      ? 'En Safari: toca el botón Compartir (□↑) y selecciona "Añadir a pantalla de inicio"'
+      : 'En Chrome: abre el menú ⋮ y selecciona "Instalar app" o "Añadir a pantalla de inicio"';
+    toast('📲 ' + msg, 'a', 6000);
+  }
 }
 
 window.addEventListener('appinstalled', () => {
-  toast('✓ Territorios instalado como app', 'g');
+  toast('✓ Territorios instalado como app','g');
   _installPrompt = null;
-  const dw = document.getElementById('drawerInstallWrap');
-  if (dw) dw.style.display = 'none';
+  _hideInstallUI();
 });
 
 // ══ CONTAR VIVIENDAS ══
