@@ -103,7 +103,7 @@ body.light{
 }
 .logo{
   font-size:17px;font-weight:700;letter-spacing:-.4px;
-  display:flex;align-items:center;gap:8px;
+  display:flex;align-items:center;gap:8px;color:var(--text);
 }
 .logo-mark{
   width:26px;height:26px;background:linear-gradient(135deg,var(--blue),var(--purple));
@@ -122,7 +122,7 @@ body.light{
 .topbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
 .sync-pill{
   display:flex;align-items:center;gap:5px;
-  font-size:11px;color:var(--t2);font-weight:500;
+  font-size:11px;color:var(--text);font-weight:500;
 }
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
 .sync-dot.syncing{background:var(--amber);animation:pulse 1s ease-in-out infinite}
@@ -234,7 +234,7 @@ body.light{
 .overlay{
   display:none;position:fixed;inset:0;
   background:rgba(0,0,0,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  z-index:200;align-items:center;justify-content:center;
+  z-index:500;align-items:center;justify-content:center;
 }
 .overlay.on{display:flex;animation:fIn .18s}
 @keyframes fIn{from{opacity:0}to{opacity:1}}
@@ -693,7 +693,7 @@ body.light{
 <!-- TOPBAR -->
 <div id="topbar">
   <button id="menuBtn" onclick="toggleDrawer()" style="width:36px;height:36px;background:var(--s2);border:1px solid var(--border);border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0">☰</button>
-  <div class="logo"><div class="logo-mark">🗺</div>Territorios</div>
+  <div class="logo"><div class="logo-mark"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
   <div class="topbar-search">
     <span style="color:var(--t3);font-size:14px">⌕</span>
     <input id="gSearch" type="text" placeholder="Buscar territorio, publicador…" oninput="onSearch()">
@@ -702,7 +702,7 @@ body.light{
     <div class="sync-pill"><div class="sync-dot" id="syncDot"></div><span id="syncTxt">Conectado</span></div>
     <button class="btn btn-ghost btn-sm" onclick="openTerModal()">＋ Territorio</button>
     <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Publicador</button>
-    <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.25);border-radius:9px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:5px">⬇ Instalar</button>
+    <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.25);border-radius:9px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:5px;flex-shrink:0">⬇ Instalar</button>
     <button onclick="toggleTheme()" id="themeBtn" title="Cambiar tema" style="width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🌙</button>
     <button id="addTerBtn" onclick="openTerModal()" style="width:36px;height:36px;background:var(--blue);border:none;border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff;flex-shrink:0">＋</button>
   </div>
@@ -730,6 +730,10 @@ body.light{
     <div class="mtab-icon">👥</div>
     <span>Hermanos</span>
   </div>
+  <div class="mtab" data-v="grupos" onclick="navTab(this)">
+    <div class="mtab-icon" style="color:var(--purple)">⬟</div>
+    <span>Grupos</span>
+  </div>
   <div class="mtab" data-v="__menu" onclick="toggleDrawer()">
     <div class="mtab-icon">☰</div>
     <span>Más</span>
@@ -741,7 +745,7 @@ body.light{
   <div id="drawerOverlay" onclick="toggleDrawer()"></div>
   <div id="drawerPanel">
     <div class="drawer-head">
-      <div class="drawer-logo"><div class="logo-mark" style="width:26px;height:26px;font-size:12px">🗺</div>Territorios</div>
+      <div class="drawer-logo"><div class="logo-mark" style="width:26px;height:26px"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
       <button class="drawer-close" onclick="toggleDrawer()">✕</button>
     </div>
     <div class="drawer-nav">
@@ -2983,65 +2987,88 @@ function buildS13Sheet(XLSX, territories, year){
 }
 
 // Build the S-13 preview HTML table (shared by inline + modal)
-function buildS13PreviewHTML(ters, year){
-  let html = `
-  <div style="overflow-x:auto">
-  <table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px;min-width:900px;width:100%">
-    <thead>
-      <tr><th colspan="10" style="padding:10px;font-size:13px;font-weight:700;text-align:center;border:1px solid var(--border);background:var(--s2)">REGISTRO DE ASIGNACIÓN DE TERRITORIO</th></tr>
-      <tr><td colspan="2" style="padding:6px 10px;font-weight:700;border:1px solid var(--border);background:var(--s2)">Año de servicio <u>${year}</u></td><td colspan="8" style="border:1px solid var(--border);background:var(--s2)"></td></tr>
-      <tr style="background:var(--s3)">
-        <th rowspan="2" style="padding:6px 4px;border:1px solid var(--border);text-align:center;width:55px">Terr. n.º</th>
-        <th rowspan="2" style="padding:6px 8px;border:1px solid var(--border);text-align:center;width:100px">Última fecha<br>en que se<br>completó*</th>
-        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
-        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
-        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
-        <th colspan="2" style="padding:5px;border:1px solid var(--border);text-align:center">Asignado a</th>
-      </tr>
-      <tr style="background:var(--s3)">
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:120px">Fecha de<br>entrega</th>
-        <th style="padding:4px;border:1px solid var(--border);text-align:center;font-weight:400;width:100px">Fecha de<br>devolución</th>
-      </tr>
-    </thead>
-    <tbody>`;
+function _getS13Hist(t){
+  const allHist=S.historial.filter(h=>h.territorio_id===t.id)
+    .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
+  const closed=allHist.filter(h=>h.fecha_dev);
+  const open=allHist.filter(h=>!h.fecha_dev);
+  const hist=[...closed.slice(-1),...open.slice(0,1)];
+  while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
+  return hist;
+}
 
+// Desktop: classic table layout (scroll horizontally)
+function buildS13TableHTML(ters,year){
+  const bd='border:1px solid var(--border)';
+  const th=bd+';padding:5px 4px;text-align:center;background:var(--s3)';
+  const td=bd+';text-align:center;padding:3px 5px';
+  let rows='';
   for(const t of ters){
-    const allHist = S.historial
-      .filter(h=>h.territorio_id===t.id)
-      .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
-    const closed = allHist.filter(h=>h.fecha_dev);
-    const open   = allHist.filter(h=>!h.fecha_dev);
-    const hist   = [...closed.slice(-1), ...open.slice(0,1)];
-    while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
-
-    const td = `border:1px solid var(--border);text-align:center;padding:3px 5px`;
-    html+=`<tr>
-      <td rowspan="2" style="${td};font-weight:600">${t.num}</td>
-      <td rowspan="2" style="${td};color:var(--t2)">${fmtDate(t.ultimo_trabajado)}</td>
-      ${hist.map(h=>`<td colspan="2" style="${td}">${h.pub_id?pubName(h.pub_id):''}</td>`).join('')}
-    </tr>
-    <tr>
-      ${hist.map(h=>`
-        <td style="${td};color:var(--t2);font-size:10px">${h.fecha_asig?fmtDate(h.fecha_asig):''}</td>
-        <td style="${td};color:var(--t2);font-size:10px">${h.fecha_dev?fmtDate(h.fecha_dev):''}</td>
-      `).join('')}
-    </tr>`;
+    const hist=_getS13Hist(t);
+    rows+='<tr>'
+      +'<td rowspan="2" style="'+td+';font-weight:700;font-size:13px">'+t.num+'</td>'
+      +'<td rowspan="2" style="'+td+';color:var(--t2);font-size:11px">'+fmtDate(t.ultimo_trabajado)+'</td>'
+      +hist.map(h=>'<td colspan="2" style="'+td+';font-size:11px">'+(h.pub_id?pubName(h.pub_id):'')+'</td>').join('')
+      +'</tr><tr>'
+      +hist.map(h=>'<td style="'+td+';color:var(--t2);font-size:10px">'+(h.fecha_asig?fmtDate(h.fecha_asig):'')+'</td><td style="'+td+';color:var(--t2);font-size:10px">'+(h.fecha_dev?fmtDate(h.fecha_dev):'')+'</td>').join('')
+      +'</tr>';
   }
+  return '<div style="overflow-x:auto">'
+    +'<table style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:11px;min-width:860px;width:100%">'
+    +'<thead>'
+    +'<tr><th colspan="10" style="'+bd+';padding:10px;font-size:13px;font-weight:700;text-align:center;background:var(--s2)">REGISTRO DE ASIGNACIÓN DE TERRITORIO</th></tr>'
+    +'<tr><td colspan="2" style="'+bd+';padding:6px 10px;font-weight:700;background:var(--s2)">Año de servicio <u>'+year+'</u></td><td colspan="8" style="'+bd+';background:var(--s2)"></td></tr>'
+    +'<tr>'
+    +'<th rowspan="2" style="'+th+';width:52px">Terr.<br>n.º</th>'
+    +'<th rowspan="2" style="'+th+';width:90px">Última<br>completado*</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'<th colspan="2" style="'+th+'">Asignado a</th>'
+    +'</tr><tr>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'<th style="'+th+';font-weight:400;width:110px">Entrega</th><th style="'+th+';font-weight:400;width:90px">Devolución</th>'
+    +'</tr></thead><tbody>'+rows+'</tbody>'
+    +'<tfoot><tr><td colspan="10" style="'+bd+';padding:5px 10px;font-size:10px;font-style:italic">*Cuando comience una nueva página, anote la última fecha en que los territorios se completaron.</td></tr>'
+    +'<tr><td colspan="10" style="'+bd+';padding:3px 10px;font-size:10px">S-13 1/22</td></tr></tfoot>'
+    +'</table></div>';
+}
 
-  html+=`
-    </tbody>
-    <tfoot>
-      <tr><td colspan="10" style="padding:6px 10px;font-size:10px;font-style:italic;border:1px solid var(--border)">**Cuando comience una nueva página, anote en esta columna la última fecha en que los territorios se completaron.</td></tr>
-      <tr><td colspan="10" style="padding:4px 10px;font-size:10px;border:1px solid var(--border)">S-13 1/22</td></tr>
-    </tfoot>
-  </table></div>`;
-  return html;
+// Mobile: card layout — one card per territory, same data
+function buildS13CardsHTML(ters,year){
+  const cards=ters.map(t=>{
+    const hist=_getS13Hist(t);
+    const active=hist.filter(h=>h.pub_id);
+    const rows=active.map(h=>{
+      const isOpen=!h.fecha_dev;
+      return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:6px 10px;border-top:1px solid var(--border);font-size:12px">'
+        +'<div style="font-weight:600;color:var(--text)">'+(h.pub_id?pubName(h.pub_id):'—')+'</div>'
+        +'<div style="color:var(--t2)">'+(h.fecha_asig?fmtDate(h.fecha_asig):'—')+'</div>'
+        +'<div style="color:'+(isOpen?'var(--amber)':'var(--t2)');font-weight:'+(isOpen?'600':'400')+'">'+(h.fecha_dev?fmtDate(h.fecha_dev):'En curso')+'</div>'
+        +'</div>';
+    }).join('');
+    const st=statusOf(t);
+    const stCol={vencido:'var(--red)',proximo:'var(--amber)',asignado:'var(--blue)',grupo:'var(--purple)',disponible:'var(--green)'}[st]||'var(--t3)';
+    return '<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s3)">'
+      +'<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;min-width:36px;color:'+stCol+'">'+t.num+'</span>'
+      +'<span style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.nombre+'</span>'
+      +'<span style="font-size:11px;color:var(--t3)">Últ: '+(t.ultimo_trabajado?fmtDate(t.ultimo_trabajado):'—')+'</span>'
+      +'</div>'
+      +(active.length
+        ?'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:4px 10px 2px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em"><span>Publicador</span><span>Entrega</span><span>Devolución</span></div>'+rows
+        :'<div style="padding:8px 10px;font-size:12px;color:var(--t3)">Sin asignaciones registradas</div>')
+      +'</div>';
+  }).join('');
+  return '<div style="font-size:11px;color:var(--t3);margin-bottom:10px;font-weight:600">S-13 · Año '+year+' · '+ters.length+' territorios</div>'+cards;
+}
+
+// Unified entry: table on desktop, cards on mobile
+function buildS13PreviewHTML(ters,year){
+  const isMobile=window.innerWidth<=700;
+  return isMobile ? buildS13CardsHTML(ters,year) : buildS13TableHTML(ters,year);
 }
 
 let _s13AllTers=[], _s13Year=2026, _s13Page=0;
