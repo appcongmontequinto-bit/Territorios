@@ -1453,10 +1453,17 @@ function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.
 function pubName(id){return id?S.publicadores.find(p=>p.id===id)?.nombre||'—':'—';}
 function grupoOf(t){return t.grupo_id?S.grupos.find(g=>g.id===t.grupo_id)||null:null;}
 function grupoLabel(t){const g=grupoOf(t);return g?`G${g.num}`:'—';}
+// Returns true if territory is currently assigned to a "Grupo X" publisher
+function isGrupo(t){
+  if(!t.pub_id) return false;
+  const pub=S.publicadores.find(p=>p.id===t.pub_id);
+  return pub ? /^grupo\s*\d/i.test(pub.nombre.trim()) : false;
+}
 function statusOf(t){
   if(t.estado==='vencido') return 'vencido';
   if(t.estado==='asignado'){if(t.fecha_vence&&daysUntil(t.fecha_vence)<=WARN_DAYS) return 'proximo'; return 'asignado';}
-  if(t.es_grupo) return 'grupo';
+  // "grupo" state: available territories assigned to a Grupo X publisher (es_grupo from runtime check)
+  if(isGrupo(t)) return 'grupo';
   return 'disponible';
 }
 
@@ -1561,7 +1568,7 @@ function filteredList(){
   const sort=document.getElementById('fSort')?.value||'num';
   let list=S.territorios.filter(t=>{
     const st=statusOf(t);
-    const mF=currentFilter==='todos'||st===currentFilter||(currentFilter==='grupo'&&t.es_grupo)||(currentFilter==='disponible'&&t.estado==='disponible')||(currentFilter==='vencido'&&t.estado==='vencido')||(currentFilter==='asignado'&&t.estado==='asignado')||(currentFilter==='proximo'&&st==='proximo');
+    const mF=currentFilter==='todos'||st===currentFilter||(currentFilter==='grupo'&&isGrupo(t))||(currentFilter==='disponible'&&t.estado==='disponible')||(currentFilter==='vencido'&&t.estado==='vencido')||(currentFilter==='asignado'&&t.estado==='asignado')||(currentFilter==='proximo'&&st==='proximo');
     const mG=!gFil||String(t.grupo_id)===gFil;
     const mS=!searchQ||t.num.toLowerCase().includes(searchQ)||t.nombre.toLowerCase().includes(searchQ)||pubName(t.pub_id).toLowerCase().includes(searchQ)||(t.descripcion||'').toLowerCase().includes(searchQ);
     return mF&&mG&&mS;
@@ -1663,7 +1670,7 @@ function renderListView(list){
           <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
           ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
         </span>
-        <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,t.es_grupo)}</span>
+        <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,isGrupo(t))}</span>
       </div>`;
     }
 
@@ -1675,7 +1682,7 @@ function renderListView(list){
       <span style="color:var(--t2);font-size:12px">${g?`G${g.num}`:'—'}</span>
       <span style="color:var(--t2);font-size:12px">${fmtDate(t.fecha_asig)}</span>
       <span style="font-size:12px">${vH}</span>
-      <span>${pillHtml(st,t.es_grupo)}</span>
+      <span>${pillHtml(st,isGrupo(t))}</span>
     </div>`;
   }).join('');
 }
@@ -1684,14 +1691,14 @@ function renderCardView(list){
   const body=document.getElementById('card-view');
   if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);grid-column:1/-1">Sin resultados</div>`;return;}
   body.innerHTML=list.map(t=>{
-    const st=statusOf(t);const cls=st==='proximo'?'prox':st==='asignado'?'asig':st==='vencido'?'venc':(t.es_grupo?'grup':'disp');
+    const st=statusOf(t);const cls=st==='proximo'?'prox':st==='asignado'?'asig':st==='vencido'?'venc':(isGrupo(t)?'grup':'disp');
     const pub=pubName(t.pub_id);
     const lastInfo=t.estado==='disponible'&&t.ultimo_trabajado?`📅 Ult: ${fmtDate(t.ultimo_trabajado)}<br>`:'';
     return`<div class="tcard ${cls}" onclick="openTerDetail(${t.id})">
       <div class="tcard-num">${t.num} · ${t.tipo} · ${grupoLabel(t)}</div>
       <div class="tcard-name">${pub}</div>
       <div class="tcard-meta">${lastInfo}${t.fecha_vence?`⏰ Vence ${fmtDate(t.fecha_vence)}<br>`:''}${t.num_dirs?`🏠 ${t.num_dirs} puertas`:''}</div>
-      <div class="tcard-foot">${pillHtml(st,t.es_grupo)}</div>
+      <div class="tcard-foot">${pillHtml(st,isGrupo(t))}</div>
     </div>`;
   }).join('');
 }
@@ -1721,7 +1728,7 @@ function updateBadges(){
   if(sb('nb-asig')) sb('nb-asig').textContent=asig;
   if(sb('nb-venc')) sb('nb-venc').textContent=venc;
   if(sb('nb-prox')) sb('nb-prox').textContent=prox;
-  if(sb('nb-grup')) sb('nb-grup').textContent=t.filter(x=>x.es_grupo).length;
+  if(sb('nb-grup')) sb('nb-grup').textContent=t.filter(x=>isGrupo(x)).length;
   if(sb('nb-old')) sb('nb-old').textContent=disp;
 
   // Drawer badges
@@ -1778,7 +1785,7 @@ function colorFor(t){
   if(st==='vencido') return isLight?'#d00000':'#ff453a';
   if(st==='proximo') return isLight?'#c96000':'#ff9f0a';
   if(st==='asignado') return isLight?'#0055d4':'#0a84ff';
-  if(st==='grupo') return isLight?'#7a00d0':'#bf5af2';
+  if(st==='grupo'||isGrupo(t)) return isLight?'#7a00d0':'#bf5af2';
   return isLight?'#1a8a3e':'#30d158';
 }
 
@@ -2068,7 +2075,7 @@ function openPubDetail(id){
     <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">TERRITORIOS ACTIVOS</div>
     ${activos.map(t=>`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center" onclick="closeModal('mPubDet');openTerDetail(${t.id})">
       <div><div style="font-weight:600;font-size:13px">${t.num}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${fmtDate(t.fecha_asig)} → ${fmtDate(t.fecha_vence)}</div></div>
-      <span>${pillHtml(statusOf(t),t.es_grupo)}</span>
+      <span>${pillHtml(statusOf(t),isGrupo(t))}</span>
     </div>`).join('')}` : '<div style="font-size:13px;color:var(--t3);margin-bottom:16px">Sin territorios activos.</div>'}
 
     <!-- HISTORIAL -->
@@ -2570,7 +2577,7 @@ function renderGrupoTers(gId){
         <div style="font-size:13px;font-weight:600">${t.num} — ${t.nombre}</div>
         <div style="font-size:11px;color:var(--t2);margin-top:2px">${pubName(t.pub_id)} · ${t.num_dirs||0} puertas ${t.fecha_vence?'· Vence '+fmtDate(t.fecha_vence):''}</div>
       </div>
-      ${pillHtml(st,t.es_grupo)}
+      ${pillHtml(st,isGrupo(t))}
     </div>`;
   }).join('');
 }
@@ -2633,7 +2640,7 @@ function renderGrupoStats(gId){
         const dv=ter.fecha_vence?daysUntil(ter.fecha_vence):null;
         const dvCol=dv===null?'var(--t2)':dv<0?'var(--red)':dv<=WARN_DAYS?'var(--amber)':'var(--green)';
         const dvTxt=dv===null?'Sin venc.':dv<0?('Venc. hace '+(-dv)+'d'):dv===0?'Vence hoy':(dv+'d');
-        const pill=pillHtml(st,ter.es_grupo);
+        const pill=pillHtml(st,isGrupo(ter));
         return '<div style="padding:7px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:background .1s" onclick="closeModal(\'mGrupo\');openTerDetail('+ter.id+')" onmouseenter="this.style.background=\'var(--s3)\'" onmouseleave="this.style.background=\'\'">'
           +'<span style="font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--blue);min-width:36px">'+ter.num+'</span>'
           +'<span style="font-size:12px;color:var(--t2);flex:1">'+fmtDate(ter.fecha_asig)+'</span>'
