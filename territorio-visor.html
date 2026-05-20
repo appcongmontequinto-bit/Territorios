@@ -365,6 +365,12 @@ body{-webkit-user-select:none;user-select:none}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ══ CONFIG ══
+// Normalize legacy tipo values to current ones
+function normalizeTipo(tipo){
+  const map={'Urbano':'Casa','Rural':'Casa','Apartamentos':'Bloque','Comercial':'Negocio','Mixto':'Especial'};
+  return map[tipo]||tipo||'Casa';
+}
+
 const SB_URL = 'https://iycqizsxmbaboaxveaeb.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5Y3FpenN4bWJhYm9heHZlYWViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTM3MzQsImV4cCI6MjA5NDU4OTczNH0.-5jCFsD2WWEity7UDuEmpDqZvXrGLEiCg8fQWPZkOXE';
 const BUCKET  = 'mapas-territorios';
@@ -489,7 +495,7 @@ function renderTerritory(idx) {
   const CIRC = 238;
 
   // Hero
-  document.getElementById('heroBadge').textContent = `📍 ${t.tipo}${t.es_grupo?' · Grupo':''}`;
+  document.getElementById('heroBadge').textContent = `📍 ${normalizeTipo(t.tipo)}${t.es_grupo?' · Grupo':''}`;
   document.getElementById('heroName').textContent = t.num + (t.descripcion ? ` — ${t.descripcion.split('\n')[0].substring(0,40)}` : '');
 
   // Countdown
@@ -528,7 +534,7 @@ function renderTerritory(idx) {
 
   // Details
   const rows=[
-    ['Número',t.num],['Tipo',t.tipo],
+    ['Número',t.num],['Tipo',normalizeTipo(t.tipo)],
     ['Grupo',grp?`Grupo ${grp.num}${grp.nombre?' — '+grp.nombre:''}`:'—'],
     ['Puertas',t.num_dirs||'—'],
     ['Asignado',fmtDate(t.fecha_asig)],['Vence',fmtDate(t.fecha_vence)],
