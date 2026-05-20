@@ -784,7 +784,7 @@ function toggleThemeVisor(){
 })();
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw-visor.js', { scope: './territorio-visor.html' })
+  navigator.serviceWorker.register('sw.js')
     .then(r => console.log('[PWA Visor] SW registered:', r.scope))
     .catch(()=>{});
 }
