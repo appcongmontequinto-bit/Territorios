@@ -36,6 +36,7 @@
 /* ── iOS SYSTEM FONT STACK ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
+  --topbar-bg:rgba(28,28,30,.92);
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Menlo", monospace;
 
@@ -66,6 +67,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 /* ── LIGHT MODE ── */
 body.light{
+  --topbar-bg:rgba(255,255,255,.92);
   --bg:#f2f2f7;--s1:#fff;--s2:#f2f2f7;--s3:#e5e5ea;--s4:#d1d1d6;
   --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.16);
   --text:#1c1c1e;--t2:#3c3c43;--t3:#8e8e93;
@@ -97,7 +99,7 @@ body.light{
 
 /* ── TOPBAR ── */
 #topbar{
-  height:52px;background:rgba(28,28,30,.9);border-bottom:1px solid var(--border);
+  height:52px;background:var(--topbar-bg);border-bottom:1px solid var(--border);
   display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;z-index:50;
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
 }
