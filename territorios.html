@@ -816,13 +816,13 @@ body.light{
 
 <!-- VIEW: TERRITORIOS -->
 <!-- VIEW: DASHBOARD -->
-<div id="view-dashboard" class="view on" style="flex-direction:column;height:100%;overflow-y:auto">
+<div id="view-dashboard" class="view on" style="flex-direction:column">
   <div class="view-head"><div class="view-title">Dashboard</div><div class="view-sub" id="dashDate"></div></div>
-  <div class="view-scroll" id="dashContent" style="padding:12px 16px 24px"></div>
+  <div class="view-scroll" id="dashContent" style="padding:12px 16px 24px;flex:1;overflow-y:auto"></div>
 </div>
 
 <!-- VIEW: LOTES -->
-<div id="view-lotes" class="view" style="display:none;flex-direction:column;height:100%">
+<div id="view-lotes" class="view" style="flex-direction:column">
     <div class="view-head">
       <div class="view-title">Asignación por lotes</div>
       <div class="view-sub">Selecciona territorios disponibles y asígnalos a un publicador</div>
@@ -835,7 +835,7 @@ body.light{
             oninput="lotesAutocomplete(this.value)" onfocus="lotesAutocomplete(this.value)"
             style="width:100%;box-sizing:border-box">
           <input type="hidden" id="lotes-pub-id">
-          <div id="lotes-pub-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;background:var(--s2);border:1px solid var(--border2);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.3)"></div>
+          <div id="lotes-pub-dropdown" style="display:none;position:fixed;left:0;right:0;z-index:2000;background:var(--s2);border:1px solid var(--border2);border-radius:12px;overflow:hidden;max-height:240px;overflow-y:auto;margin:0 16px;box-shadow:0 8px 32px rgba(0,0,0,.4)"></div>
         </div>
       </div>
       <div>
@@ -1253,8 +1253,14 @@ body.light{
         <div class="fg"><label class="fl">Notas internas</label><input class="fi" id="t-notas" placeholder="Perros, acceso difícil…"></div>
         <div class="fg" style="margin-top:8px">
           <label class="fl">⚠️ Aviso de no visitar</label>
-          <input class="fi" id="t-no-visitar" placeholder="Motivo: perro agresivo, propietario hostil…" style="border-color:var(--amber)">
-          <div style="font-size:11px;color:var(--t3);margin-top:4px">Deja vacío si no hay aviso. Aparecerá en rojo en la lista y en el visor del publicador.</div>
+          <div style="display:flex;gap:8px;align-items:flex-start">
+            <input class="fi" id="t-no-visitar" placeholder="Motivo: perro agresivo, propietario hostil…" style="border-color:var(--amber);flex:1" oninput="if(this.value&&!document.getElementById('t-no-visitar-fecha').value)document.getElementById('t-no-visitar-fecha').value=today()">
+            <div style="flex-shrink:0">
+              <div style="font-size:11px;color:var(--t3);margin-bottom:4px">Fecha aviso</div>
+              <input class="fi" id="t-no-visitar-fecha" type="date" style="width:150px">
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:4px">Deja vacío si no hay aviso. Aparecerá en rojo en la lista y en el visor.</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
           <input type="checkbox" id="t-esGrupo" style="accent-color:var(--purple);width:16px;height:16px">
@@ -1555,10 +1561,28 @@ function statusOf(t){
 // ══════════════════════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════════════════════
+function getAnioServicio(){
+  // Año de servicio: sept → ago
+  const now=new Date();
+  const m=now.getMonth(); // 0=jan
+  const y=now.getFullYear();
+  // If we're in Sept(8)-Dec(11), service year started this year
+  const startYear = m>=8 ? y : y-1;
+  return {
+    start: `${startYear}-09-01`,
+    end:   `${startYear+1}-08-31`,
+    label: `${startYear}/${startYear+1}`
+  };
+}
+
 function renderDashboard(){
   const el=document.getElementById('dashContent');
+  if(!el) return;
   const now=new Date();
-  document.getElementById('dashDate').textContent=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const anio=getAnioServicio();
+
+  document.getElementById('dashDate').textContent=
+    'Año de servicio '+anio.label+' · '+now.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
 
   const ters=S.territorios;
   const total=ters.length;
@@ -1568,96 +1592,103 @@ function renderDashboard(){
   const prox=ters.filter(t=>statusOf(t)==='proximo').length;
   const noVisitar=ters.filter(t=>t.no_visitar).length;
 
-  // Actividad último mes
-  const hace30=new Date(now-30*864e5).toISOString().split('T')[0];
-  const ultMes=S.historial.filter(h=>h.fecha_dev&&h.fecha_dev>=hace30).length;
-  const ultMesAsig=S.historial.filter(h=>h.fecha_asig&&h.fecha_asig>=hace30).length;
+  // Año de servicio stats
+  const histAnio=S.historial.filter(h=>h.fecha_dev&&h.fecha_dev>=anio.start&&h.fecha_dev<=anio.end);
+  const asigAnio=S.historial.filter(h=>h.fecha_asig&&h.fecha_asig>=anio.start&&h.fecha_asig<=anio.end);
+  const tersTrabajadosAnio=new Set(histAnio.map(h=>h.territorio_id)).size;
+  const pubsActivosAnio=new Set(histAnio.map(h=>h.pub_id)).size;
+  // Territorios completados = devueltos en el año de servicio
+  const completadosAnio=histAnio.length;
+  // Average days per assignment this year
+  const avgDias=histAnio.length ? Math.round(histAnio.reduce((s,h)=>{
+    if(!h.fecha_asig||!h.fecha_dev) return s;
+    return s+Math.abs(daysBetween(h.fecha_asig,h.fecha_dev));
+  },0)/histAnio.length) : 0;
 
-  // Próximos a vencer esta semana
-  const hace7=new Date(now+7*864e5).toISOString().split('T')[0];
-  const proxSemana=ters.filter(t=>t.fecha_vence&&t.fecha_vence<=hace7&&t.estado==='asignado');
+  // Proximos a vencer esta semana
+  const en7=new Date(now.getTime()+7*864e5).toISOString().split('T')[0];
+  const proxSemana=ters.filter(t=>t.fecha_vence&&t.fecha_vence<=en7&&(t.estado==='asignado'||t.estado==='vencido'))
+    .sort((a,b)=>a.fecha_vence.localeCompare(b.fecha_vence)).slice(0,8);
 
-  // Territorios sin trabajar más de 1 año
-  const hace365=new Date(now-365*864e5).toISOString().split('T')[0];
-  const sinTrabajar=ters.filter(t=>t.estado==='disponible'&&(!t.ultimo_trabajado||t.ultimo_trabajado<hace365));
+  // Sin trabajar >1 año
+  const hace365=new Date(now.getTime()-365*864e5).toISOString().split('T')[0];
+  const sinTrabajar=ters.filter(t=>t.estado==='disponible'&&(!t.ultimo_trabajado||t.ultimo_trabajado<hace365))
+    .sort((a,b)=>(a.ultimo_trabajado||'').localeCompare(b.ultimo_trabajado||'')).slice(0,6);
 
-  // Top publicadores último trimestre
-  const hace90=new Date(now-90*864e5).toISOString().split('T')[0];
-  const topPubs=S.publicadores
-    .filter(p=>p.activo!==false)
-    .map(p=>({p,cnt:S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev&&h.fecha_dev>=hace90).length}))
-    .filter(x=>x.cnt>0).sort((a,b)=>b.cnt-a.cnt).slice(0,5);
+  const kpi=(icon,label,val,col,sub)=>`
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">
+      <div style="font-size:20px;margin-bottom:4px">${icon}</div>
+      <div style="font-size:26px;font-weight:800;color:${col};letter-spacing:-.5px;line-height:1">${val}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-top:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
+      ${sub?`<div style="font-size:11px;color:var(--t2);margin-top:2px">${sub}</div>`:''}
+    </div>`;
 
-  const kpiColor=(v,warn,danger)=>v>=danger?'var(--red)':v>=warn?'var(--amber)':'var(--green)';
-  const kpi=(label,val,col,sub='')=>`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px">
-    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em">${label}</div>
-    <div style="font-size:28px;font-weight:800;letter-spacing:-.5px;color:${col}">${val}</div>
-    ${sub?`<div style="font-size:12px;color:var(--t2)">${sub}</div>`:''}
-  </div>`;
+  const section=(title,body)=>`
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">${title}</div>
+      ${body}
+    </div>`;
 
-  const section=(title,body)=>`<div style="margin-bottom:20px">
-    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">${title}</div>
-    ${body}
-  </div>`;
-
-  // Progress bar: % completado
-  const pct=Math.round((disp/total)*100);
-  const progressBar=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px">
+  // Progress bar
+  const pct=total?Math.round((disp/total)*100):0;
+  const prog=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:16px">
     <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:13px;font-weight:600">Disponibles</span>
-      <span style="font-size:13px;font-weight:700;color:var(--green)">${disp} / ${total} (${pct}%)</span>
+      <span style="font-size:13px;font-weight:600">Disponibles ahora</span>
+      <span style="font-size:14px;font-weight:700;color:var(--green)">${disp} / ${total} (${pct}%)</span>
     </div>
     <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
       <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .6s"></div>
     </div>
   </div>`;
 
-  const kpiGrid=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
-    ${kpi('Asignados',asig,'var(--blue)',`${Math.round(asig/total*100)}% del total`)}
-    ${kpi('Vencidos',venc,kpiColor(venc,1,5),venc?'Requieren atención':' ')}
-    ${kpi('Próx. vencer',prox,'var(--amber)',`En ${WARN_DAYS} días`)}
-    ${kpi('Devueltos/30d',ultMes,'var(--green)','Último mes')}
-    ${kpi('Asignados/30d',ultMesAsig,'var(--blue)','Último mes')}
-    ${kpi('⚠️ No visitar',noVisitar,noVisitar?'var(--red)':'var(--t3)','Avisos activos')}
+  // Año de servicio grid
+  const anioGrid=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
+    ${kpi('✅','Trabajados año',tersTrabajadosAnio,'var(--green)','territorios únicos')}
+    ${kpi('👥','Publicadores',pubsActivosAnio,'var(--blue)','han predicado')}
+    ${kpi('📋','Asignaciones',completadosAnio,'var(--purple)','devueltas este año')}
+    ${kpi('⏱','Media días',avgDias?avgDias+'d':'—','var(--t2)','por asignación')}
   </div>`;
 
-  // Proximos a vencer esta semana
-  const proxHtml=proxSemana.length?proxSemana.slice(0,8).map(t=>{
+  // Estado actual grid
+  const estadoGrid=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
+    ${kpi('📌','Asignados',asig,'var(--blue)',Math.round(asig/total*100)+'% del total')}
+    ${kpi('🔴','Vencidos',venc,venc?'var(--red)':'var(--t3)',venc?'Requieren atención':'—')}
+    ${kpi('⏳','Próx. vencer',prox,'var(--amber)','en '+WARN_DAYS+'d')}
+    ${kpi('⚠️','No visitar',noVisitar,noVisitar?'var(--red)':'var(--t3)','avisos activos')}
+    ${kpi('📊','Total',total,'var(--t2)','')}
+    ${kpi('🆓','Disponibles',disp,'var(--green)','')}
+  </div>`;
+
+  // Próximos a vencer
+  const proxHtml=proxSemana.length ? proxSemana.map(t=>{
     const pub=S.publicadores.find(p=>p.id===t.pub_id);
     const dv=daysUntil(t.fecha_vence);
-    const dvCol=dv<0?'var(--red)':'var(--amber)';
-    const dvTxt=dv<0?'Vencido hace '+(-dv)+'d':dv+'d';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
-      <span style="font-family:var(--font-mono);font-weight:700;color:var(--amber);min-width:36px">${t.num}</span>
-      <span style="flex:1;font-size:13px">${pub?.nombre||'—'}</span>
-      <span style="font-size:12px;color:${dvCol};font-weight:600">${dvTxt}</span>
+    const col=dv<0?'var(--red)':dv<=3?'var(--red)':'var(--amber)';
+    const txt=dv<0?'Vencido hace '+(-dv)+'d':dv===0?'Hoy':dv+'d';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
+      <span style="font-family:var(--font-mono);font-weight:700;color:${col};min-width:36px">${t.num}</span>
+      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pub?.nombre||'—'}</span>
+      <span style="font-size:12px;color:${col};font-weight:600;white-space:nowrap">${txt}</span>
     </div>`;
-  }).join(''):'<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno esta semana ✓</div>';
+  }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno ✓</div>';
 
-  // Sin trabajar >1 año
-  const sinHtml=sinTrabajar.length?sinTrabajar.slice(0,6).map(t=>{
-    const dias=t.ultimo_trabajado?daysSince(t.ultimo_trabajado):9999;
-    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
+  // Sin trabajar
+  const sinHtml=sinTrabajar.length ? sinTrabajar.map(t=>{
+    const dias=t.ultimo_trabajado?daysSince(t.ultimo_trabajado):99999;
+    const txt=dias>9000?'Nunca':Math.round(dias/365*10)/10+' años';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
       <span style="font-family:var(--font-mono);font-weight:700;color:var(--red);min-width:36px">${t.num}</span>
-      <span style="flex:1;font-size:13px">${t.nombre||t.num}</span>
-      <span style="font-size:12px;color:var(--red);font-weight:600">${dias===9999?'Nunca':Math.round(dias/365)+' año/s'}</span>
+      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.nombre||t.num}</span>
+      <span style="font-size:12px;color:var(--red);font-weight:600;white-space:nowrap">${txt}</span>
     </div>`;
-  }).join('')+'<div style="font-size:12px;color:var(--t3);margin-top:4px">y '+(sinTrabajar.length-6)+' más…</div>'
-  :'<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno ✓</div>';
+  }).join('')+(sinTrabajar.length>0?`<div style="font-size:11px;color:var(--t3);text-align:right;margin-top:4px">Ver más en Prioridad →</div>`:'')
+  : '<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno ✓</div>';
 
-  // Top publicadores
-  const topHtml=topPubs.length?`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
-    ${topPubs.map((x,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:${i<topPubs.length-1?'1px solid var(--border)':'none'}">
-      <span style="font-size:13px;font-weight:700;color:var(--blue);min-width:20px">${i+1}</span>
-      <span style="flex:1;font-size:13px;font-weight:500">${x.p.nombre}</span>
-      <span style="font-size:12px;color:var(--t2)">${x.cnt} territori${x.cnt===1?'o':'os'}</span>
-    </div>`).join('')}
-  </div>`:'<div style="font-size:13px;color:var(--t3);padding:8px">Sin actividad reciente</div>';
-
-  el.innerHTML=progressBar+kpiGrid
-    +section('⚠️ Vencen esta semana',proxHtml)
-    +section('📦 Sin trabajar más de 1 año',sinHtml)
-    +section('🏆 Más activos (últimos 90 días)',topHtml);
+  el.innerHTML=prog
+    +section('📅 Año de servicio '+anio.label, anioGrid)
+    +section('📊 Estado actual', estadoGrid)
+    +section('⚠️ Vencen esta semana', proxHtml)
+    +section('📦 Sin trabajar más de 1 año', sinHtml);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1741,10 +1772,24 @@ function _updateLotesCount(){
 
 function lotesAutocomplete(q){
   const dd=document.getElementById('lotes-pub-dropdown');
+  const inp=document.getElementById('lotes-pub-input');
   const matches=S.publicadores.filter(p=>p.activo!==false&&p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,10);
   if(!matches.length||!q){dd.style.display='none';return;}
-  dd.innerHTML=matches.map(p=>`<div onclick="lotesSelectPub(${p.id},'${p.nombre.replace(/'/g,'\'')}')" style="padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border)" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">${p.nombre}</div>`).join('');
-  dd.style.display='';
+  dd.innerHTML=matches.map(p=>`<div onclick="lotesSelectPub(${p.id},'${p.nombre.replace(/'/g,'\'')}')" style="padding:12px 16px;cursor:pointer;font-size:15px;border-bottom:1px solid var(--border)" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">${p.nombre}</div>`).join('');
+  // Position dropdown below input using fixed coords
+  const r=inp.getBoundingClientRect();
+  const spaceBelow=window.innerHeight-r.bottom;
+  if(spaceBelow<220){
+    dd.style.bottom=(window.innerHeight-r.top+4)+'px';
+    dd.style.top='auto';
+  } else {
+    dd.style.top=(r.bottom+4)+'px';
+    dd.style.bottom='auto';
+  }
+  dd.style.left=r.left+'px';
+  dd.style.right=(window.innerWidth-r.right)+'px';
+  dd.style.margin='0';
+  dd.style.display='block';
 }
 
 function lotesSelectPub(id,nombre){
@@ -2581,7 +2626,7 @@ function openTerModal(){
   document.getElementById('mTerTitle').textContent='Nuevo Territorio';
   document.getElementById('btnElimTer').style.display='none';
   document.getElementById('btnCancelarAsig').style.display='none';
-  ['t-num','t-nombre','t-desc','t-notas','t-dirs','t-no-visitar'].forEach(id=>document.getElementById(id).value='');
+  ['t-num','t-nombre','t-desc','t-notas','t-dirs','t-no-visitar','t-no-visitar-fecha'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-tipo').value='Casa';
   document.getElementById('t-esGrupo').checked=false;
   fillGrupoSel('t-grupo'); fillPubSel('asig-pub');
@@ -2611,6 +2656,7 @@ async function openTerDetail(id){
   document.getElementById('t-dirs').value=t.num_dirs||'';
   document.getElementById('t-notas').value=t.notas||'';
   document.getElementById('t-no-visitar').value=t.no_visitar||'';
+  document.getElementById('t-no-visitar-fecha').value=t.no_visitar_fecha||'';;
   document.getElementById('t-esGrupo').checked=!!t.es_grupo;
   fillGrupoSel('t-grupo',t.grupo_id);
   fillPubSel('asig-pub',t.pub_id);
@@ -2695,7 +2741,7 @@ async function guardarTer(){
   const nombre=document.getElementById('t-nombre').value.trim();
   if(!num||!nombre){toast('⚠ Número y nombre requeridos','am');return;}
   const grupoId=document.getElementById('t-grupo').value?parseInt(document.getElementById('t-grupo').value):null;
-  const data={num,nombre,descripcion:document.getElementById('t-desc').value.trim(),tipo:document.getElementById('t-tipo').value,grupo_id:grupoId,num_dirs:parseInt(document.getElementById('t-dirs').value)||0,notas:document.getElementById('t-notas').value.trim(),no_visitar:document.getElementById('t-no-visitar').value.trim()||null,es_grupo:document.getElementById('t-esGrupo').checked};
+  const data={num,nombre,descripcion:document.getElementById('t-desc').value.trim(),tipo:document.getElementById('t-tipo').value,grupo_id:grupoId,num_dirs:parseInt(document.getElementById('t-dirs').value)||0,notas:document.getElementById('t-notas').value.trim(),no_visitar:document.getElementById('t-no-visitar').value.trim()||null,no_visitar_fecha:document.getElementById('t-no-visitar-fecha').value||null,es_grupo:document.getElementById('t-esGrupo').checked};
   setSyncStatus('syncing');
   try{
     if(editingTId){
