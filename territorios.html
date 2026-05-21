@@ -768,6 +768,8 @@ body.light{
     <div class="drawer-nav">
       <div class="nav-sect">Vistas</div>
       <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="dnb-grp">0</span></div>
+      <div class="nav-item" data-v="dashboard" onclick="navDrawer(this)"><span class="nav-icon">🏠</span>Dashboard</div>
+      <div class="nav-item" data-v="lotes" onclick="navDrawer(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
       <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📖</span>Historial</div>
       <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
       <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
@@ -786,6 +788,7 @@ body.light{
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="nav-sect">Principal</div>
+  <div class="nav-item" data-v="dashboard" onclick="nav(this)"><span class="nav-icon">🏠</span>Dashboard</div>
   <div class="nav-item on" data-v="territorios" onclick="nav(this)"><span class="nav-icon">📋</span>Territorios<span class="nav-badge a" id="nb-tot">0</span></div>
   <div class="nav-item" data-v="mapa" onclick="nav(this)"><span class="nav-icon">🗺</span>Mapa<span class="nav-badge" id="nb-map">204</span></div>
   <div class="nav-item" data-v="prioridad" onclick="nav(this)"><span class="nav-icon">⏳</span>Sin trabajar<span class="nav-badge am" id="nb-old">0</span></div>
@@ -794,6 +797,7 @@ body.light{
   <div class="nav-item" data-v="publicadores" onclick="nav(this)"><span class="nav-icon">👥</span>Publicadores<span class="nav-badge" id="nb-pub">0</span></div>
   <div class="nav-item" data-v="grupos" onclick="nav(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="nb-grp">0</span></div>
   <div class="nav-item" data-v="historial" onclick="nav(this)"><span class="nav-icon">📋</span>Historial</div>
+  <div class="nav-item" data-v="lotes" onclick="nav(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
   <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
   <div class="nav-sect">Estado rápido</div>
   <div class="nav-item" data-filter="disponible" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="nb-disp">0</span></div>
@@ -812,6 +816,48 @@ body.light{
 
 <!-- VIEW: TERRITORIOS -->
 <div id="view-territorios" class="view on">
+  <!-- ═══ VIEW: DASHBOARD ═══ -->
+  <div id="view-dashboard" class="view" style="display:none;flex-direction:column;height:100%;overflow-y:auto">
+    <div class="view-head"><div class="view-title">Dashboard</div><div class="view-sub" id="dashDate"></div></div>
+    <div class="view-scroll" id="dashContent" style="padding:12px 16px 24px"></div>
+  </div>
+
+  <!-- ═══ VIEW: ASIGNACIÓN POR LOTES ═══ -->
+  <div id="view-lotes" class="view" style="display:none;flex-direction:column;height:100%">
+    <div class="view-head">
+      <div class="view-title">Asignación por lotes</div>
+      <div class="view-sub">Selecciona territorios disponibles y asígnalos a un publicador</div>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border)">
+      <div style="flex:1;min-width:200px">
+        <label style="font-size:12px;color:var(--t3);font-weight:600;display:block;margin-bottom:4px">PUBLICADOR</label>
+        <div style="position:relative">
+          <input class="fi" id="lotes-pub-input" placeholder="Buscar publicador…" autocomplete="off"
+            oninput="lotesAutocomplete(this.value)" onfocus="lotesAutocomplete(this.value)"
+            style="width:100%;box-sizing:border-box">
+          <input type="hidden" id="lotes-pub-id">
+          <div id="lotes-pub-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:400;background:var(--s2);border:1px solid var(--border2);border-radius:10px;overflow:hidden;max-height:200px;overflow-y:auto;margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.3)"></div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--t3);font-weight:600;display:block;margin-bottom:4px">FECHA ENTREGA</label>
+        <input class="fi" id="lotes-fecha" type="date" style="width:160px">
+      </div>
+      <div style="display:flex;gap:6px;align-items:flex-end">
+        <button class="btn btn-primary" onclick="ejecutarLotes()" id="lotes-btn" disabled>
+          📌 Asignar seleccionados
+        </button>
+        <button class="btn btn-ghost" onclick="lotesDeselectAll()">Limpiar</button>
+      </div>
+    </div>
+    <div style="padding:8px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--s2)">
+      <input type="checkbox" id="lotes-select-all" onchange="lotesToggleAll(this.checked)" style="accent-color:var(--blue);width:16px;height:16px">
+      <label for="lotes-select-all" style="font-size:13px;font-weight:600;cursor:pointer">Seleccionar todos los disponibles</label>
+      <span id="lotes-count" style="font-size:12px;color:var(--blue);font-weight:600;margin-left:auto"></span>
+    </div>
+    <div id="lotes-list" style="flex:1;overflow-y:auto;padding:8px 12px"></div>
+  </div>
+
   <div class="view-head" style="padding-bottom:0">
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
       <div><div class="view-title">Territorios</div><div class="view-sub" id="tbl-count"></div></div>
@@ -1203,7 +1249,12 @@ body.light{
           <div class="fg"><label class="fl">Grupo</label><select class="fs" id="t-grupo"><option value="">Sin grupo</option></select></div>
           <div class="fg"><label class="fl">Nº de puertas</label><input class="fi" id="t-dirs" type="number" min="0" placeholder="80"></div>
         </div>
-        <div class="fg"><label class="fl">Notas</label><input class="fi" id="t-notas" placeholder="Perros, acceso difícil…"></div>
+        <div class="fg"><label class="fl">Notas internas</label><input class="fi" id="t-notas" placeholder="Perros, acceso difícil…"></div>
+        <div class="fg" style="margin-top:8px">
+          <label class="fl">⚠️ Aviso de no visitar</label>
+          <input class="fi" id="t-no-visitar" placeholder="Motivo: perro agresivo, propietario hostil…" style="border-color:var(--amber)">
+          <div style="font-size:11px;color:var(--t3);margin-top:4px">Deja vacío si no hay aviso. Aparecerá en rojo en la lista y en el visor del publicador.</div>
+        </div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
           <input type="checkbox" id="t-esGrupo" style="accent-color:var(--purple);width:16px;height:16px">
           <label for="t-esGrupo" style="font-size:14px;cursor:pointer;color:var(--t2)">Territorio de grupo <span style="color:var(--t3);font-size:12px">(se asigna al siervo del grupo)</span></label>
@@ -1499,6 +1550,249 @@ function statusOf(t){
 }
 
 // ══ INIT ══
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════════════════
+function renderDashboard(){
+  const el=document.getElementById('dashContent');
+  const now=new Date();
+  document.getElementById('dashDate').textContent=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  const ters=S.territorios;
+  const total=ters.length;
+  const disp=ters.filter(t=>t.estado==='disponible').length;
+  const asig=ters.filter(t=>t.estado==='asignado').length;
+  const venc=ters.filter(t=>t.estado==='vencido').length;
+  const prox=ters.filter(t=>statusOf(t)==='proximo').length;
+  const noVisitar=ters.filter(t=>t.no_visitar).length;
+
+  // Actividad último mes
+  const hace30=new Date(now-30*864e5).toISOString().split('T')[0];
+  const ultMes=S.historial.filter(h=>h.fecha_dev&&h.fecha_dev>=hace30).length;
+  const ultMesAsig=S.historial.filter(h=>h.fecha_asig&&h.fecha_asig>=hace30).length;
+
+  // Próximos a vencer esta semana
+  const hace7=new Date(now+7*864e5).toISOString().split('T')[0];
+  const proxSemana=ters.filter(t=>t.fecha_vence&&t.fecha_vence<=hace7&&t.estado==='asignado');
+
+  // Territorios sin trabajar más de 1 año
+  const hace365=new Date(now-365*864e5).toISOString().split('T')[0];
+  const sinTrabajar=ters.filter(t=>t.estado==='disponible'&&(!t.ultimo_trabajado||t.ultimo_trabajado<hace365));
+
+  // Top publicadores último trimestre
+  const hace90=new Date(now-90*864e5).toISOString().split('T')[0];
+  const topPubs=S.publicadores
+    .filter(p=>p.activo!==false)
+    .map(p=>({p,cnt:S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev&&h.fecha_dev>=hace90).length}))
+    .filter(x=>x.cnt>0).sort((a,b)=>b.cnt-a.cnt).slice(0,5);
+
+  const kpiColor=(v,warn,danger)=>v>=danger?'var(--red)':v>=warn?'var(--amber)':'var(--green)';
+  const kpi=(label,val,col,sub='')=>`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:4px">
+    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.07em">${label}</div>
+    <div style="font-size:28px;font-weight:800;letter-spacing:-.5px;color:${col}">${val}</div>
+    ${sub?`<div style="font-size:12px;color:var(--t2)">${sub}</div>`:''}
+  </div>`;
+
+  const section=(title,body)=>`<div style="margin-bottom:20px">
+    <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">${title}</div>
+    ${body}
+  </div>`;
+
+  // Progress bar: % completado
+  const pct=Math.round((disp/total)*100);
+  const progressBar=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <span style="font-size:13px;font-weight:600">Disponibles</span>
+      <span style="font-size:13px;font-weight:700;color:var(--green)">${disp} / ${total} (${pct}%)</span>
+    </div>
+    <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .6s"></div>
+    </div>
+  </div>`;
+
+  const kpiGrid=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+    ${kpi('Asignados',asig,'var(--blue)',`${Math.round(asig/total*100)}% del total`)}
+    ${kpi('Vencidos',venc,kpiColor(venc,1,5),venc?'Requieren atención':' ')}
+    ${kpi('Próx. vencer',prox,'var(--amber)',`En ${WARN_DAYS} días`)}
+    ${kpi('Devueltos/30d',ultMes,'var(--green)','Último mes')}
+    ${kpi('Asignados/30d',ultMesAsig,'var(--blue)','Último mes')}
+    ${kpi('⚠️ No visitar',noVisitar,noVisitar?'var(--red)':'var(--t3)','Avisos activos')}
+  </div>`;
+
+  // Proximos a vencer esta semana
+  const proxHtml=proxSemana.length?proxSemana.slice(0,8).map(t=>{
+    const pub=S.publicadores.find(p=>p.id===t.pub_id);
+    const dv=daysUntil(t.fecha_vence);
+    const dvCol=dv<0?'var(--red)':'var(--amber)';
+    const dvTxt=dv<0?'Vencido hace '+(-dv)+'d':dv+'d';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
+      <span style="font-family:var(--font-mono);font-weight:700;color:var(--amber);min-width:36px">${t.num}</span>
+      <span style="flex:1;font-size:13px">${pub?.nombre||'—'}</span>
+      <span style="font-size:12px;color:${dvCol};font-weight:600">${dvTxt}</span>
+    </div>`;
+  }).join(''):'<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno esta semana ✓</div>';
+
+  // Sin trabajar >1 año
+  const sinHtml=sinTrabajar.length?sinTrabajar.slice(0,6).map(t=>{
+    const dias=t.ultimo_trabajado?daysSince(t.ultimo_trabajado):9999;
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
+      <span style="font-family:var(--font-mono);font-weight:700;color:var(--red);min-width:36px">${t.num}</span>
+      <span style="flex:1;font-size:13px">${t.nombre||t.num}</span>
+      <span style="font-size:12px;color:var(--red);font-weight:600">${dias===9999?'Nunca':Math.round(dias/365)+' año/s'}</span>
+    </div>`;
+  }).join('')+'<div style="font-size:12px;color:var(--t3);margin-top:4px">y '+(sinTrabajar.length-6)+' más…</div>'
+  :'<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno ✓</div>';
+
+  // Top publicadores
+  const topHtml=topPubs.length?`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+    ${topPubs.map((x,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:${i<topPubs.length-1?'1px solid var(--border)':'none'}">
+      <span style="font-size:13px;font-weight:700;color:var(--blue);min-width:20px">${i+1}</span>
+      <span style="flex:1;font-size:13px;font-weight:500">${x.p.nombre}</span>
+      <span style="font-size:12px;color:var(--t2)">${x.cnt} territori${x.cnt===1?'o':'os'}</span>
+    </div>`).join('')}
+  </div>`:'<div style="font-size:13px;color:var(--t3);padding:8px">Sin actividad reciente</div>';
+
+  el.innerHTML=progressBar+kpiGrid
+    +section('⚠️ Vencen esta semana',proxHtml)
+    +section('📦 Sin trabajar más de 1 año',sinHtml)
+    +section('🏆 Más activos (últimos 90 días)',topHtml);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ASIGNACIÓN POR LOTES
+// ══════════════════════════════════════════════════════════════
+let _lotesSelected=new Set();
+
+function renderLotes(){
+  _lotesSelected.clear();
+  document.getElementById('lotes-pub-input').value='';
+  document.getElementById('lotes-pub-id').value='';
+  document.getElementById('lotes-fecha').value=today();
+  document.getElementById('lotes-count').textContent='';
+  document.getElementById('lotes-btn').disabled=true;
+  document.getElementById('lotes-select-all').checked=false;
+  _renderLotesList();
+}
+
+function _renderLotesList(){
+  const avail=S.territorios.filter(t=>t.estado==='disponible')
+    .sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  const el=document.getElementById('lotes-list');
+  if(!avail.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">No hay territorios disponibles</div>';
+    return;
+  }
+  el.innerHTML=avail.map(t=>{
+    const checked=_lotesSelected.has(t.id);
+    const g=S.grupos.find(x=>Number(x.id)===Number(t.grupo_id));
+    const dias=t.ultimo_trabajado?daysSince(t.ultimo_trabajado):9999;
+    const diasStr=dias===9999?'Nunca trabajado':dias>365?`${Math.round(dias/365)}a sin trabajar`:dias>30?`${Math.round(dias/30)}m sin trabajar`:`${dias}d`;
+    const col=dias>365?'var(--red)':dias>180?'var(--amber)':'var(--t2)';
+    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;${checked?'background:rgba(10,132,255,.08)':''}" onclick="lotesToggle(${t.id},this)">
+      <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();lotesToggle(${t.id},this.closest('div'))" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">
+      <span style="font-family:var(--font-mono);font-weight:700;font-size:14px;min-width:40px">${t.num}</span>
+      <span style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.nombre||t.num}</div>
+        <div style="font-size:11px;color:var(--t3)">${g?`G${g.num} · `:''} ${t.tipo||''}</div>
+      </span>
+      <span style="font-size:12px;color:${col};white-space:nowrap;text-align:right">${diasStr}</span>
+    </div>`;
+  }).join('');
+  _updateLotesCount();
+}
+
+function lotesToggle(id,row){
+  if(_lotesSelected.has(id)){
+    _lotesSelected.delete(id);
+    row.style.background='';
+    row.querySelector('input').checked=false;
+  } else {
+    _lotesSelected.add(id);
+    row.style.background='rgba(10,132,255,.08)';
+    row.querySelector('input').checked=true;
+  }
+  _updateLotesCount();
+}
+
+function lotesToggleAll(checked){
+  const avail=S.territorios.filter(t=>t.estado==='disponible');
+  if(checked){
+    avail.forEach(t=>_lotesSelected.add(t.id));
+  } else {
+    _lotesSelected.clear();
+  }
+  _renderLotesList();
+}
+
+function lotesDeselectAll(){
+  _lotesSelected.clear();
+  document.getElementById('lotes-select-all').checked=false;
+  _renderLotesList();
+}
+
+function _updateLotesCount(){
+  const n=_lotesSelected.size;
+  document.getElementById('lotes-count').textContent=n?`${n} seleccionado${n>1?'s':''}` :'';
+  const pubId=document.getElementById('lotes-pub-id').value;
+  document.getElementById('lotes-btn').disabled=!n||!pubId;
+}
+
+function lotesAutocomplete(q){
+  const dd=document.getElementById('lotes-pub-dropdown');
+  const matches=S.publicadores.filter(p=>p.activo!==false&&p.nombre.toLowerCase().includes(q.toLowerCase())).slice(0,10);
+  if(!matches.length||!q){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(p=>`<div onclick="lotesSelectPub(${p.id},'${p.nombre.replace(/'/g,'\'')}')" style="padding:10px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--border)" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">${p.nombre}</div>`).join('');
+  dd.style.display='';
+}
+
+function lotesSelectPub(id,nombre){
+  document.getElementById('lotes-pub-input').value=nombre;
+  document.getElementById('lotes-pub-id').value=id;
+  document.getElementById('lotes-pub-dropdown').style.display='none';
+  _updateLotesCount();
+}
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#lotes-pub-input')&&!e.target.closest('#lotes-pub-dropdown')){
+    const dd=document.getElementById('lotes-pub-dropdown');
+    if(dd) dd.style.display='none';
+  }
+});
+
+async function ejecutarLotes(){
+  const pubId=parseInt(document.getElementById('lotes-pub-id').value);
+  const fecha=document.getElementById('lotes-fecha').value;
+  if(!pubId){toast('⚠️ Selecciona un publicador','am');return;}
+  if(!fecha){toast('⚠️ Indica la fecha de entrega','am');return;}
+  if(!_lotesSelected.size){toast('⚠️ Selecciona al menos un territorio','am');return;}
+
+  const ids=[..._lotesSelected];
+  const pub=S.publicadores.find(p=>p.id===pubId);
+  const esGrupoAuto=pub?/^grupo\s*\d/i.test(pub.nombre.trim()):false;
+  const fechaVence=addDays(fecha,EXPIRY_DAYS);
+
+  const btn=document.getElementById('lotes-btn');
+  btn.disabled=true; btn.textContent='Asignando…';
+  setSyncStatus('syncing');
+
+  let ok=0, fail=0;
+  for(const id of ids){
+    try{
+      const rows=await sbPatch('territorios',{id},{estado:'asignado',pub_id:pubId,fecha_asig:fecha,fecha_vence:fechaVence,ultimo_trabajado:fecha,es_grupo:esGrupoAuto});
+      const t=S.territorios.find(x=>x.id===id);
+      if(t) Object.assign(t,rows[0]);
+      ok++;
+    }catch(e){ fail++; console.error(e); }
+  }
+
+  await loadHistorial();
+  setSyncStatus('ok');
+  _lotesSelected.clear();
+  renderLotes();
+  toast(`✅ ${ok} territorio${ok>1?'s':''} asignado${ok>1?'s':''} a ${pub?.nombre}${fail?` (${fail} errores)`:''}`,'g',5000);
+}
+
 async function initApp(){
   showLoader('Cargando datos…');
   try {
@@ -1546,13 +1840,15 @@ function quickFilter(el){
 }
 function renderView(v){
   updateBadges();
-  if(v==='territorios') renderTerritorios();
+  if(v==='dashboard') renderDashboard();
+  else if(v==='territorios') renderTerritorios();
   else if(v==='mapa') initMapView();
   else if(v==='prioridad') renderPrioridad();
   else if(v==='estadisticas') renderStats();
   else if(v==='publicadores') renderPublicadores();
   else if(v==='grupos') renderGrupos();
   else if(v==='historial') renderHistorial();
+  else if(v==='lotes') renderLotes();
 }
 
 // ══ FILTERS ══
@@ -1700,6 +1996,7 @@ function renderListView(list){
         <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow:hidden;min-width:0">
           <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
           ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
+          ${t.no_visitar?`<span style="font-size:10px;color:var(--red);font-weight:700">⚠️ No visitar</span>`:''}
         </span>
         <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,isGrupo(t))}</span>
       </div>`;
@@ -1902,7 +2199,8 @@ async function openMapPanel(num,t){
       <div class="mp-field"><span>Asignado</span><span>${fmtDate(t.fecha_asig)}</span></div>
       <div class="mp-field"><span>Vence</span><span>${fmtDate(t.fecha_vence)}</span></div>
       <div class="mp-field"><span>Último trabajo</span><span>${ds===9999?'Nunca':fmtDate(t.ultimo_trabajado)}</span></div>
-      ${t.notas?`<div class="mp-field"><span>Notas</span><span>${t.notas}</span></div>`:''}`;
+      ${t.notas?`<div class="mp-field"><span>Notas</span><span>${t.notas}</span></div>`:''}
+      ${t.no_visitar?`<div class="mp-field" style="background:rgba(255,59,48,.1);border-radius:8px;padding:6px 10px;margin-top:4px"><span style="color:var(--red);font-weight:700">⚠️ No visitar</span><span style="color:var(--red)">${t.no_visitar}</span></div>`:''}`;
   } else {
     document.getElementById('mpFields').innerHTML='<div style="color:var(--t3);font-size:13px">No encontrado en Supabase</div>';
   }
@@ -2282,7 +2580,7 @@ function openTerModal(){
   document.getElementById('mTerTitle').textContent='Nuevo Territorio';
   document.getElementById('btnElimTer').style.display='none';
   document.getElementById('btnCancelarAsig').style.display='none';
-  ['t-num','t-nombre','t-desc','t-notas','t-dirs'].forEach(id=>document.getElementById(id).value='');
+  ['t-num','t-nombre','t-desc','t-notas','t-dirs','t-no-visitar'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('t-tipo').value='Casa';
   document.getElementById('t-esGrupo').checked=false;
   fillGrupoSel('t-grupo'); fillPubSel('asig-pub');
@@ -2311,6 +2609,7 @@ async function openTerDetail(id){
   document.getElementById('t-tipo').value=t.tipo;
   document.getElementById('t-dirs').value=t.num_dirs||'';
   document.getElementById('t-notas').value=t.notas||'';
+  document.getElementById('t-no-visitar').value=t.no_visitar||'';
   document.getElementById('t-esGrupo').checked=!!t.es_grupo;
   fillGrupoSel('t-grupo',t.grupo_id);
   fillPubSel('asig-pub',t.pub_id);
@@ -2395,7 +2694,7 @@ async function guardarTer(){
   const nombre=document.getElementById('t-nombre').value.trim();
   if(!num||!nombre){toast('⚠ Número y nombre requeridos','am');return;}
   const grupoId=document.getElementById('t-grupo').value?parseInt(document.getElementById('t-grupo').value):null;
-  const data={num,nombre,descripcion:document.getElementById('t-desc').value.trim(),tipo:document.getElementById('t-tipo').value,grupo_id:grupoId,num_dirs:parseInt(document.getElementById('t-dirs').value)||0,notas:document.getElementById('t-notas').value.trim(),es_grupo:document.getElementById('t-esGrupo').checked};
+  const data={num,nombre,descripcion:document.getElementById('t-desc').value.trim(),tipo:document.getElementById('t-tipo').value,grupo_id:grupoId,num_dirs:parseInt(document.getElementById('t-dirs').value)||0,notas:document.getElementById('t-notas').value.trim(),no_visitar:document.getElementById('t-no-visitar').value.trim()||null,es_grupo:document.getElementById('t-esGrupo').checked};
   setSyncStatus('syncing');
   try{
     if(editingTId){
