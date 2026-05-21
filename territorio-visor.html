@@ -812,9 +812,11 @@ function toggleThemeVisor(){
 })();
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js')
-    .then(r => console.log('[PWA Visor] SW registered:', r.scope))
-    .catch(()=>{});
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('[PWA Visor] SW registrado:', r.scope))
+      .catch(e => console.warn('[PWA Visor] SW error:', e));
+  });
 }
 
 init();
