@@ -507,7 +507,8 @@ function renderTerritory(idx) {
     document.getElementById('heroName').parentNode.insertBefore(nvBanner, document.getElementById('heroName').nextSibling);
   }
   if(t.no_visitar){
-    nvBanner.innerHTML = '⚠️ Aviso: ' + t.no_visitar;
+    const fechaAviso = t.no_visitar_fecha ? ' ('+fmtDate(t.no_visitar_fecha)+')' : '';
+    nvBanner.innerHTML = '⚠️ Aviso'+fechaAviso+': ' + t.no_visitar;
     nvBanner.style.display = '';
   } else {
     nvBanner.style.display = 'none';
@@ -555,7 +556,7 @@ function renderTerritory(idx) {
     ['Asignado',fmtDate(t.fecha_asig)],['Vence',fmtDate(t.fecha_vence)],
     ['Modalidad',t.es_grupo?'Territorio de grupo':'Individual'],
     ...(t.descripcion?[['Descripción',t.descripcion]]:[]),
-    ...(t.no_visitar?[['⚠️ No visitar',t.no_visitar]]:[]),
+    ...(t.no_visitar?[['⚠️ No visitar',t.no_visitar+(t.no_visitar_fecha?' ('+fmtDate(t.no_visitar_fecha)+')':'')]]:[]),
   ];
   document.getElementById('detList').innerHTML=rows.map(([k,v])=>
     `<div class="det-row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('');
