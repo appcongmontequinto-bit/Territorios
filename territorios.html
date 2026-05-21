@@ -944,7 +944,7 @@ body.light{
       <div><div class="view-title">Publicadores</div><div class="view-sub">Todos los publicadores registrados</div></div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-ghost btn-sm" onclick="exportarPublicadores()">⬇ Excel</button>
-        <button class="btn btn-ghost btn-sm" id="toggleInactivosBtn" onclick="_showInactivos=!_showInactivos;document.getElementById('toggleInactivosBtn').textContent=_showInactivos?'👤 Activos':'📦 Inactivos';renderPublicadores()">📦 Inactivos</button>
+        <button class="btn btn-ghost btn-sm" id="toggleArchivadosBtn" onclick="_showArchivados=!_showArchivados;document.getElementById('toggleArchivadosBtn').textContent=_showArchivados?'👤 Activos':'📦 Archivados';renderPublicadores()">📦 Archivados</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Añadir</button>
       </div>
     </div>
@@ -1237,7 +1237,7 @@ body.light{
         <button class="btn btn-primary" id="btnGuardarDatos" onclick="guardarTer()">Guardar datos</button>
       </div>
     </div>
-    <div id="drawerInstallWrap" style="display:none;padding:10px 16px;border-top:1px solid var(--border)">
+    <div id="drawerInstallWrap" style="padding:10px 16px;border-top:1px solid var(--border)">
       <button onclick="installPWA();toggleDrawer()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(48,209,88,.3);background:var(--green-dim);color:var(--green);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⬇ Instalar app en este dispositivo</button>
     </div>
     <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;margin-top:auto;border-top:1px solid var(--border)">
@@ -2010,14 +2010,14 @@ function barRow(label,val,max,unit='',override=null){
 }
 
 // ══ PUBLICADORES ══
-let _showInactivos=false;
+let _showArchivados=false;
 function renderPublicadores(){
   const el=document.getElementById('pubTable');
   if(!S.publicadores.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin publicadores</div>`;return;}
   const mob=window.innerWidth<=700;
   const q=searchQ;
   // Show active by default; show inactive when toggle is on
-  let pubs=[...S.publicadores].filter(p=>_showInactivos ? p.activo===false : p.activo!==false);
+  let pubs=[...S.publicadores].filter(p=>_showArchivados ? p.activo===false : p.activo!==false);
   if(q) pubs=pubs.filter(p=>{
     const g=S.grupos.find(x=>x.id===p.grupo_id);
     return p.nombre.toLowerCase().includes(q)||(g?.nombre||'').toLowerCase().includes(q)||(`G${g?.num}`).toLowerCase().includes(q);
@@ -2157,8 +2157,8 @@ async function guardarPubDesdeDetalle(id){
 function renderGrupos(){
   const el=document.getElementById('gruposGrid');
   el.innerHTML=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{
-    const pubs=S.publicadores.filter(p=>p.grupo_id===g.id);
-    const ters=S.territorios.filter(t=>t.grupo_id===g.id);
+    const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===Number(g.id)&&p.activo!==false);
+    const ters=S.territorios.filter(t=>Number(t.grupo_id)===Number(g.id));
     const venc=ters.filter(t=>t.estado==='vencido').length;
     const asig=ters.filter(t=>t.estado==='asignado').length;
     const disp=ters.filter(t=>t.estado==='disponible').length;
@@ -2674,7 +2674,7 @@ function renderGrupoStats(gId){
   const gIdN=Number(gId);
   const g=S.grupos.find(x=>Number(x.id)===gIdN);
   const ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
-  const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gIdN);
+  const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gIdN&&p.activo!==false);
   const terIds=new Set(ters.map(t=>t.id));
   const hist=S.historial.filter(h=>terIds.has(h.territorio_id));
 
@@ -3513,7 +3513,8 @@ function toast(msg,type='',dur=3500){
 // ══ SERVICE WORKER REGISTRATION ══
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    // Use relative path so it works in both root and subdirectory deployments
+    navigator.serviceWorker.register('./sw.js')
       .then(reg => {
         console.log('[PWA] SW registrado, scope:', reg.scope);
         setInterval(() => reg.update(), 30 * 60 * 1000);
@@ -3541,11 +3542,11 @@ function _hideInstallUI(){
 
 // Show install button unless already running as installed PWA
 if(window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone){
-  // Already installed — keep hidden
-} else {
-  // Show after a short delay so page has rendered
-  setTimeout(_showInstallUI, 1500);
+  // Already installed — hide install UI
+  _hideInstallUI();
 }
+// Always show drawer install button unless already installed
+// (topbar button shown after delay or when beforeinstallprompt fires)
 
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
@@ -3555,20 +3556,40 @@ window.addEventListener('beforeinstallprompt', e => {
 
 function installPWA(){
   if(_installPrompt){
-    // Native prompt available
     _installPrompt.prompt();
     _installPrompt.userChoice.then(result => {
       if(result.outcome === 'accepted'){ toast('✓ App instalada','g'); _hideInstallUI(); }
       _installPrompt = null;
     });
-  } else {
-    // No native prompt — show manual instructions
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const msg = isIOS
-      ? 'En Safari: toca el botón Compartir (□↑) y selecciona "Añadir a pantalla de inicio"'
-      : 'En Chrome: abre el menú ⋮ y selecciona "Instalar app" o "Añadir a pantalla de inicio"';
-    toast('📲 ' + msg, 'a', 6000);
+    return;
   }
+  // No native prompt — show device-specific instructions in a modal
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isSafari = /safari/i.test(navigator.userAgent) && !/chrome/i.test(navigator.userAgent);
+  let msg, steps;
+  if(isIOS){
+    msg = 'Instalar en iPhone / iPad';
+    steps = isSafari
+      ? ['Abre esta página en <b>Safari</b> (si no estás ya en él)', 'Toca el botón <b>Compartir</b> (□↑) en la barra inferior', 'Desplázate y selecciona <b>«Añadir a pantalla de inicio»</b>', 'Toca <b>Añadir</b> — la app aparecerá en tu inicio']
+      : ['Esta función requiere <b>Safari</b> en iOS', 'Abre la página en Safari y repite el proceso'];
+  } else {
+    msg = 'Instalar en Android / escritorio';
+    steps = ['Abre el <b>menú</b> del navegador (⋮ o ···)', 'Selecciona <b>«Instalar app»</b> o <b>«Añadir a pantalla de inicio»</b>', 'Confirma la instalación', 'La app aparecerá como icono independiente'];
+  }
+  const stepsHtml = steps.map((s,i)=>`<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--blue);font-weight:700;min-width:20px">${i+1}</span><span>${s}</span></div>`).join('');
+  // Use a simple overlay
+  const ov = document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(8px)';
+  ov.innerHTML=`<div style="background:var(--s1);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:700">📲 ${msg}</div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:var(--s3);border:none;border-radius:8px;padding:6px 10px;color:var(--t2);font-size:16px;cursor:pointer">✕</button>
+    </div>
+    ${stepsHtml}
+    <div style="margin-top:16px;font-size:12px;color:var(--t3)">Una vez instalada, ábrela desde tu pantalla de inicio como cualquier app.</div>
+  </div>`;
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.remove(); });
+  document.body.appendChild(ov);
 }
 
 window.addEventListener('appinstalled', () => {
