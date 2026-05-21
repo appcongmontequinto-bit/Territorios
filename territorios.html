@@ -480,9 +480,9 @@ body.light{
    MOBILE UI — completo rediseño
    ══════════════════════════════════════ */
 @media(max-width:700px){
-  /* Hide desktop sidebar */
+  /* ── LAYOUT ── */
   #sidebar{display:none}
-  #main{padding-bottom:68px} /* space for bottom tab bar */
+  #main{padding-bottom:68px}
   .frow,.frow3{grid-template-columns:1fr}
 
   /* ── TOPBAR ── */
@@ -496,23 +496,23 @@ body.light{
   #menuBtn{display:flex!important}
   #addTerBtn{display:flex!important}
 
-  /* ── MOBILE BOTTOM TAB BAR ── */
+  /* ── BOTTOM TAB BAR ── */
   #mobileTabBar{
     display:flex!important;
     position:fixed;bottom:0;left:0;right:0;z-index:300;
     height:68px;padding-bottom:env(safe-area-inset-bottom);
-    background:rgba(20,20,22,.97);
-    border-top:1px solid rgba(255,255,255,.1);
+    background:var(--topbar-bg);
+    border-top:1px solid var(--border);
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   }
   .mtab{
     flex:1;display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:3px;cursor:pointer;
-    color:rgba(255,255,255,.45);font-size:10px;font-weight:600;
+    color:var(--t3);font-size:10px;font-weight:600;
     letter-spacing:.01em;transition:color .12s;position:relative;
-    padding-top:6px;
+    padding-top:6px;min-width:0;
   }
-  .mtab-icon{font-size:20px;line-height:1;margin-bottom:1px}
+  .mtab-icon{font-size:22px;line-height:1;margin-bottom:1px}
   .mtab.on{color:var(--blue)}
   .mtab-badge{
     position:absolute;top:2px;right:calc(50% - 18px);
@@ -520,7 +520,7 @@ body.light{
     font-size:9px;font-weight:700;
     min-width:16px;height:16px;border-radius:99px;
     display:flex;align-items:center;justify-content:center;
-    padding:0 3px;border:2px solid rgba(20,20,22,.97);
+    padding:0 3px;
   }
 
   /* ── DRAWER ── */
@@ -529,7 +529,7 @@ body.light{
   #drawerOverlay{position:absolute;inset:0;background:rgba(0,0,0,.6);opacity:0;transition:opacity .25s;backdrop-filter:blur(4px)}
   #mobileDrawer.open #drawerOverlay{opacity:1}
   #drawerPanel{
-    position:absolute;left:0;top:0;bottom:0;width:76%;max-width:300px;
+    position:absolute;left:0;top:0;bottom:0;width:80%;max-width:300px;
     background:var(--s1);border-right:1px solid var(--border2);
     display:flex;flex-direction:column;
     transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
@@ -537,144 +537,159 @@ body.light{
   }
   #mobileDrawer.open #drawerPanel{transform:translateX(0)}
   .drawer-head{padding:20px 16px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-  .drawer-logo{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
-  .drawer-close{margin-left:auto;width:28px;height:28px;background:var(--s3);border:none;border-radius:8px;color:var(--t2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .drawer-logo{font-size:16px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px;color:var(--text)}
+  .drawer-close{margin-left:auto;width:32px;height:32px;background:var(--s3);border:none;border-radius:8px;color:var(--t2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .drawer-nav{padding:8px}
+  .nav-item{padding:12px 12px;font-size:15px;min-height:44px}
+  .nav-sect{padding:14px 12px 4px;font-size:11px}
 
-  /* ── MAP PANEL ── */
+  /* ── MAP PANEL (bottom sheet) ── */
   #mapPanel{
-    width:100%;height:62%;top:auto;bottom:68px;right:0;
+    width:100%;height:65%;top:auto;bottom:68px;right:0;
     transform:translateY(110%);border-left:none;
     border-top:1px solid var(--border2);border-radius:18px 18px 0 0;
+    overflow-y:auto;
   }
   #mapPanel.open{transform:translateY(0)}
 
   /* ── MODAL ── */
   .overlay{z-index:1000;align-items:flex-end}
   .modal,.modal-lg{
-    width:100%!important;max-width:100%!important;max-height:92vh;
+    width:100%!important;max-width:100%!important;max-height:94vh;
     border-radius:20px 20px 0 0;margin:0;
+    overflow-y:auto;
   }
+  .mhead{padding:16px 18px 12px;position:sticky;top:0;background:var(--s1);z-index:10;border-radius:20px 20px 0 0}
+  .mtitle{font-size:18px}
+  .mbody{padding:12px 16px 20px}
+  .xbtn{width:36px;height:36px;font-size:18px}
 
-  /* ── VIEW HEAD — compact ── */
+  /* ── MODAL TABS ── */
+  .tabs{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;gap:0;padding:0 2px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:10px 14px;font-size:13px;white-space:nowrap;flex-shrink:0}
+
+  /* ── FORM ELEMENTS — big touch targets ── */
+  .fi,.fs{
+    min-height:46px;padding:12px 14px;font-size:16px;border-radius:12px;
+    width:100%;box-sizing:border-box;
+  }
+  .fi:focus,.fs:focus{outline:2px solid var(--blue);outline-offset:0}
+  .fl{font-size:14px;margin-bottom:8px}
+  .fg{margin-bottom:16px}
+  .btn{min-height:44px;padding:10px 18px;font-size:15px;border-radius:12px}
+  .btn-sm{min-height:38px;padding:8px 14px;font-size:14px}
+  .btn-xs{min-height:32px;padding:5px 10px;font-size:12px}
+  .xbtn{min-width:36px;min-height:36px}
+
+  /* ── MODAL FOOTER BUTTONS — full width on mobile ── */
+  .mfoot{display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px}
+  .mfoot .btn{width:100%;justify-content:center}
+
+  /* ── VIEW HEAD ── */
   .view-head{padding:10px 14px 0}
   .view-title{font-size:20px;letter-spacing:-.4px}
   .view-sub{font-size:12px;margin-top:1px}
   .view-scroll{padding:8px 12px 12px;overflow-y:auto}
 
-  /* ── STATS STRIP — horizontal scroll, compact pills ── */
+  /* ── STATS STRIP ── */
   .stats-strip{
-    display:flex!important;
-    flex-wrap:nowrap;
-    overflow-x:auto;
-    gap:8px;
-    padding:8px 0 4px;
-    margin:0 -12px;
-    padding-left:12px;
-    padding-right:12px;
-    scrollbar-width:none;
-    -ms-overflow-style:none;
-    flex:none;
+    display:flex!important;flex-wrap:nowrap;overflow-x:auto;
+    gap:8px;padding:8px 0 4px;margin:0 -12px;
+    padding-left:12px;padding-right:12px;scrollbar-width:none;
   }
   .stats-strip::-webkit-scrollbar{display:none}
   .stat-box{
-    flex:none;
-    min-width:110px;
-    padding:10px 12px;
-    border-radius:12px;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:4px;
+    flex:none;min-width:110px;padding:10px 12px;border-radius:12px;
+    flex-direction:column;align-items:flex-start;gap:4px;
   }
   .stat-ico{width:24px;height:24px;font-size:13px;border-radius:6px;margin-bottom:2px}
   .stat-val{font-size:20px;letter-spacing:-.4px}
   .stat-lbl{font-size:10px}
 
-  /* ── FILTER BAR — horizontal scroll ── */
+  /* ── FILTER BAR ── */
   .filter-bar{
-    display:flex!important;
-    flex-wrap:nowrap!important;
-    overflow-x:auto;
-    gap:6px;
-    margin:6px -12px 8px;
-    padding:0 12px;
-    scrollbar-width:none;
-    -ms-overflow-style:none;
+    display:flex!important;flex-wrap:nowrap!important;overflow-x:auto;
+    gap:6px;margin:6px -12px 8px;padding:0 12px;scrollbar-width:none;
   }
   .filter-bar::-webkit-scrollbar{display:none}
-  .chip{flex:none;padding:6px 13px;font-size:13px;white-space:nowrap}
+  .chip{flex:none;padding:7px 14px;font-size:13px;white-space:nowrap;min-height:36px}
   .filter-bar select{
-    flex:none;min-width:120px;padding:6px 10px;font-size:13px;
+    flex:none;min-width:130px;padding:7px 10px;font-size:13px;
     border-radius:99px;background:var(--s2);border:1px solid var(--border);
-    color:var(--text);font-family:var(--font);
+    color:var(--text);font-family:var(--font);min-height:36px;
   }
-
-  /* ── SORT SELECT — inline with filters ── */
   #fSort{min-width:140px!important}
   #fGrupo{min-width:130px!important}
 
-  /* ── TABLE — 3 cols: num, nombre+estado, publicador ── */
+  /* ── TERRITORY LIST ROWS ── */
   .tcols{grid-template-columns:48px 1fr auto}
   .tbl-head{padding:0 8px}
   .tbl-head span{padding:8px 5px;font-size:10px}
-  .tbl-row{padding:0 8px}
-  .tbl-row span{padding:11px 5px;font-size:13px}
-  /* Show: num(1), nombre(2), estado(8) — hide rest */
+  .tbl-row{padding:0 8px;min-height:52px}
+  .tbl-row span{padding:12px 5px;font-size:14px}
   .tbl-head span:nth-child(n+3):not(:last-child),
   .tbl-row span:nth-child(n+3):not(:last-child){display:none}
-  /* Estado pill column */
   .tbl-head span:last-child,.tbl-row span:last-child{display:flex;align-items:center}
-  /* Nombre with last-worked date inline */
-  .tbl-row span:nth-child(2){flex-direction:column;align-items:flex-start;gap:1px}
-
-  /* Hide table header on mobile — info is inline in rows */
+  .tbl-row span:nth-child(2){flex-direction:column;align-items:flex-start;gap:2px}
   #tblHead{display:none}
   #pubTblHead{display:none}
   .tbl-body{max-height:calc(100dvh - 240px)!important}
-  /* Ensure text in rows doesn't overflow */
   .tbl-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   /* ── CARD GRID ── */
   .card-grid{grid-template-columns:1fr}
-  .tcard{padding:12px}
-  .tcard-name{font-size:14px}
+  .tcard{padding:14px}
+  .tcard-name{font-size:15px}
 
   /* ── PRIO LIST ── */
-  .prio-item{padding:10px 12px;gap:8px}
-  .prio-name{font-size:13px}
-  .prio-sub{font-size:11px}
-  .prio-last{font-size:11px}
-  .prio-rank{width:24px;font-size:10px}
-
-  /* ── CHARTS ── */
-  #statGrid{grid-template-columns:1fr!important}
+  .prio-item{padding:12px 14px;gap:10px;min-height:52px}
+  .prio-name{font-size:14px}
+  .prio-sub{font-size:12px}
+  .prio-last{font-size:12px}
+  .prio-rank{width:28px;font-size:11px}
 
   /* ── HISTORIAL ── */
   #histScrollArea{flex-direction:column!important}
-  #histDetail.open{
-    display:block!important;
-    position:fixed!important;top:0!important;right:0!important;bottom:0!important;left:0!important;
-    z-index:500!important;background:var(--bg)!important;
+  #histDetail{
+    position:fixed!important;top:0!important;right:0!important;bottom:0!important;
+    width:100%!important;z-index:500!important;background:var(--bg)!important;
     overflow-y:auto!important;padding:16px!important;
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+    display:block!important;
   }
+  #histDetail.open{transform:translateX(0)!important}
   #histTblHead{display:none!important}
 
-  /* ── GRUPOS grid ── */
+  /* ── GRUPOS ── */
   #gruposGrid{grid-template-columns:1fr!important}
+  .grp-card{padding:14px}
+
+  /* ── STATS / CHARTS ── */
+  #statGrid{grid-template-columns:1fr!important}
 
   /* ── MAP LEGEND ── */
   .map-legend{font-size:11px;padding:8px 10px;bottom:76px;left:10px}
 
   /* ── TOAST ── */
-  #toast-wrap{bottom:76px;right:12px}
+  #toast-wrap{bottom:76px;right:12px;left:12px;align-items:stretch}
+  #toast-wrap .toast{text-align:center;justify-content:center}
 
   /* ── TOGGLE BUTTONS ── */
-  .tgl-btn{width:34px;height:34px}
+  .tgl-btn{width:36px;height:36px}
 
   /* ── PRIORIDAD sort ── */
-  #prioSort{font-size:13px!important;padding:6px 10px!important;border-radius:99px!important}
-}
+  #prioSort{font-size:13px!important;padding:7px 12px!important;border-radius:99px!important;min-height:36px!important}
 
+  /* ── S-13 preview ── */
+  #s13Preview{margin-top:12px}
+  #s13Preview .btn{min-height:40px}
+
+  /* ── GRUPOS modal KPI grid ── */
+  .grp-stat{padding:10px}
+  .grp-stat-val{font-size:22px}
+}
 /* Always hidden on mobile unless activated */
 #menuBtn{display:none}
 #addTerBtn{display:none}
@@ -3498,22 +3513,12 @@ function toast(msg,type='',dur=3500){
 // ══ SERVICE WORKER REGISTRATION ══
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('/sw.js')
       .then(reg => {
-        console.log('[PWA] Service Worker registered:', reg.scope);
-        // Check for updates every 30 minutes
+        console.log('[PWA] SW registrado, scope:', reg.scope);
         setInterval(() => reg.update(), 30 * 60 * 1000);
-        reg.addEventListener('updatefound', () => {
-          const newSW = reg.installing;
-          newSW.addEventListener('statechange', () => {
-            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available — show update toast
-              toast('🔄 Nueva versión disponible — recarga para actualizar', 'a');
-            }
-          });
-        });
       })
-      .catch(err => console.warn('[PWA] SW registration failed:', err));
+      .catch(err => console.warn('[PWA] SW error:', err));
   });
 }
 
