@@ -498,6 +498,21 @@ function renderTerritory(idx) {
   document.getElementById('heroBadge').textContent = `📍 ${normalizeTipo(t.tipo)}${t.es_grupo?' · Grupo':''}`;
   document.getElementById('heroName').textContent = t.num + (t.descripcion ? ` — ${t.descripcion.split('\n')[0].substring(0,40)}` : '');
 
+  // No-visitar warning banner
+  let nvBanner = document.getElementById('noVisitarBanner');
+  if(!nvBanner){
+    nvBanner = document.createElement('div');
+    nvBanner.id = 'noVisitarBanner';
+    nvBanner.style.cssText = 'display:none;margin:10px 16px 0;padding:10px 14px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:12px;color:#ef4444;font-size:14px;font-weight:600;line-height:1.4';
+    document.getElementById('heroName').parentNode.insertBefore(nvBanner, document.getElementById('heroName').nextSibling);
+  }
+  if(t.no_visitar){
+    nvBanner.innerHTML = '⚠️ Aviso: ' + t.no_visitar;
+    nvBanner.style.display = '';
+  } else {
+    nvBanner.style.display = 'none';
+  }
+
   // Countdown
   const ring=document.getElementById('ringFill');
   const elapsed=t.fecha_asig?daysBetween(t.fecha_asig,today()):0;
@@ -539,7 +554,8 @@ function renderTerritory(idx) {
     ['Puertas',t.num_dirs||'—'],
     ['Asignado',fmtDate(t.fecha_asig)],['Vence',fmtDate(t.fecha_vence)],
     ['Modalidad',t.es_grupo?'Territorio de grupo':'Individual'],
-    ...(t.descripcion?[['Descripción',t.descripcion]]:[] ),
+    ...(t.descripcion?[['Descripción',t.descripcion]]:[]),
+    ...(t.no_visitar?[['⚠️ No visitar',t.no_visitar]]:[]),
   ];
   document.getElementById('detList').innerHTML=rows.map(([k,v])=>
     `<div class="det-row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('');
