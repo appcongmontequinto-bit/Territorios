@@ -2405,7 +2405,7 @@ function openPubDetail(id){
   const activos=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
   const hist=S.historial.filter(h=>h.pub_id===p.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
   const base=location.href.replace(/[^/]*$/,'');
-  const enlacePub=`${base}territorio-visor.html?p=${p.id}`;
+  const enlacePub=`${base}visor/?p=${p.id}`;
   const grupoOpts=S.grupos.sort((a,b)=>a.num-b.num).map(gr=>`<option value="${gr.id}"${gr.id===p.grupo_id?' selected':''}>${gr.nombre||'Grupo '+gr.num}</option>`).join('');
 
   document.getElementById('mPubDetTitle').textContent=p.nombre;
@@ -3861,7 +3861,7 @@ function toast(msg,type='',dur=3500){
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     // Use relative path so it works in both root and subdirectory deployments
-    navigator.serviceWorker.register('/sw.js', { scope: '/territorios.html' })
+    navigator.serviceWorker.register('./sw.js')
       .then(reg => {
         console.log('[PWA] SW registrado, scope:', reg.scope);
         setInterval(() => reg.update(), 30 * 60 * 1000);
