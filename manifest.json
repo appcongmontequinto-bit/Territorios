@@ -2,8 +2,8 @@
   "name": "Territorios · Congregación",
   "short_name": "Territorios",
   "description": "Gestión de territorios de predicación",
-  "start_url": "/territorios.html",
-  "scope": "/territorios.html",
+  "start_url": "./territorios.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
