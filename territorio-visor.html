@@ -353,7 +353,8 @@ body{-webkit-user-select:none;user-select:none}
 
     <div style="text-align:center;font-size:11px;color:var(--t3);padding:12px 0 4px;line-height:1.7">
       Desarrollada por <span style="color:var(--t2);font-weight:600">Manuel Fernández</span><br>
-      para uso exclusivo de la congregación <span style="color:var(--t2);font-weight:600">Montequinto</span>
+      para uso exclusivo de la congregación <span style="color:var(--t2);font-weight:600">Montequinto</span><br>
+      <button onclick="visorCambiarPublicador()" style="margin-top:8px;background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--t3);font-size:11px;cursor:pointer;font-family:var(--font)">🔄 Cambiar publicador</button>
     </div>
   </div>
 </div>
@@ -394,7 +395,18 @@ const daysUntil = d => d ? daysBetween(today(),d) : null;
 const fmtDate = s => { if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}/${m}/${y}`; };
 
 // ══ STATE ══
-const PID = parseInt(new URLSearchParams(location.search).get('p')||'0');
+// PID: read from URL param first, then fall back to localStorage (PWA reopen)
+const _pidFromUrl = parseInt(new URLSearchParams(location.search).get('p')||'0');
+let PID = _pidFromUrl;
+if (PID) {
+  // Save to localStorage so PWA remembers it after closing
+  localStorage.setItem('visor_pub_id', String(PID));
+} else {
+  // No param in URL — try localStorage (PWA installed, reopened without URL)
+  const saved = parseInt(localStorage.getItem('visor_pub_id')||'0');
+  if (saved) PID = saved;
+}
+
 let territories = [];   // active territories of this publisher
 let currentIdx  = 0;    // which territory is shown
 let pub = null, grupos = [];
@@ -830,10 +842,17 @@ function toggleThemeVisor(){
 
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('/sw-visor.js')
       .then(r => console.log('[PWA Visor] SW registrado:', r.scope))
       .catch(e => console.warn('[PWA Visor] SW error:', e));
   });
+}
+
+function visorCambiarPublicador(){
+  if(confirm('¿Cambiar de publicador? Se borrará el enlace guardado en este dispositivo.')){
+    localStorage.removeItem('visor_pub_id');
+    location.href = location.pathname;
+  }
 }
 
 init();
