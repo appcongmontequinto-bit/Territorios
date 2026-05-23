@@ -2405,7 +2405,7 @@ function openPubDetail(id){
   const activos=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
   const hist=S.historial.filter(h=>h.pub_id===p.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
   const base=location.href.replace(/[^/]*$/,'');
-  const enlacePub=`${base}visor/?p=${p.id}`;
+  const enlacePub=`https://montequinto-bit.github.io/visor-montequinto/?p=${p.id}`;
   const grupoOpts=S.grupos.sort((a,b)=>a.num-b.num).map(gr=>`<option value="${gr.id}"${gr.id===p.grupo_id?' selected':''}>${gr.nombre||'Grupo '+gr.num}</option>`).join('');
 
   document.getElementById('mPubDetTitle').textContent=p.nombre;
