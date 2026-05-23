@@ -2,8 +2,8 @@
   "name": "Mis Territorios",
   "short_name": "Mis Territorios",
   "description": "Consulta tus territorios asignados — Congregación Montequinto",
-  "start_url": "/visor/index.html",
-  "scope": "/visor/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "display_override": [
     "standalone",
