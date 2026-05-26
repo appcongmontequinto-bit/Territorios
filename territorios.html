@@ -4169,7 +4169,7 @@ let _cvRunning=false, _cvStop=false, _cvResults={}, _cvGeoJSON=null;
 async function cvCargarGeoJSON(){
   if(_cvGeoJSON) return _cvGeoJSON;
   const r=await fetch(GEOJSON_URL);
-  if(!r.ok) throw new Error('No se encontró zonas.geojson');
+  if(!r.ok) throw new Error('No se encontró zonas.geojson (HTTP '+r.status+')');
   _cvGeoJSON=await r.json();
   return _cvGeoJSON;
 }
@@ -4177,54 +4177,114 @@ async function cvCargarGeoJSON(){
 function cvPolyStr(coords){
   const pts=coords[coords.length-1][0]===coords[0][0]&&coords[coords.length-1][1]===coords[0][1]
     ?coords.slice(0,-1):coords;
-  return pts.map(c=>c[1].toFixed(7)+' '+c[0].toFixed(7)).join(' ');
+  return pts.map(c=>c[1].toFixed(6)+' '+c[0].toFixed(6)).join(' ');
 }
 
+// Build Overpass query - simplified syntax for maximum compatibility
 function cvBuildQuery(polyStr, fuente){
-  const poly='(poly:"'+polyStr+'")';
+  const t = 30; // timeout seconds
+  const p = `(poly:"${polyStr}")`;
+
   if(fuente==='entrance'){
-    return '[out:json][timeout:25];\nnode["entrance"][!"entrance"="no"][!"entrance"="emergency"]'+poly+';\nout count;';
+    // Entrance nodes - each building door/portal
+    return `[out:json][timeout:${t}];
+node["entrance"]${p};
+out count;`;
   }
+
   if(fuente==='housenumber'){
-    return '[out:json][timeout:25];\n(way["addr:housenumber"]'+poly+';node["addr:housenumber"]'+poly+';);\nout count;';
+    // Ways with housenumber = buildings (most common in Spain)
+    // Nodes with housenumber = individual addresses
+    return `[out:json][timeout:${t}];
+(
+  way["addr:housenumber"]${p};
+  node["addr:housenumber"]${p};
+);
+out count;`;
   }
+
   if(fuente==='both'){
-    // For Spain: entrance nodes for portales, housenumber ways for edificios
-    // Run both and return the higher (entrances are per door, housenumber per building)
-    return '[out:json][timeout:30];\n(node["entrance"][!"entrance"="no"][!"entrance"="emergency"]'+poly+';way["addr:housenumber"]'+poly+';node["addr:housenumber"]'+poly+';);\nout count;';
+    // Combined: ways+nodes with housenumber
+    // This is the most reliable for Spain
+    return `[out:json][timeout:${t}];
+(
+  way["addr:housenumber"]${p};
+  node["addr:housenumber"]${p};
+  node["entrance"]${p};
+);
+out count;`;
   }
+
   if(fuente==='buildings'){
-    return '[out:json][timeout:25];\n(way["building"~"^(residential|apartments|house|terrace|detached|semidetached_house|bungalow|dormitory)$"]'+poly+';relation["building"~"^(residential|apartments)$"]'+poly+';);\nout count;';
+    return `[out:json][timeout:${t}];
+(
+  way["building"="residential"]${p};
+  way["building"="apartments"]${p};
+  way["building"="house"]${p};
+  way["building"="terrace"]${p};
+  way["building"="detached"]${p};
+  way["building"="semidetached_house"]${p};
+  way["building"="bungalow"]${p};
+  way["building"="yes"]${p};
+);
+out count;`;
   }
+
   return '';
 }
 
-async function cvQuery(polyStr, fuente, serverIdx=0){
-  const server=OVERPASS_SERVERS[serverIdx%OVERPASS_SERVERS.length];
-  const q=cvBuildQuery(polyStr,fuente);
-  const ctrl=new AbortController();
-  const tid=setTimeout(()=>ctrl.abort(),28000);
-  try{
-    const r=await fetch(server,{method:'POST',body:new URLSearchParams({data:q}),headers:{'Content-Type':'application/x-www-form-urlencoded'},signal:ctrl.signal});
-    clearTimeout(tid);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    const el=data.elements?.[0];
-    if(el?.type==='count'){
-      const nodes=parseInt(el.tags?.nodes||'0');
-      const ways=parseInt(el.tags?.ways||'0');
-      const rels=parseInt(el.tags?.relations||'0');
-      const total=parseInt(el.tags?.total||'0');
-      if(fuente==='both') return nodes>0?nodes:ways; // entrance nodes preferred
-      return total>0?total:(nodes+ways+rels);
+function cvParseCount(data, fuente){
+  const el = data.elements?.[0];
+  if(el?.type==='count'){
+    const nodes = parseInt(el.tags?.nodes||'0');
+    const ways  = parseInt(el.tags?.ways||'0');
+    const rels  = parseInt(el.tags?.relations||'0');
+    const total = parseInt(el.tags?.total||'0');
+
+    if(fuente==='both'){
+      // ways = buildings, nodes could be entrances or addr nodes
+      // prefer total if available
+      return total > 0 ? total : (nodes + ways);
     }
-    return data.elements?.length||0;
-  }catch(e){clearTimeout(tid);throw e;}
+    return total > 0 ? total : (nodes + ways + rels);
+  }
+  // Fallback: count elements array directly
+  return data.elements?.length || 0;
 }
 
-function cvLog(msg,color='var(--t2)'){
+async function cvQueryServer(q, serverIdx){
+  const server = OVERPASS_SERVERS[serverIdx % OVERPASS_SERVERS.length];
+  const ctrl = new AbortController();
+  const tid = setTimeout(()=>ctrl.abort(), 32000);
+  try{
+    const r = await fetch(server, {
+      method:'POST',
+      body: new URLSearchParams({data: q}),
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      signal: ctrl.signal
+    });
+    clearTimeout(tid);
+    if(!r.ok){
+      const txt = await r.text().catch(()=>'');
+      throw new Error('HTTP '+r.status+(txt?' — '+txt.slice(0,80):''));
+    }
+    return await r.json();
+  }catch(e){
+    clearTimeout(tid);
+    if(e.name==='AbortError') throw new Error('Timeout (32s)');
+    throw e;
+  }
+}
+
+async function cvQuery(polyStr, fuente, serverIdx=0){
+  const q = cvBuildQuery(polyStr, fuente);
+  const data = await cvQueryServer(q, serverIdx);
+  return cvParseCount(data, fuente);
+}
+
+function cvLog(msg, color='var(--t2)'){
   const log=document.getElementById('cvLog');
-  if(!log)return;
+  if(!log) return;
   const d=document.createElement('div');
   d.style.cssText='color:'+color+';padding:1px 0;font-size:11px';
   d.textContent=msg;
@@ -4234,10 +4294,18 @@ function cvLog(msg,color='var(--t2)'){
 
 function cvUpdateResultTable(){
   const wrap=document.getElementById('cvResultTable');
-  if(!wrap)return;
+  if(!wrap) return;
   const entries=Object.entries(_cvResults).sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}));
   if(!entries.length){wrap.innerHTML='';return;}
-  wrap.innerHTML='<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);margin-top:10px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s3);position:sticky;top:0"><th style="padding:6px 10px;text-align:left">Nº</th><th style="padding:6px 10px;text-align:left">Nombre</th><th style="padding:6px 10px;text-align:right">Anterior</th><th style="padding:6px 10px;text-align:right">Nuevo</th><th style="padding:6px 10px;text-align:right">Δ</th></tr></thead><tbody>'
+  wrap.innerHTML='<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);margin-top:10px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:var(--s3);position:sticky;top:0">'
+    +'<th style="padding:6px 10px;text-align:left">Nº</th>'
+    +'<th style="padding:6px 10px;text-align:left">Nombre</th>'
+    +'<th style="padding:6px 10px;text-align:right">Anterior</th>'
+    +'<th style="padding:6px 10px;text-align:right">Nuevo</th>'
+    +'<th style="padding:6px 10px;text-align:right">Δ</th>'
+    +'</tr></thead><tbody>'
     +entries.map(([num,count])=>{
       const t=S.territorios.find(x=>x.num===num);
       const prev=t?.num_dirs||0;
@@ -4245,109 +4313,168 @@ function cvUpdateResultTable(){
       const dStr=diff>0?'+'+diff:diff<0?String(diff):'=';
       const dCol=diff>0?'var(--green)':diff<0?'var(--red)':'var(--t3)';
       const bg=count===0?'background:rgba(255,59,48,.06)':'';
-      return '<tr style="border-top:1px solid var(--border);'+bg+'"><td style="padding:5px 10px;font-family:var(--font-mono);font-weight:600">'+num+'</td><td style="padding:5px 10px;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t?.nombre||'—')+'</td><td style="padding:5px 10px;text-align:right;color:var(--t3)">'+(prev||'—')+'</td><td style="padding:5px 10px;text-align:right;font-weight:700;color:'+(count===0?'var(--red)':'var(--text)')+'">'+count+'</td><td style="padding:5px 10px;text-align:right;font-weight:600;color:'+dCol+'">'+dStr+'</td></tr>';
+      return '<tr style="border-top:1px solid var(--border);'+bg+'">'
+        +'<td style="padding:5px 10px;font-family:var(--font-mono);font-weight:600">'+num+'</td>'
+        +'<td style="padding:5px 10px;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t?.nombre||'—')+'</td>'
+        +'<td style="padding:5px 10px;text-align:right;color:var(--t3)">'+(prev||'—')+'</td>'
+        +'<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+(count===0?'var(--red)':'var(--text)')+'">' +count+'</td>'
+        +'<td style="padding:5px 10px;text-align:right;font-weight:600;color:'+dCol+'">'+dStr+'</td>'
+        +'</tr>';
     }).join('')
     +'</tbody></table></div>';
 }
 
 async function cvIniciar(){
-  if(_cvRunning)return;
+  if(_cvRunning) return;
   const fuente=document.getElementById('cvFuente').value;
   const fromTer=document.getElementById('cvFrom').value.trim();
   const toTer=document.getElementById('cvTo').value.trim();
+
   let gj;
-  try{gj=await cvCargarGeoJSON();}catch(e){toast('⚠ '+e.message,'r');return;}
+  try{ gj=await cvCargarGeoJSON(); }
+  catch(e){ toast('⚠ '+e.message,'r'); return; }
+
   let features=[...gj.features];
   if(fromTer) features=features.filter(f=>f.properties.Name.localeCompare(fromTer,undefined,{numeric:true})>=0);
   if(toTer)   features=features.filter(f=>f.properties.Name.localeCompare(toTer,undefined,{numeric:true})<=0);
-  if(!features.length){toast('Sin territorios en ese rango','am');return;}
-  _cvRunning=true;_cvStop=false;_cvResults={};
+  if(!features.length){ toast('Sin territorios en ese rango','am'); return; }
+
+  _cvRunning=true; _cvStop=false; _cvResults={};
   document.getElementById('cvStartBtn').style.display='none';
   document.getElementById('cvStopBtn').style.display='';
   document.getElementById('cvProgress').style.display='';
   document.getElementById('cvResults').style.display='';
   document.getElementById('cvLog').innerHTML='';
   document.getElementById('cvResultTable').innerHTML='';
-  const total=features.length;let done=0,errors=0,zeros=0;
-  cvLog('🔍 Iniciando '+total+' territorios · fuente: '+fuente,'var(--blue)');
+
+  const total=features.length;
+  let done=0, errors=0, zeros=0;
+  let currentServer=0; // track which server is working
+
+  cvLog('Iniciando conteo de '+total+' territorios · fuente: '+fuente,'var(--blue)');
+  cvLog('Servidor: '+OVERPASS_SERVERS[0].replace('https://',''),'var(--t3)');
+
   for(let i=0;i<features.length;i++){
-    if(_cvStop){cvLog('⏹ Detenido.','var(--amber)');break;}
+    if(_cvStop){ cvLog('⏹ Detenido.','var(--amber)'); break; }
+
     const feat=features[i];
     const name=feat.properties.Name;
-    const coords=feat.geometry.type==='MultiPolygon'?feat.geometry.coordinates[0][0]:feat.geometry.coordinates[0];
+    const coords=feat.geometry.type==='MultiPolygon'
+      ?feat.geometry.coordinates[0][0]
+      :feat.geometry.coordinates[0];
     const poly=cvPolyStr(coords);
+
     const pct=Math.round(i/total*100);
     document.getElementById('cvProgressPct').textContent=pct+'%';
     document.getElementById('cvProgressBar').style.width=pct+'%';
     document.getElementById('cvProgressText').textContent='Procesando '+name+' ('+(i+1)+'/'+total+')…';
-    let count=-1,lastErr='';
+
+    let count=-1;
+    let lastErr='';
+
+    // Try each server
     for(let srv=0;srv<OVERPASS_SERVERS.length;srv++){
-      try{count=await cvQuery(poly,fuente,srv);break;}
-      catch(e){
-        lastErr=e.name==='AbortError'?'Timeout':e.message;
-        if(srv<OVERPASS_SERVERS.length-1){cvLog('  ↻ '+name+': reintentando…','var(--amber)');await new Promise(r=>setTimeout(r,1200));}
-        else{cvLog('✗ '+name+': '+lastErr,'var(--red)');errors++;}
+      const srvIdx=(currentServer+srv)%OVERPASS_SERVERS.length;
+      try{
+        count=await cvQuery(poly,fuente,srvIdx);
+        currentServer=srvIdx; // stick with working server
+        break;
+      }catch(e){
+        lastErr=e.message;
+        if(srv<OVERPASS_SERVERS.length-1){
+          cvLog('  ↻ '+name+': cambiando servidor… ('+lastErr.slice(0,40)+')','var(--amber)');
+          await new Promise(r=>setTimeout(r,800));
+        } else {
+          cvLog('✗ '+name+': '+lastErr,'var(--red)');
+          errors++;
+        }
       }
     }
+
     if(count>=0){
-      _cvResults[name]=count;done++;
-      if(count===0)zeros++;
-      const t=S.territorios.find(x=>x.num===name);
-      const prev=t?.num_dirs;
+      _cvResults[name]=count;
+      done++;
+      if(count===0) zeros++;
+      const t2=S.territorios.find(t=>t.num===name);
+      const prev=t2?.num_dirs;
       const prevStr=prev!=null?' (antes: '+prev+')':'';
-      cvLog('✓ '+name+': '+count+(count===0?' ⚠️ sin datos':' entradas')+prevStr,count===0?'var(--amber)':count>50?'var(--green)':'var(--t2)');
+      const col=count===0?'var(--amber)':count>30?'var(--green)':'var(--t2)';
+      cvLog('✓ '+name+': '+count+(count===0?' — sin datos en OSM':' entradas')+prevStr, col);
       cvUpdateResultTable();
     }
-    if(i<features.length-1)await new Promise(r=>setTimeout(r,errors>2?3000:1500));
+
+    // Delay between requests: shorter if going well
+    if(i<features.length-1){
+      await new Promise(r=>setTimeout(r, errors>3?3000:1200));
+    }
   }
+
   _cvRunning=false;
   document.getElementById('cvStartBtn').style.display='';
   document.getElementById('cvStopBtn').style.display='none';
   document.getElementById('cvProgressPct').textContent='100%';
   document.getElementById('cvProgressBar').style.width='100%';
   document.getElementById('cvProgressText').textContent='Completado';
+
   const totalDoors=Object.values(_cvResults).reduce((a,b)=>a+b,0);
   const avg=done?Math.round(totalDoors/done):0;
   let sum='✓ '+done+' territorios · '+totalDoors.toLocaleString()+' entradas · Media: '+avg;
-  if(zeros)sum+=' · ⚠️ '+zeros+' sin datos';
-  if(errors)sum+=' · ❌ '+errors+' errores';
+  if(zeros) sum+=' · ⚠️ '+zeros+' sin datos OSM';
+  if(errors) sum+=' · ❌ '+errors+' errores de red';
   document.getElementById('cvSummary').textContent=sum;
-  if(zeros)cvLog('\n⚠️ '+zeros+' territorios devolvieron 0. Prueba "Edificios residenciales" para esos.','var(--amber)');
+
+  if(zeros){
+    cvLog('','');
+    cvLog('⚠️ '+zeros+' territorios devolvieron 0. Posibles causas:','var(--amber)');
+    cvLog('  1. No están mapeados en OSM (zona nueva o rural)','var(--amber)');
+    cvLog('  2. Los edificios usan "entrance" en vez de "addr:housenumber"','var(--amber)');
+    cvLog('  3. Prueba con otra fuente de datos','var(--amber)');
+  }
 }
 
-function cvDetener(){_cvStop=true;}
+function cvDetener(){ _cvStop=true; }
 
 async function cvGuardarEnBD(){
   const entries=Object.entries(_cvResults);
-  if(!entries.length){toast('Sin datos','am');return;}
+  if(!entries.length){ toast('Sin datos que guardar','am'); return; }
   showLoader('Guardando '+entries.length+' territorios…');
   setSyncStatus('syncing');
-  let ok=0,fail=0;
+  let ok=0, fail=0;
   for(const [num,count] of entries){
     const t=S.territorios.find(x=>x.num===num);
-    if(!t)continue;
-    try{await sbPatch('territorios',{id:t.id},{num_dirs:count});t.num_dirs=count;ok++;}
-    catch{fail++;}
+    if(!t) continue;
+    try{
+      await sbPatch('territorios',{id:t.id},{num_dirs:count});
+      t.num_dirs=count; ok++;
+    }catch(e){ fail++; console.error(num,e); }
   }
-  hideLoader();setSyncStatus(fail?'error':'ok');
-  toast('✓ '+ok+' actualizados'+(fail?' · '+fail+' errores':''),fail?'am':'g');
+  hideLoader(); setSyncStatus(fail?'error':'ok');
+  toast('✓ '+ok+' actualizados'+(fail?' · '+fail+' errores':''), fail?'am':'g');
   renderView(currentView);
 }
 
 function cvDescargarSQL(){
   const lines=['-- Viviendas Montequinto · '+new Date().toLocaleDateString('es-ES'),'',
-    ...Object.entries(_cvResults).sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}))
+    ...Object.entries(_cvResults)
+      .sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}))
       .map(([n,c])=>'UPDATE territorios SET num_dirs = '+c+" WHERE num = '"+n+"';"),
-    '\nSELECT num, nombre, num_dirs FROM territorios ORDER BY num;'];
+    '',
+    'SELECT num, nombre, num_dirs FROM territorios ORDER BY num;'];
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
-  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.sql';a.click();
+  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.sql';
+  a.click();
 }
 
 function cvDescargarJSON(){
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify({fecha:new Date().toISOString(),resultados:_cvResults},null,2)],{type:'application/json'}));
-  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({
+    fecha:new Date().toISOString(),
+    fuente:document.getElementById('cvFuente')?.value,
+    resultados:_cvResults
+  },null,2)],{type:'application/json'}));
+  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
 }
 // ══ THEME ══
 function toggleTheme(){
