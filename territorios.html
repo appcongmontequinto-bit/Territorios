@@ -770,6 +770,8 @@ body.light{
       <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="dnb-grp">0</span></div>
       <div class="nav-item" data-v="dashboard" onclick="navDrawer(this)"><span class="nav-icon">🏠</span>Dashboard</div>
       <div class="nav-item" data-v="lotes" onclick="navDrawer(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
+      <div class="nav-item" data-v="cambios" onclick="navDrawer(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
+      <div class="nav-item" data-v="solicitudes" onclick="navDrawer(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic-d" style="display:none">0</span></div>
       <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📖</span>Historial</div>
       <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
       <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
@@ -797,6 +799,8 @@ body.light{
   <div class="nav-item" data-v="publicadores" onclick="nav(this)"><span class="nav-icon">👥</span>Publicadores<span class="nav-badge" id="nb-pub">0</span></div>
   <div class="nav-item" data-v="grupos" onclick="nav(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="nb-grp">0</span></div>
   <div class="nav-item" data-v="historial" onclick="nav(this)"><span class="nav-icon">📋</span>Historial</div>
+  <div class="nav-item" data-v="cambios" onclick="nav(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
+  <div class="nav-item" data-v="solicitudes" onclick="nav(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic" style="display:none">0</span></div>
   <div class="nav-item" data-v="lotes" onclick="nav(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
   <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
   <div class="nav-sect">Estado rápido</div>
@@ -1052,6 +1056,26 @@ body.light{
 </div>
 
 <!-- VIEW: S-13 -->
+<!-- VIEW: ÚLTIMOS CAMBIOS -->
+<div id="view-cambios" class="view" style="flex-direction:column">
+  <div class="view-head">
+    <div class="view-title">Últimos cambios</div>
+    <div class="view-sub">Registro de actividad reciente</div>
+  </div>
+  <div class="view-scroll" id="cambiosList"></div>
+</div>
+
+<!-- VIEW: SOLICITUDES -->
+<div id="view-solicitudes" class="view" style="flex-direction:column">
+  <div class="view-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px">
+    <div>
+      <div class="view-title">Solicitudes</div>
+      <div class="view-sub">Peticiones de territorio de los publicadores</div>
+    </div>
+  </div>
+  <div class="view-scroll" id="solicitudesList"></div>
+</div>
+
 <div id="view-s13" class="view">
   <div class="view-head"><div class="view-title">Exportar S-13</div><div class="view-sub">Registro oficial de asignación de territorio</div></div>
   <div class="view-scroll">
@@ -1465,7 +1489,13 @@ function initRealtime(){
         setSyncStatus('syncing');
         _debouncedReload.grupos().then(()=>setSyncStatus('ok')).catch(()=>setSyncStatus('error'));
       })
-      .subscribe((status) => {
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'audit_log' }, () => {
+      loadAuditLog().then(()=>{if(currentView==='cambios') renderCambios(); updateBadges();});
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitudes' }, () => {
+      loadSolicitudes().then(()=>{if(currentView==='solicitudes') renderSolicitudes(); updateBadges();});
+    })
+          .subscribe((status) => {
         if(status === 'SUBSCRIBED') console.log('✓ Realtime conectado');
         if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('Realtime desconectado, reintentando…');
       });
@@ -1517,7 +1547,7 @@ async function sbStorageDelete(path) {
 }
 
 // ══ STATE ══
-let S = { territorios:[], publicadores:[], grupos:[], historial:[] };
+let S = { territorios:[], publicadores:[], grupos:[], historial:[], auditLog:[], solicitudes:[] };
 let currentView='dashboard', currentFilter='todos', currentPeriod='year';
 let viewMode='list', searchQ='', editingTId=null, editingGId=null;
 let leafletMap=null, geoLayer=null;
@@ -1837,13 +1867,45 @@ async function ejecutarLotes(){
   setSyncStatus('ok');
   _lotesSelected.clear();
   renderLotes();
+  // Mark pending solicitud as approved if came from solicitudes view
+  if(window._pendingSolicitudId && ok>0){
+    try{
+      const asignedTer=S.territorios.filter(t=>t.pub_id===pubId&&(t.estado==='asignado'||t.estado==='vencido')).slice(-1)[0];
+      await sbPatch('solicitudes',{id:window._pendingSolicitudId},{
+        estado:'aprobada',
+        territorio_id:asignedTer?.id||null,
+        updated_at:new Date().toISOString()
+      });
+      const s=S.solicitudes.find(x=>x.id===window._pendingSolicitudId);
+      if(s){s.estado='aprobada';s.territorio_id=asignedTer?.id||null;}
+      await logAudit('aprobar',asignedTer?.id||null,pubId,{});
+      updateBadges();
+    }catch(e){console.warn('solicitud update error',e);}
+    window._pendingSolicitudId=null;
+  }
   toast(`✅ ${ok} territorio${ok>1?'s':''} asignado${ok>1?'s':''} a ${pub?.nombre}${fail?` (${fail} errores)`:''}`,'g',5000);
+}
+
+// ══ AUDIT LOG ══
+async function logAudit(accion, territorioId=null, pubId=null, datos={}){
+  try{
+    await sbPost('audit_log',{
+      accion, tabla:'territorios',
+      territorio_id:territorioId||null,
+      pub_id:pubId||null,
+      datos:Object.keys(datos).length?datos:null
+    });
+    // Prepend to local state
+    S.auditLog.unshift({accion,territorio_id:territorioId,pub_id:pubId,datos,created_at:new Date().toISOString()});
+    // Update badge
+    updateBadges();
+  }catch(e){console.warn('audit log error',e);}
 }
 
 async function initApp(){
   showLoader('Cargando datos…');
   try {
-    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial()]);
+    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial(),loadAuditLog(),loadSolicitudes()]);
     await checkVencidos();
     fillAllSels();
     renderView('dashboard');
@@ -1861,6 +1923,8 @@ async function loadGrupos(){S.grupos=await sbGet('grupos',{select:'*',order:'num
 async function loadPublicadores(){S.publicadores=await sbGet('publicadores',{select:'*',order:'nombre.asc'});}
 async function loadTerritorios(){S.territorios=await sbGet('territorios',{select:'*',order:'num.asc'});}
 async function loadHistorial(){S.historial=await sbGet('historial',{select:'*',order:'created_at.desc',limit:2000});}
+async function loadAuditLog(){S.auditLog=await sbGet('audit_log',{select:'*',order:'created_at.desc',limit:200});}
+async function loadSolicitudes(){S.solicitudes=await sbGet('solicitudes',{select:'*',order:'created_at.desc'});}
 async function checkVencidos(){
   const venc=S.territorios.filter(t=>t.estado==='asignado'&&t.fecha_vence&&daysUntil(t.fecha_vence)<0);
   for(const t of venc){await sbPatch('territorios',{id:t.id},{estado:'vencido'});t.estado='vencido';}
@@ -1896,6 +1960,8 @@ function renderView(v){
   else if(v==='grupos') renderGrupos();
   else if(v==='historial') renderHistorial();
   else if(v==='lotes') renderLotes();
+  else if(v==='cambios') renderCambios();
+  else if(v==='solicitudes') renderSolicitudes();
 }
 
 // ══ FILTERS ══
@@ -2118,6 +2184,12 @@ function updateBadges(){
   if(vencBadge){ vencBadge.textContent=venc; vencBadge.style.display=venc>0?'flex':'none'; }
   const oldBadge=sb('mtb-old');
   if(oldBadge){ oldBadge.textContent=disp; oldBadge.style.display=disp>0?'flex':'none'; }
+  // Solicitudes badge
+  const pendSolic=S.solicitudes.filter(s=>s.estado==='pendiente').length;
+  ['nb-solic','nb-solic-d'].forEach(id=>{
+    const el=sb(id);
+    if(el){el.textContent=pendSolic;el.style.display=pendSolic>0?'flex':'none';}
+  });
 
   if(leafletMap) updateMapColors();
 }
@@ -2754,6 +2826,7 @@ async function guardarTer(){
       data.estado='disponible';
       const rows=await sbPost('territorios',data);
       S.territorios.push(rows[0]);
+      logAudit('crear', rows[0]?.id, null, {num:data.num, nombre:data.nombre});
       toast('✓ Territorio creado','g');
     }
     setSyncStatus('ok');closeModal('mTer');
@@ -2788,6 +2861,7 @@ async function cancelarAsignacion(){
     setSyncStatus('ok');
     document.getElementById('btnCancelarAsig').style.display='none';
     showAsignarPanels('disponible');renderAsigStatus(t);reloadAndRender();
+    logAudit('cancelar', t.id, t.pub_id||null, {num:t.num});
     toast('↩ Asignación cancelada','am');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2810,6 +2884,7 @@ async function confirmarAsig(){
     setSyncStatus('ok');
     closeModal('mTer');
     reloadAndRender();
+    logAudit('asignar', t.id, pubId, {num:t.num, fecha_asig:fecha, fecha_vence:fechaVence});
     toast(`📌 Asignado a ${pubName(pubId)}`,'a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -2851,6 +2926,7 @@ async function ejecutarDevolucion(t,fecha){
     const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,ultimo_trabajado:fecha,es_grupo:false});
     Object.assign(t,rows[0]);
     setSyncStatus('ok');showAsignarPanels('disponible');renderAsigStatus(t);renderTerHistorial(t);reloadAndRender();
+    logAudit('devolver', t.id, t.pub_id||null, {num:t.num, fecha_dev:fecha});
     toast('✅ Devuelto y disponible','g');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -3698,7 +3774,7 @@ async function exportarGrupo(gId){
 async function reloadAndRender(){
   setSyncStatus('syncing');
   try{
-    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial()]);
+    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial(),loadAuditLog(),loadSolicitudes()]);
     await checkVencidos();
     fillAllSels();
     renderView(currentView);
@@ -3944,6 +4020,143 @@ window.addEventListener('appinstalled', () => {
   _installPrompt = null;
   _hideInstallUI();
 });
+
+
+// ══════════════════════════════════════════════════════════════
+// ÚLTIMOS CAMBIOS
+// ══════════════════════════════════════════════════════════════
+function renderCambios(){
+  const el=document.getElementById('cambiosList');
+  if(!el) return;
+  if(!S.auditLog.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3);font-size:14px">Sin cambios registrados aún.<br><span style="font-size:12px">Los cambios aparecen aquí automáticamente.</span></div>';
+    return;
+  }
+
+  const icons={'asignar':'📌','devolver':'✅','cancelar':'↩','crear':'➕','editar':'✏️','eliminar':'🗑','rechazar':'❌','aprobar':'✅'};
+  const cols={'asignar':'var(--blue)','devolver':'var(--green)','cancelar':'var(--amber)','crear':'var(--green)','editar':'var(--t2)','eliminar':'var(--red)','rechazar':'var(--red)','aprobar':'var(--green)'};
+
+  // Group by date
+  let lastDate='';
+  const rows=S.auditLog.map(log=>{
+    const t=S.territorios.find(x=>x.id===log.territorio_id);
+    const p=S.publicadores.find(x=>x.id===log.pub_id);
+    const dt=new Date(log.created_at);
+    const dateStr=dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+    const timeStr=dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    const icon=icons[log.accion]||'•';
+    const col=cols[log.accion]||'var(--t2)';
+
+    let dateSep='';
+    if(dateStr!==lastDate){
+      lastDate=dateStr;
+      dateSep=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;padding:14px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px">${dateStr}</div>`;
+    }
+
+    const numLabel=t?`Terr. <b>${t.num}</b>`:(log.datos?.num?`Terr. <b>${log.datos.num}</b>`:'');
+    const pubLabel=p?p.nombre:'';
+    const desc={
+      'asignar': numLabel+(pubLabel?' → '+pubLabel:''),
+      'devolver': numLabel+(pubLabel?' por '+pubLabel:''),
+      'cancelar': 'Cancelada asignación '+numLabel,
+      'crear': 'Creado '+numLabel+(log.datos?.nombre?' — '+log.datos.nombre:''),
+      'editar': 'Editado '+numLabel,
+      'eliminar': 'Eliminado terr.'+(log.datos?.num?' '+log.datos.num:''),
+      'aprobar': 'Solicitud aprobada '+numLabel,
+      'rechazar': 'Solicitud rechazada'+(pubLabel?' de '+pubLabel:''),
+    }[log.accion]||log.accion;
+
+    return dateSep+`<div style="display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="width:28px;height:28px;border-radius:50%;background:${col}20;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:${col}">${log.accion.charAt(0).toUpperCase()+log.accion.slice(1)}</div>
+        <div style="font-size:13px;color:var(--text);margin-top:1px">${desc}</div>
+      </div>
+      <div style="font-size:11px;color:var(--t3);white-space:nowrap;padding-top:2px">${timeStr}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=rows;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SOLICITUDES
+// ══════════════════════════════════════════════════════════════
+function renderSolicitudes(){
+  const el=document.getElementById('solicitudesList');
+  if(!el) return;
+
+  const pendientes=S.solicitudes.filter(s=>s.estado==='pendiente');
+  const resueltas=S.solicitudes.filter(s=>s.estado!=='pendiente');
+
+  if(!S.solicitudes.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3);font-size:14px">No hay solicitudes.<br><span style="font-size:12px">Aparecerán aquí cuando un publicador solicite un territorio.</span></div>';
+    return;
+  }
+
+  const renderSolic=(s,isPend)=>{
+    const pub=S.publicadores.find(p=>p.id===s.pub_id);
+    const ter=S.territorios.find(t=>t.id===s.territorio_id);
+    const dt=new Date(s.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+    const stCol=s.estado==='pendiente'?'var(--amber)':s.estado==='aprobada'?'var(--green)':'var(--red)';
+    const stLabel=s.estado==='pendiente'?'⏳ Pendiente':s.estado==='aprobada'?'✅ Aprobada':'❌ Rechazada';
+
+    return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:${isPend?'12px':'4px'}">
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700">${pub?.nombre||'Publicador #'+s.pub_id}</div>
+          <div style="font-size:12px;color:var(--t3);margin-top:2px">${dt}</div>
+          ${s.nota?`<div style="font-size:13px;color:var(--t2);margin-top:6px;font-style:italic">"${s.nota}"</div>`:''}
+          ${ter?`<div style="font-size:12px;color:var(--blue);margin-top:4px">Asignado: Terr. ${ter.num}</div>`:''}
+        </div>
+        <span style="font-size:12px;font-weight:600;color:${stCol};white-space:nowrap">${stLabel}</span>
+      </div>
+      ${isPend?`<div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" style="background:var(--s3);color:var(--text);border:1px solid var(--border)" onclick="abrirAsignarSolicitud(${s.id},${s.pub_id})">📌 Asignar territorio</button>
+        <button class="btn btn-sm btn-danger" onclick="rechazarSolicitud(${s.id})">❌ Rechazar</button>
+      </div>`:''}
+    </div>`;
+  };
+
+  let html='';
+  if(pendientes.length){
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Pendientes (${pendientes.length})</div>`;
+    html+=pendientes.map(s=>renderSolic(s,true)).join('');
+  }
+  if(resueltas.length){
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">Resueltas (${resueltas.length})</div>`;
+    html+=resueltas.slice(0,20).map(s=>renderSolic(s,false)).join('');
+  }
+  el.innerHTML=html;
+}
+
+async function rechazarSolicitud(id){
+  if(!confirm('¿Rechazar esta solicitud?')) return;
+  setSyncStatus('syncing');
+  try{
+    await sbPatch('solicitudes',{id},{estado:'rechazada',updated_at:new Date().toISOString()});
+    const s=S.solicitudes.find(x=>x.id===id);
+    if(s){s.estado='rechazada'; await logAudit('rechazar',null,s.pub_id,{});}
+    renderSolicitudes(); updateBadges(); setSyncStatus('ok');
+    toast('Solicitud rechazada','am');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+function abrirAsignarSolicitud(solicitudId, pubId){
+  // Open the lotes view pre-filtered to this publisher
+  const pub=S.publicadores.find(p=>p.id===pubId);
+  if(!pub) return;
+  showView('lotes');
+  setTimeout(()=>{
+    document.getElementById('lotes-pub-input').value=pub.nombre;
+    document.getElementById('lotes-pub-id').value=pubId;
+    document.getElementById('lotes-fecha').value=today();
+    _updateLotesCount();
+    // Store solicitud id to mark as approved after assigning
+    window._pendingSolicitudId=solicitudId;
+    toast('Selecciona el territorio a asignar a '+pub.nombre,'a',4000);
+  },100);
+}
 
 // ══ CONTAR VIVIENDAS ══
 const OVERPASS_SERVERS = [
