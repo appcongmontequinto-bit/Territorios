@@ -4160,18 +4160,9 @@ function abrirAsignarSolicitud(solicitudId, pubId){
   },100);
 }
 
-// ══ CONTAR VIVIENDAS ══
-// Estrategia:
-// 1. WFS Catastro INSPIRE (wfsAD) → direcciones por bbox → filtra dentro del polígono
-// 2. Cada dirección del WFS = 1 portal/entrada de edificio
-// 3. Para contar viviendas individuales usamos la API REST del Catastro
-//    que devuelve inmuebles (pisos) por referencia catastral
-//
-// Flujo: bbox → WFS AD → referencias catastrales dentro del polígono
-//        → API REST → contar inmuebles de uso "V" (vivienda) y "E" (entrance/local)
-
+// ══ CONTAR VIVIENDAS ══ (Catastro INSPIRE)
 const CATASTRO_WFS = 'https://ovc.catastro.meh.es/INSPIRE/wfsAD.aspx';
-const CATASTRO_RC  = 'https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCoordenadas.svc/json';
+const CATASTRO_INMUEBLES = 'https://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/OVCFincas.svc/json/Consulta_DNPRC';
 
 let _cvRunning=false, _cvStop=false, _cvResults={}, _cvGeoJSON=null;
 
@@ -4188,23 +4179,30 @@ function cvBbox(coords){
   return [Math.min(...lons),Math.min(...lats),Math.max(...lons),Math.max(...lats)];
 }
 
-// WGS84 → Web Mercator (needed for Catastro WFS bbox bug)
+// WGS84 → Web Mercator (needed for Catastro WFS)
 function toMercator(lon,lat){
   const R=6378137;
-  return [Math.round(R*lon*Math.PI/180), Math.round(R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360)))];
+  return [R*lon*Math.PI/180, R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360))];
 }
 
-// Ray-casting point-in-polygon
-function inPolygon([px,py], poly){
+// Web Mercator → WGS84
+function fromMercator(mx,my){
+  return [mx/20037508.34*180, Math.atan(Math.exp(my/20037508.34*Math.PI))*360/Math.PI-90];
+}
+
+// Ray-casting point-in-polygon — coords in WGS84 [lon,lat]
+function inPolygon(px,py,poly){
   let inside=false;
   for(let i=0,j=poly.length-1;i<poly.length;j=i++){
-    const [xi,yi]=poly[i],[xj,yj]=poly[j];
+    const xi=poly[i][0],yi=poly[i][1];
+    const xj=poly[j][0],yj=poly[j][1];
     if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi)) inside=!inside;
   }
   return inside;
 }
 
-// Parse WFS XML → array of {lon, lat, refcat} for each address
+// Parse Catastro WFS XML → array of {lon, lat, refcat}
+// The XML uses namespaces so we work with textContent and gml:id attributes
 function cvParseAddresses(xmlText){
   const parser=new DOMParser();
   const doc=parser.parseFromString(xmlText,'text/xml');
@@ -4213,75 +4211,72 @@ function cvParseAddresses(xmlText){
   if(err) throw new Error('Catastro: '+err.textContent.trim().slice(0,100));
 
   const results=[];
-  // Each member = one address
   const members=doc.querySelectorAll('featureMember, member');
 
-  // DEBUG: log first 2000 chars of XML to console
-  console.log('[Catastro XML sample]', xmlText.slice(0,2000));
-  console.log('[Members found]', members.length);
+  members.forEach(m=>{
+    // Only process ad:Address — skip ThoroughfareName (which has no gml:pos)
+    // We detect it by the gml:id prefix on the child element
+    const child=m.firstElementChild;
+    if(!child) return;
+    const gmlId=child.getAttribute('gml:id')||'';
+    // ThoroughfareName ids look like ES.SDGC.TN.* — skip them
+    if(gmlId.includes('.TN.')) return;
 
-  members.forEach((m,idx)=>{
-    // Try multiple coordinate element names used by Catastro
-    const posEl=m.querySelector('pos, coordinates, Coordinates');
-    const refEl=m.querySelector('localId, identifier, LocalId');
+    // Get position — look for gml:pos inside gml:Point
+    const posEl=m.querySelector('pos');
+    if(!posEl) return;
 
-    // Also try gml:Point > gml:pos
-    const pointPos=m.querySelector('Point pos, point pos');
+    const parts=posEl.textContent.trim().split(/\s+/);
+    if(parts.length<2) return;
 
-    const coordEl=posEl||pointPos;
+    const mx=parseFloat(parts[0]);
+    const my=parseFloat(parts[1]);
+    const [lon,lat]=fromMercator(mx,my);
 
-    if(coordEl){
-      const parts=coordEl.textContent.trim().split(/\s+/);
-      if(parts.length>=2){
-        const mx=parseFloat(parts[0]);
-        const my=parseFloat(parts[1]);
-        // Mercator to WGS84
-        const lon=mx/20037508.34*180;
-        const lat=Math.atan(Math.exp(my/20037508.34*Math.PI))*360/Math.PI-90;
-        const ref=refEl?refEl.textContent.trim():'';
-        if(idx<3) console.log('[Addr '+idx+']', {mx,my,lon,lat,ref});
-        results.push({lon,lat,ref});
-      }
-    } else {
-      // No pos found - log element for debugging
-      if(idx<3) console.log('[Addr '+idx+' no pos]', m.innerHTML.slice(0,200));
-    }
+    // Extract refcat from localId: "41.038.973.63.0863955TG4306S"
+    // Last segment after last dot = refcat (14 chars)
+    const localIdEl=m.querySelector('localId');
+    const localId=localIdEl?localIdEl.textContent.trim():'';
+    const segments=localId.split('.');
+    const refcat=segments[segments.length-1]||'';
+
+    results.push({lon,lat,refcat,localId});
   });
 
-  console.log('[Addresses parsed]', results.length);
   return results;
 }
 
-// Get number of dwellings for a cadastral reference via REST API
-async function cvGetInmuebles(refcat){
-  if(!refcat||refcat.length<14) return 1; // fallback: count as 1 if no refcat
-
-  // Use the free Catastro REST endpoint that returns building data
-  const url=`https://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/OVCFincas.svc/json/Consulta_DNPRC?RefCat=${refcat}`;
+// Count residential dwellings for a cadastral reference via API
+async function cvContarViviendas(refcat){
+  if(!refcat||refcat.length<14) return 0;
   try{
-    const r=await fetch(url,{headers:{Accept:'application/json'}});
-    if(!r.ok) return 1;
+    const r=await fetch(CATASTRO_INMUEBLES+'?RefCat='+refcat,
+      {headers:{Accept:'application/json'}});
+    if(!r.ok) return 0;
     const data=await r.json();
-    // Count individual "bienInmueble" with use "V" (vivienda)
-    const inmuebles=data?.consulta_dnprcResult?.lrcdnp?.rcdnp;
-    if(!inmuebles) return 1;
-    const list=Array.isArray(inmuebles)?inmuebles:[inmuebles];
-    // Each rcdnp is one building/parcel - count the dt elements (dwellings)
+
+    // Check for error response
+    const errCode=data?.consulta_dnprcResult?.control?.cuerr;
+    if(errCode&&errCode!=='0') return 0;
+
+    let rcdnpList=data?.consulta_dnprcResult?.lrcdnp?.rcdnp;
+    if(!rcdnpList) return 0;
+    if(!Array.isArray(rcdnpList)) rcdnpList=[rcdnpList];
+
     let count=0;
-    list.forEach(item=>{
-      const detalles=item?.dt?.ldt?.dt;
-      if(!detalles) return;
-      const dlist=Array.isArray(detalles)?detalles:[detalles];
-      // Count units with use "V" (vivienda/residence)
-      dlist.forEach(d=>{
-        const uso=d?.locs?.lous?.lourb?.lor?.tip||'';
-        if(uso==='V'||uso==='v') count++;
-        else if(uso==='') count++; // unknown use, count it
+    rcdnpList.forEach(rcdnp=>{
+      let dtList=rcdnp?.dt?.ldt?.dt;
+      if(!dtList) return;
+      if(!Array.isArray(dtList)) dtList=[dtList];
+      dtList.forEach(dt=>{
+        const uso=dt?.locs?.lous?.lourb?.lor?.tip||'';
+        if(uso==='V') count++;  // V = vivienda residencial
       });
     });
-    return count||1;
+    return count;
   }catch(e){
-    return 1; // fallback
+    console.warn('cvContarViviendas error for',refcat,e);
+    return 0;
   }
 }
 
@@ -4302,8 +4297,11 @@ function cvUpdateResultTable(){
   if(!entries.length){wrap.innerHTML='';return;}
   wrap.innerHTML='<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);margin-top:10px">'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s3);position:sticky;top:0">'
-    +'<th style="padding:6px 10px;text-align:left">Nº</th><th style="padding:6px 10px;text-align:left">Nombre</th>'
-    +'<th style="padding:6px 10px;text-align:right">Anterior</th><th style="padding:6px 10px;text-align:right">Nuevo</th><th style="padding:6px 10px;text-align:right">Δ</th>'
+    +'<th style="padding:6px 10px;text-align:left">Nº</th>'
+    +'<th style="padding:6px 10px;text-align:left">Nombre</th>'
+    +'<th style="padding:6px 10px;text-align:right">Anterior</th>'
+    +'<th style="padding:6px 10px;text-align:right">Nuevo</th>'
+    +'<th style="padding:6px 10px;text-align:right">Δ</th>'
     +'</tr></thead><tbody>'
     +entries.map(([num,count])=>{
       const t=S.territorios.find(x=>x.num===num);
@@ -4316,18 +4314,18 @@ function cvUpdateResultTable(){
         +'<td style="padding:5px 10px;font-family:var(--font-mono);font-weight:600">'+num+'</td>'
         +'<td style="padding:5px 10px;color:var(--t2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t?.nombre||'—')+'</td>'
         +'<td style="padding:5px 10px;text-align:right;color:var(--t3)">'+(prev||'—')+'</td>'
-        +'<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+(count===0?'var(--red)':'var(--text)')+'">' +count+'</td>'
+        +'<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+(count===0?'var(--red)':'var(--text)')+'">'+(count)+'</td>'
         +'<td style="padding:5px 10px;text-align:right;font-weight:600;color:'+dCol+'">'+dStr+'</td></tr>';
     }).join('')+'</tbody></table></div>';
 }
 
-async function cvQueryTerritorio(coords){
+async function cvQueryTerritorio(coords, mode){
   const bbox=cvBbox(coords);
   const [minLon,minLat,maxLon,maxLat]=bbox;
   const [minX,minY]=toMercator(minLon,minLat);
   const [maxX,maxY]=toMercator(maxLon,maxLat);
 
-  // Step 1: get all addresses in bbox from Catastro WFS
+  // Fetch addresses from Catastro WFS
   const url=CATASTRO_WFS
     +'?service=wfs&version=2.0.0&request=getfeature'
     +'&Typenames=ad.address'
@@ -4345,43 +4343,47 @@ async function cvQueryTerritorio(coords){
     addresses=cvParseAddresses(xml);
   }catch(e){
     clearTimeout(tid);
-    if(e.name==='AbortError') throw new Error('Timeout WFS');
-    throw e;
+    throw e.name==='AbortError'?new Error('Timeout'):e;
   }
 
   if(!addresses.length) return 0;
 
-  // Step 2: filter addresses inside the actual polygon
-  const inside=addresses.filter(a=>inPolygon([a.lon,a.lat],coords));
+  // Filter addresses strictly inside the polygon
+  const inside=addresses.filter(a=>inPolygon(a.lon,a.lat,coords));
+
+  console.log('[CV]',`bbox=${addresses.length} inside=${inside.length}`,
+    inside.map(a=>a.refcat));
 
   if(!inside.length) return 0;
 
-  // Step 3: for each address inside, count individual dwellings
-  // Option A (fast): just count addresses → each = 1 portal
-  // Option B (accurate): query each refcat for number of dwellings
-  // We use Option A by default (much faster, ~1 req per territory)
-  // If the mode is "viviendas", use Option B
-  const mode=document.getElementById('cvMode')?.value||'portales';
-
   if(mode==='portales'){
+    // Count portales (one per entrance/address)
     return inside.length;
   }
 
-  // Mode "viviendas": query each refcat (slower but accurate)
+  // Mode viviendas: count individual dwellings per refcat
+  // Deduplicate refcats first (same building may appear multiple times)
+  const uniqueRefcats=[...new Set(inside.map(a=>a.refcat).filter(r=>r.length>=14))];
+  cvLog('  → '+inside.length+' portales, '+uniqueRefcats.length+' referencias catastrales','var(--t3)');
+
   let total=0;
-  for(const addr of inside){
+  for(const refcat of uniqueRefcats){
     if(_cvStop) break;
-    const n=await cvGetInmuebles(addr.ref);
+    const n=await cvContarViviendas(refcat);
+    cvLog('    '+refcat+': '+n+' viviendas','var(--t3)');
     total+=n;
     await new Promise(r=>setTimeout(r,200));
   }
-  return total;
+
+  // Fallback: if API returns 0 for all, use portal count
+  return total||inside.length;
 }
 
 async function cvIniciar(){
   if(_cvRunning) return;
   const fromTer=document.getElementById('cvFrom').value.trim();
   const toTer=document.getElementById('cvTo').value.trim();
+  const mode=document.getElementById('cvMode')?.value||'portales';
 
   let gj;
   try{gj=await cvCargarGeoJSON();}catch(e){toast('⚠ '+e.message,'r');return;}
@@ -4391,7 +4393,6 @@ async function cvIniciar(){
   if(toTer)   features=features.filter(f=>f.properties.Name.localeCompare(toTer,undefined,{numeric:true})<=0);
   if(!features.length){toast('Sin territorios en ese rango','am');return;}
 
-  const mode=document.getElementById('cvMode')?.value||'portales';
   _cvRunning=true;_cvStop=false;_cvResults={};
   document.getElementById('cvStartBtn').style.display='none';
   document.getElementById('cvStopBtn').style.display='';
@@ -4402,8 +4403,7 @@ async function cvIniciar(){
 
   const total=features.length;
   let done=0,errors=0,zeros=0;
-
-  cvLog('📋 Catastro INSPIRE — '+total+' territorios — modo: '+(mode==='portales'?'portales':'viviendas individuales'),'var(--blue)');
+  cvLog('📋 Catastro INSPIRE · '+total+' territorios · modo: '+(mode==='portales'?'portales':'viviendas'),'var(--blue)');
 
   for(let i=0;i<features.length;i++){
     if(_cvStop){cvLog('⏹ Detenido.','var(--amber)');break;}
@@ -4421,7 +4421,7 @@ async function cvIniciar(){
 
     let count=-1;
     try{
-      count=await cvQueryTerritorio(coords);
+      count=await cvQueryTerritorio(coords,mode);
     }catch(e){
       cvLog('✗ '+name+': '+e.message,'var(--red)');
       errors++;
@@ -4429,15 +4429,16 @@ async function cvIniciar(){
 
     if(count>=0){
       _cvResults[name]=count;done++;
-      if(count===0)zeros++;
+      if(count===0) zeros++;
       const t2=S.territorios.find(t=>t.num===name);
       const prev=t2?.num_dirs;
       const prevStr=prev!=null?' (antes: '+prev+')':'';
-      cvLog('✓ '+name+': '+count+' '+(mode==='portales'?'portales':'viviendas')+prevStr,count===0?'var(--amber)':count>20?'var(--green)':'var(--t2)');
+      cvLog('✓ '+name+': '+count+' '+(mode==='portales'?'portales':'viviendas')+prevStr,
+        count===0?'var(--amber)':count>20?'var(--green)':'var(--t2)');
       cvUpdateResultTable();
     }
 
-    if(i<features.length-1) await new Promise(r=>setTimeout(r,600));
+    if(i<features.length-1) await new Promise(r=>setTimeout(r,500));
   }
 
   _cvRunning=false;
@@ -4453,6 +4454,7 @@ async function cvIniciar(){
   if(zeros) sum+=' · ⚠️ '+zeros+' sin datos';
   if(errors) sum+=' · ❌ '+errors+' errores';
   document.getElementById('cvSummary').textContent=sum;
+  if(zeros) cvLog('⚠️ '+zeros+' sin datos en el Catastro (zona industrial o sin inmuebles).','var(--amber)');
 }
 
 function cvDetener(){_cvStop=true;}
@@ -4486,7 +4488,10 @@ function cvDescargarSQL(){
 
 function cvDescargarJSON(){
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify({fecha:new Date().toISOString(),fuente:'Catastro INSPIRE',resultados:_cvResults},null,2)],{type:'application/json'}));
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({
+    fecha:new Date().toISOString(),
+    fuente:'Catastro INSPIRE WFS + API Inmuebles',
+    resultados:_cvResults},null,2)],{type:'application/json'}));
   a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
 // ══ THEME ══
