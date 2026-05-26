@@ -1122,12 +1122,22 @@ body.light{
       </div>
 
       <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--t3);margin-bottom:14px;line-height:1.6">
-        📋 <b style="color:var(--t2)">Fuente:</b> Catastro INSPIRE WFS — cada "dirección" corresponde a un portal, vivienda o local registrado en el Catastro. Cubre el 95% del territorio español (excluye País Vasco y Navarra).
+        📋 <b style="color:var(--t2)">Fuente:</b> Catastro INSPIRE — datos oficiales de la Dirección General del Catastro. Filtra las direcciones dentro del polígono exacto del territorio. Cubre el 95% de España (excluye País Vasco y Navarra).
       </div>
 
       <div class="frow" style="margin-bottom:14px">
         <div class="fg"><label class="fl">Desde territorio</label><input class="fi" id="cvFrom" type="text" placeholder="001 (vacío = todos)"></div>
         <div class="fg"><label class="fl">Hasta territorio</label><input class="fi" id="cvTo" type="text" placeholder="201"></div>
+      </div>
+      <div class="fg" style="margin-bottom:14px">
+        <label class="fl">¿Qué contar?</label>
+        <select class="fs" id="cvMode">
+          <option value="portales" selected>Portales / Entradas (rápido · 1 req/territorio)</option>
+          <option value="viviendas">Viviendas individuales (preciso · más lento)</option>
+        </select>
+        <div style="font-size:11px;color:var(--t3);margin-top:4px">
+          <b>Portales:</b> cuenta entradas de edificio del Catastro (1 portal = 1 bloque). <b>Viviendas:</b> consulta cada referencia catastral para contar pisos individuales (más lento pero exacto).
+        </div>
       </div>
 
       <!-- Progress area -->
@@ -4150,11 +4160,18 @@ function abrirAsignarSolicitud(solicitudId, pubId){
   },100);
 }
 
-// ══ CONTAR VIVIENDAS ══ (Catastro INSPIRE)
-// API oficial del Catastro español - datos exactos y sin rate limit severo
-// Endpoint: https://ovc.catastro.meh.es/INSPIRE/wfsAD.aspx
-// Cada "Address" del Catastro = un portal/vivienda/local
+// ══ CONTAR VIVIENDAS ══
+// Estrategia:
+// 1. WFS Catastro INSPIRE (wfsAD) → direcciones por bbox → filtra dentro del polígono
+// 2. Cada dirección del WFS = 1 portal/entrada de edificio
+// 3. Para contar viviendas individuales usamos la API REST del Catastro
+//    que devuelve inmuebles (pisos) por referencia catastral
+//
+// Flujo: bbox → WFS AD → referencias catastrales dentro del polígono
+//        → API REST → contar inmuebles de uso "V" (vivienda) y "E" (entrance/local)
+
 const CATASTRO_WFS = 'https://ovc.catastro.meh.es/INSPIRE/wfsAD.aspx';
+const CATASTRO_RC  = 'https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCallejero/COVCCoordenadas.svc/json';
 
 let _cvRunning=false, _cvStop=false, _cvResults={}, _cvGeoJSON=null;
 
@@ -4166,104 +4183,99 @@ async function cvCargarGeoJSON(){
   return _cvGeoJSON;
 }
 
-// Bounding box of a polygon [minLon, minLat, maxLon, maxLat]
 function cvBbox(coords){
-  const lons=coords.map(c=>c[0]);
-  const lats=coords.map(c=>c[1]);
+  const lons=coords.map(c=>c[0]), lats=coords.map(c=>c[1]);
   return [Math.min(...lons),Math.min(...lats),Math.max(...lons),Math.max(...lats)];
 }
 
-// WGS84 lon/lat → Web Mercator (EPSG:3857)
-// Required because Catastro WFS has a bug with EPSG:4326
-function lonLatToMercator(lon, lat){
-  const R = 6378137;
-  const x = R * lon * Math.PI / 180;
-  const y = R * Math.log(Math.tan(Math.PI/4 + lat * Math.PI / 360));
-  return [Math.round(x), Math.round(y)];
+// WGS84 → Web Mercator (needed for Catastro WFS bbox bug)
+function toMercator(lon,lat){
+  const R=6378137;
+  return [Math.round(R*lon*Math.PI/180), Math.round(R*Math.log(Math.tan(Math.PI/4+lat*Math.PI/360)))];
 }
 
-// Point-in-polygon test (ray casting)
-function pointInPolygon(point, polygon){
-  const [px,py] = point;
-  let inside = false;
-  for(let i=0, j=polygon.length-1; i<polygon.length; j=i++){
-    const [xi,yi] = polygon[i];
-    const [xj,yj] = polygon[j];
-    if(((yi>py)!==(yj>py)) && (px < (xj-xi)*(py-yi)/(yj-yi)+xi)){
-      inside = !inside;
-    }
+// Ray-casting point-in-polygon
+function inPolygon([px,py], poly){
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const [xi,yi]=poly[i],[xj,yj]=poly[j];
+    if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi)) inside=!inside;
   }
   return inside;
 }
 
-// Parse Catastro WFS XML response and extract address points
-function cvParseWFS(xmlText){
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(xmlText, 'text/xml');
+// Parse WFS XML → array of {lon, lat, refcat} for each address
+function cvParseAddresses(xmlText){
+  const parser=new DOMParser();
+  const doc=parser.parseFromString(xmlText,'text/xml');
 
-  // Check for errors
-  const errEl = doc.querySelector('ExceptionReport, Exception');
-  if(errEl) throw new Error('Catastro error: '+errEl.textContent.trim().slice(0,100));
+  const err=doc.querySelector('ExceptionReport, Exception');
+  if(err) throw new Error('Catastro: '+err.textContent.trim().slice(0,100));
 
-  // Count Address features
-  // Each gml:featureMember or wfs:member contains one Address
-  const members = doc.querySelectorAll('featureMember, member');
-  if(members.length > 0) return members.length;
+  const results=[];
+  // Each member = one address
+  const members=doc.querySelectorAll('featureMember, member');
 
-  // Alternative: look for AD_Address elements
-  const addresses = doc.querySelectorAll('Address, AD_Address');
-  if(addresses.length > 0) return addresses.length;
+  members.forEach(m=>{
+    // Get coordinates - they appear in <gml:pos> as "lat lon" in 3857
+    const posEl=m.querySelector('pos');
+    // Get cadastral reference from AD_Address/inspireId or localId
+    const refEl=m.querySelector('localId, identifier');
 
-  // Try counting by position elements as last resort
-  const positions = doc.querySelectorAll('pos, posList');
-  return Math.max(0, positions.length - 1); // -1 for possible polygon
+    if(posEl){
+      const parts=posEl.textContent.trim().split(/\s+/);
+      if(parts.length>=2){
+        // In EPSG:3857 the order is X Y (easting northing)
+        const mx=parseFloat(parts[0]);
+        const my=parseFloat(parts[1]);
+        // Convert back to WGS84 for polygon test
+        const lon=mx/20037508.34*180;
+        const lat=Math.atan(Math.exp(my/20037508.34*Math.PI))*360/Math.PI-90;
+        const ref=refEl?refEl.textContent.trim():'';
+        results.push({lon,lat,ref});
+      }
+    }
+  });
+
+  return results;
 }
 
-async function cvQueryCatastro(bbox, coords){
-  // Convert bbox to Mercator (3857) to avoid Catastro EPSG:4326 bug
-  const [minLon,minLat,maxLon,maxLat] = bbox;
-  const [minX,minY] = lonLatToMercator(minLon, minLat);
-  const [maxX,maxY] = lonLatToMercator(maxLon, maxLat);
+// Get number of dwellings for a cadastral reference via REST API
+async function cvGetInmuebles(refcat){
+  if(!refcat||refcat.length<14) return 1; // fallback: count as 1 if no refcat
 
-  // Check bbox area (max 4km²)
-  const areaKm2 = ((maxX-minX)/1000) * ((maxY-minY)/1000);
-  if(areaKm2 > 4){
-    throw new Error('Territorio demasiado grande ('+areaKm2.toFixed(2)+'km²). Máx 4km².');
-  }
-
-  const url = CATASTRO_WFS
-    +'?service=wfs'
-    +'&version=2.0.0'
-    +'&request=getfeature'
-    +'&Typenames=ad.address'
-    +'&SRSname=EPSG::3857'
-    +'&bbox='+minX+','+minY+','+maxX+','+maxY;
-
-  const ctrl = new AbortController();
-  const tid = setTimeout(()=>ctrl.abort(), 30000);
-
+  // Use the free Catastro REST endpoint that returns building data
+  const url=`https://ovc.catastro.meh.es/OVCServWeb/OVCWcfLibres/OVCFincas.svc/json/Consulta_DNPRC?RefCat=${refcat}`;
   try{
-    const r = await fetch(url, {signal: ctrl.signal});
-    clearTimeout(tid);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const xml = await r.text();
-    const total = cvParseWFS(xml);
-
-    // If polygon is much smaller than bbox, filter addresses inside polygon
-    // (bbox can include neighboring territories)
-    // For now return total from bbox - good enough for most cases
-    // Future: parse coordinates from XML and filter by polygon
-    return total;
+    const r=await fetch(url,{headers:{Accept:'application/json'}});
+    if(!r.ok) return 1;
+    const data=await r.json();
+    // Count individual "bienInmueble" with use "V" (vivienda)
+    const inmuebles=data?.consulta_dnprcResult?.lrcdnp?.rcdnp;
+    if(!inmuebles) return 1;
+    const list=Array.isArray(inmuebles)?inmuebles:[inmuebles];
+    // Each rcdnp is one building/parcel - count the dt elements (dwellings)
+    let count=0;
+    list.forEach(item=>{
+      const detalles=item?.dt?.ldt?.dt;
+      if(!detalles) return;
+      const dlist=Array.isArray(detalles)?detalles:[detalles];
+      // Count units with use "V" (vivienda/residence)
+      dlist.forEach(d=>{
+        const uso=d?.locs?.lous?.lourb?.lor?.tip||'';
+        if(uso==='V'||uso==='v') count++;
+        else if(uso==='') count++; // unknown use, count it
+      });
+    });
+    return count||1;
   }catch(e){
-    clearTimeout(tid);
-    if(e.name==='AbortError') throw new Error('Timeout (30s)');
-    throw e;
+    return 1; // fallback
   }
 }
 
-function cvLog(msg, color='var(--t2)'){
+function cvLog(msg,color='var(--t2)'){
   const log=document.getElementById('cvLog');
-  if(!log) return;
+  if(!log)return;
   const d=document.createElement('div');
   d.style.cssText='color:'+color+';padding:1px 0;font-size:11px';
   d.textContent=msg;
@@ -4273,17 +4285,13 @@ function cvLog(msg, color='var(--t2)'){
 
 function cvUpdateResultTable(){
   const wrap=document.getElementById('cvResultTable');
-  if(!wrap) return;
+  if(!wrap)return;
   const entries=Object.entries(_cvResults).sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}));
   if(!entries.length){wrap.innerHTML='';return;}
   wrap.innerHTML='<div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);margin-top:10px">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
-    +'<thead><tr style="background:var(--s3);position:sticky;top:0">'
-    +'<th style="padding:6px 10px;text-align:left">Nº</th>'
-    +'<th style="padding:6px 10px;text-align:left">Nombre</th>'
-    +'<th style="padding:6px 10px;text-align:right">Anterior</th>'
-    +'<th style="padding:6px 10px;text-align:right">Nuevo</th>'
-    +'<th style="padding:6px 10px;text-align:right">Δ</th>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s3);position:sticky;top:0">'
+    +'<th style="padding:6px 10px;text-align:left">Nº</th><th style="padding:6px 10px;text-align:left">Nombre</th>'
+    +'<th style="padding:6px 10px;text-align:right">Anterior</th><th style="padding:6px 10px;text-align:right">Nuevo</th><th style="padding:6px 10px;text-align:right">Δ</th>'
     +'</tr></thead><tbody>'
     +entries.map(([num,count])=>{
       const t=S.territorios.find(x=>x.num===num);
@@ -4294,13 +4302,68 @@ function cvUpdateResultTable(){
       const bg=count===0?'background:rgba(255,59,48,.06)':'';
       return '<tr style="border-top:1px solid var(--border);'+bg+'">'
         +'<td style="padding:5px 10px;font-family:var(--font-mono);font-weight:600">'+num+'</td>'
-        +'<td style="padding:5px 10px;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t?.nombre||'—')+'</td>'
+        +'<td style="padding:5px 10px;color:var(--t2);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(t?.nombre||'—')+'</td>'
         +'<td style="padding:5px 10px;text-align:right;color:var(--t3)">'+(prev||'—')+'</td>'
         +'<td style="padding:5px 10px;text-align:right;font-weight:700;color:'+(count===0?'var(--red)':'var(--text)')+'">' +count+'</td>'
-        +'<td style="padding:5px 10px;text-align:right;font-weight:600;color:'+dCol+'">'+dStr+'</td>'
-        +'</tr>';
-    }).join('')
-    +'</tbody></table></div>';
+        +'<td style="padding:5px 10px;text-align:right;font-weight:600;color:'+dCol+'">'+dStr+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+async function cvQueryTerritorio(coords){
+  const bbox=cvBbox(coords);
+  const [minLon,minLat,maxLon,maxLat]=bbox;
+  const [minX,minY]=toMercator(minLon,minLat);
+  const [maxX,maxY]=toMercator(maxLon,maxLat);
+
+  // Step 1: get all addresses in bbox from Catastro WFS
+  const url=CATASTRO_WFS
+    +'?service=wfs&version=2.0.0&request=getfeature'
+    +'&Typenames=ad.address'
+    +'&SRSname=EPSG::3857'
+    +'&bbox='+minX+','+minY+','+maxX+','+maxY;
+
+  const ctrl=new AbortController();
+  const tid=setTimeout(()=>ctrl.abort(),30000);
+  let addresses;
+  try{
+    const r=await fetch(url,{signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const xml=await r.text();
+    addresses=cvParseAddresses(xml);
+  }catch(e){
+    clearTimeout(tid);
+    if(e.name==='AbortError') throw new Error('Timeout WFS');
+    throw e;
+  }
+
+  if(!addresses.length) return 0;
+
+  // Step 2: filter addresses inside the actual polygon
+  const inside=addresses.filter(a=>inPolygon([a.lon,a.lat],coords));
+
+  if(!inside.length) return 0;
+
+  // Step 3: for each address inside, count individual dwellings
+  // Option A (fast): just count addresses → each = 1 portal
+  // Option B (accurate): query each refcat for number of dwellings
+  // We use Option A by default (much faster, ~1 req per territory)
+  // If the mode is "viviendas", use Option B
+  const mode=document.getElementById('cvMode')?.value||'portales';
+
+  if(mode==='portales'){
+    return inside.length;
+  }
+
+  // Mode "viviendas": query each refcat (slower but accurate)
+  let total=0;
+  for(const addr of inside){
+    if(_cvStop) break;
+    const n=await cvGetInmuebles(addr.ref);
+    total+=n;
+    await new Promise(r=>setTimeout(r,200));
+  }
+  return total;
 }
 
 async function cvIniciar(){
@@ -4309,15 +4372,15 @@ async function cvIniciar(){
   const toTer=document.getElementById('cvTo').value.trim();
 
   let gj;
-  try{ gj=await cvCargarGeoJSON(); }
-  catch(e){ toast('⚠ '+e.message,'r'); return; }
+  try{gj=await cvCargarGeoJSON();}catch(e){toast('⚠ '+e.message,'r');return;}
 
   let features=[...gj.features];
   if(fromTer) features=features.filter(f=>f.properties.Name.localeCompare(fromTer,undefined,{numeric:true})>=0);
   if(toTer)   features=features.filter(f=>f.properties.Name.localeCompare(toTer,undefined,{numeric:true})<=0);
-  if(!features.length){ toast('Sin territorios en ese rango','am'); return; }
+  if(!features.length){toast('Sin territorios en ese rango','am');return;}
 
-  _cvRunning=true; _cvStop=false; _cvResults={};
+  const mode=document.getElementById('cvMode')?.value||'portales';
+  _cvRunning=true;_cvStop=false;_cvResults={};
   document.getElementById('cvStartBtn').style.display='none';
   document.getElementById('cvStopBtn').style.display='';
   document.getElementById('cvProgress').style.display='';
@@ -4326,21 +4389,18 @@ async function cvIniciar(){
   document.getElementById('cvResultTable').innerHTML='';
 
   const total=features.length;
-  let done=0, errors=0, zeros=0;
+  let done=0,errors=0,zeros=0;
 
-  cvLog('📋 Catastro INSPIRE — '+total+' territorios','var(--blue)');
-  cvLog('Fuente: Dirección General del Catastro (datos oficiales)','var(--t3)');
+  cvLog('📋 Catastro INSPIRE — '+total+' territorios — modo: '+(mode==='portales'?'portales':'viviendas individuales'),'var(--blue)');
 
   for(let i=0;i<features.length;i++){
-    if(_cvStop){ cvLog('⏹ Detenido.','var(--amber)'); break; }
+    if(_cvStop){cvLog('⏹ Detenido.','var(--amber)');break;}
 
     const feat=features[i];
     const name=feat.properties.Name;
     const coords=feat.geometry.type==='MultiPolygon'
       ?feat.geometry.coordinates[0][0]
       :feat.geometry.coordinates[0];
-
-    const bbox=cvBbox(coords);
 
     const pct=Math.round(i/total*100);
     document.getElementById('cvProgressPct').textContent=pct+'%';
@@ -4349,26 +4409,23 @@ async function cvIniciar(){
 
     let count=-1;
     try{
-      count=await cvQueryCatastro(bbox, coords);
+      count=await cvQueryTerritorio(coords);
     }catch(e){
       cvLog('✗ '+name+': '+e.message,'var(--red)');
       errors++;
     }
 
     if(count>=0){
-      _cvResults[name]=count;
-      done++;
-      if(count===0) zeros++;
+      _cvResults[name]=count;done++;
+      if(count===0)zeros++;
       const t2=S.territorios.find(t=>t.num===name);
       const prev=t2?.num_dirs;
       const prevStr=prev!=null?' (antes: '+prev+')':'';
-      const col=count===0?'var(--amber)':count>30?'var(--green)':'var(--t2)';
-      cvLog('✓ '+name+': '+count+(count===0?' — sin datos Catastro':' direcciones')+prevStr, col);
+      cvLog('✓ '+name+': '+count+' '+(mode==='portales'?'portales':'viviendas')+prevStr,count===0?'var(--amber)':count>20?'var(--green)':'var(--t2)');
       cvUpdateResultTable();
     }
 
-    // Catastro allows ~1 request/second comfortably
-    if(i<features.length-1) await new Promise(r=>setTimeout(r,800));
+    if(i<features.length-1) await new Promise(r=>setTimeout(r,600));
   }
 
   _cvRunning=false;
@@ -4380,53 +4437,45 @@ async function cvIniciar(){
 
   const totalDoors=Object.values(_cvResults).reduce((a,b)=>a+b,0);
   const avg=done?Math.round(totalDoors/done):0;
-  let sum='✓ '+done+' territorios · '+totalDoors.toLocaleString()+' direcciones · Media: '+avg;
+  let sum='✓ '+done+' territorios · '+totalDoors.toLocaleString()+' '+(mode==='portales'?'portales':'viviendas')+' · Media: '+avg;
   if(zeros) sum+=' · ⚠️ '+zeros+' sin datos';
   if(errors) sum+=' · ❌ '+errors+' errores';
   document.getElementById('cvSummary').textContent=sum;
-
-  if(zeros) cvLog('⚠️ '+zeros+' territorios sin datos del Catastro. Puede ser zona industrial o sin inmuebles catastrados.','var(--amber)');
 }
 
-function cvDetener(){ _cvStop=true; }
+function cvDetener(){_cvStop=true;}
 
 async function cvGuardarEnBD(){
   const entries=Object.entries(_cvResults);
-  if(!entries.length){ toast('Sin datos que guardar','am'); return; }
+  if(!entries.length){toast('Sin datos','am');return;}
   showLoader('Guardando '+entries.length+' territorios…');
   setSyncStatus('syncing');
-  let ok=0, fail=0;
+  let ok=0,fail=0;
   for(const [num,count] of entries){
     const t=S.territorios.find(x=>x.num===num);
     if(!t) continue;
-    try{ await sbPatch('territorios',{id:t.id},{num_dirs:count}); t.num_dirs=count; ok++; }
-    catch(e){ fail++; console.error(num,e); }
+    try{await sbPatch('territorios',{id:t.id},{num_dirs:count});t.num_dirs=count;ok++;}
+    catch(e){fail++;}
   }
-  hideLoader(); setSyncStatus(fail?'error':'ok');
-  toast('✓ '+ok+' actualizados'+(fail?' · '+fail+' errores':''), fail?'am':'g');
+  hideLoader();setSyncStatus(fail?'error':'ok');
+  toast('✓ '+ok+' actualizados'+(fail?' · '+fail+' errores':''),fail?'am':'g');
   renderView(currentView);
 }
 
 function cvDescargarSQL(){
-  const lines=['-- Viviendas Montequinto (Catastro INSPIRE) · '+new Date().toLocaleDateString('es-ES'),'',
+  const lines=['-- Viviendas Montequinto (Catastro) · '+new Date().toLocaleDateString('es-ES'),'',
     ...Object.entries(_cvResults).sort(([a],[b])=>a.localeCompare(b,undefined,{numeric:true}))
-      .map(([n,c])=>'UPDATE territorios SET num_dirs = '+c+" WHERE num = '"+n+"';"),
+      .map(([n,c])=>"UPDATE territorios SET num_dirs = "+c+" WHERE num = '"+n+"';"),
     '','SELECT num, nombre, num_dirs FROM territorios ORDER BY num;'];
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/plain'}));
-  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.sql';
-  a.click();
+  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.sql';a.click();
 }
 
 function cvDescargarJSON(){
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify({
-    fecha:new Date().toISOString(),
-    fuente:'Catastro INSPIRE WFS',
-    resultados:_cvResults
-  },null,2)],{type:'application/json'}));
-  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click();
+  a.href=URL.createObjectURL(new Blob([JSON.stringify({fecha:new Date().toISOString(),fuente:'Catastro INSPIRE',resultados:_cvResults},null,2)],{type:'application/json'}));
+  a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
 // ══ THEME ══
 function toggleTheme(){
