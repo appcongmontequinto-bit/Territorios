@@ -4216,27 +4216,39 @@ function cvParseAddresses(xmlText){
   // Each member = one address
   const members=doc.querySelectorAll('featureMember, member');
 
-  members.forEach(m=>{
-    // Get coordinates - they appear in <gml:pos> as "lat lon" in 3857
-    const posEl=m.querySelector('pos');
-    // Get cadastral reference from AD_Address/inspireId or localId
-    const refEl=m.querySelector('localId, identifier');
+  // DEBUG: log first 2000 chars of XML to console
+  console.log('[Catastro XML sample]', xmlText.slice(0,2000));
+  console.log('[Members found]', members.length);
 
-    if(posEl){
-      const parts=posEl.textContent.trim().split(/\s+/);
+  members.forEach((m,idx)=>{
+    // Try multiple coordinate element names used by Catastro
+    const posEl=m.querySelector('pos, coordinates, Coordinates');
+    const refEl=m.querySelector('localId, identifier, LocalId');
+
+    // Also try gml:Point > gml:pos
+    const pointPos=m.querySelector('Point pos, point pos');
+
+    const coordEl=posEl||pointPos;
+
+    if(coordEl){
+      const parts=coordEl.textContent.trim().split(/\s+/);
       if(parts.length>=2){
-        // In EPSG:3857 the order is X Y (easting northing)
         const mx=parseFloat(parts[0]);
         const my=parseFloat(parts[1]);
-        // Convert back to WGS84 for polygon test
+        // Mercator to WGS84
         const lon=mx/20037508.34*180;
         const lat=Math.atan(Math.exp(my/20037508.34*Math.PI))*360/Math.PI-90;
         const ref=refEl?refEl.textContent.trim():'';
+        if(idx<3) console.log('[Addr '+idx+']', {mx,my,lon,lat,ref});
         results.push({lon,lat,ref});
       }
+    } else {
+      // No pos found - log element for debugging
+      if(idx<3) console.log('[Addr '+idx+' no pos]', m.innerHTML.slice(0,200));
     }
   });
 
+  console.log('[Addresses parsed]', results.length);
   return results;
 }
 
