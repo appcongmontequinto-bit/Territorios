@@ -1847,6 +1847,7 @@ async function ejecutarLotes(){
   if(!_lotesSelected.size){toast('⚠️ Selecciona al menos un territorio','am');return;}
 
   const ids=[..._lotesSelected];
+  const _assignedIds=[]; // track which IDs were actually assigned successfully
   const pub=S.publicadores.find(p=>p.id===pubId);
   const esGrupoAuto=pub?/^grupo\s*\d/i.test(pub.nombre.trim()):false;
   const fechaVence=addDays(fecha,EXPIRY_DAYS);
@@ -1861,6 +1862,7 @@ async function ejecutarLotes(){
       const rows=await sbPatch('territorios',{id},{estado:'asignado',pub_id:pubId,fecha_asig:fecha,fecha_vence:fechaVence,ultimo_trabajado:fecha,es_grupo:esGrupoAuto});
       const t=S.territorios.find(x=>x.id===id);
       if(t) Object.assign(t,rows[0]);
+      _assignedIds.push(id);
       ok++;
     }catch(e){ fail++; console.error(e); }
   }
@@ -1872,7 +1874,9 @@ async function ejecutarLotes(){
   // Mark pending solicitud as approved if came from solicitudes view
   if(window._pendingSolicitudId && ok>0){
     try{
-      const asignedTer=S.territorios.filter(t=>t.pub_id===pubId&&(t.estado==='asignado'||t.estado==='vencido')).slice(-1)[0];
+      // Use the first actually-assigned territory, not a guess from S.territorios
+      const asignedTerId=_assignedIds[0]||null;
+      const asignedTer=asignedTerId?S.territorios.find(t=>t.id===asignedTerId):null;
       await sbPatch('solicitudes',{id:window._pendingSolicitudId},{
         estado:'aprobada',
         territorio_id:asignedTer?.id||null,
@@ -4068,11 +4072,22 @@ function renderCambios(){
       'rechazar': 'Solicitud rechazada'+(pubLabel?' de '+pubLabel:''),
     }[log.accion]||log.accion;
 
-    return dateSep+`<div style="display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div style="width:28px;height:28px;border-radius:50%;background:${col}20;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px">${icon}</div>
+    // Build detail pills: num, publicador, fecha
+    const pills=[];
+    const terNum=t?.num||log.datos?.num;
+    const fechaAccion=log.datos?.fecha_asig||log.datos?.fecha_dev||'';
+    if(terNum) pills.push(`<span style="font-family:var(--font-mono);font-weight:700;color:var(--text);background:var(--s3);padding:2px 7px;border-radius:6px;font-size:12px">Nº ${terNum}</span>`);
+    if(pubLabel) pills.push(`<span style="font-size:12px;color:var(--t2)">${pubLabel}</span>`);
+    if(fechaAccion) pills.push(`<span style="font-size:12px;color:var(--t3)">${fmtDate(fechaAccion)}</span>`);
+
+    return dateSep+`<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:50%;background:${col}20;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:1px">${icon}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:${col}">${log.accion.charAt(0).toUpperCase()+log.accion.slice(1)}</div>
-        <div style="font-size:13px;color:var(--text);margin-top:1px">${desc}</div>
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:700;color:${col}">${log.accion.charAt(0).toUpperCase()+log.accion.slice(1)}</span>
+          ${pills.join('<span style="color:var(--border2);font-size:11px">·</span>')}
+        </div>
+        <div style="font-size:12px;color:var(--t3)">${desc}</div>
       </div>
       <div style="font-size:11px;color:var(--t3);white-space:nowrap;padding-top:2px">${timeStr}</div>
     </div>`;
