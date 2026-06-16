@@ -784,6 +784,16 @@ body.light{
       <div class="nav-item" onclick="toggleDrawer();openTerModal()"><span class="nav-icon">➕</span>Nuevo territorio</div>
       <div class="nav-item" onclick="toggleDrawer();openModal('mPub')"><span class="nav-icon">👤</span>Nuevo publicador</div>
     </div>
+    <div id="drawerInstallWrap" style="display:none;padding:10px 16px;border-top:1px solid var(--border)">
+      <button onclick="installPWA();toggleDrawer()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(48,209,88,.3);background:var(--green-dim);color:var(--green);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⬇ Instalar app en este dispositivo</button>
+    </div>
+    <div id="drawerNotifWrap" style="padding:10px 16px;border-top:1px solid var(--border)">
+      <button onclick="setupPushNotifications().then(()=>{toast('🔔 Notificaciones activadas','g');renderDrawerNotifBtn();})" id="notifBtn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(10,132,255,.3);background:rgba(10,132,255,.1);color:var(--blue);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🔔 Activar notificaciones</button>
+    </div>
+    <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;border-top:1px solid var(--border)">
+      Desarrollada por <b style="color:var(--t2)">Manuel Fernández</b><br>
+      Congregación <b style="color:var(--t2)">Montequinto</b>
+    </div>
   </div>
 </div>
 
@@ -1322,12 +1332,7 @@ body.light{
         <button class="btn btn-primary" id="btnGuardarDatos" onclick="guardarTer()">Guardar datos</button>
       </div>
     </div>
-    <div id="drawerInstallWrap" style="padding:10px 16px;border-top:1px solid var(--border)">
-      <button onclick="installPWA();toggleDrawer()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(48,209,88,.3);background:var(--green-dim);color:var(--green);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⬇ Instalar app en este dispositivo</button>
-    </div>
-    <div id="drawerNotifWrap" style="padding:10px 16px;border-top:1px solid var(--border)">
-      <button onclick="setupPushNotifications().then(()=>{toast('🔔 Notificaciones activadas','g');renderDrawerNotifBtn();})" id="notifBtn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(10,132,255,.3);background:rgba(10,132,255,.1);color:var(--blue);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🔔 Activar notificaciones</button>
-    </div>
+
     <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;margin-top:auto;border-top:1px solid var(--border)">
       Desarrollada por <b style="color:var(--t2)">Manuel Fernández</b><br>
       Congregación <b style="color:var(--t2)">Montequinto</b>
