@@ -120,3 +120,51 @@ function offlineResponse(request) {
   }
   return new Response('', { status: 503 });
 }
+
+// ══ PUSH NOTIFICATIONS ══
+// Receives push from Supabase Edge Function when a new solicitud arrives.
+// Updates the app icon badge AND shows a notification, even if the app is closed.
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch(e) {}
+
+  const title = data.title || 'Territorios Montequinto';
+  const body  = data.body  || 'Tienes una nueva solicitud de territorio';
+  const badgeCount = data.badge || 1;
+  const url = data.url || '/territorios.html';
+
+  event.waitUntil((async () => {
+    // Update app icon badge — works even with app closed
+    if ('setAppBadge' in self.registration) {
+      try { await self.registration.setAppBadge(badgeCount); } catch(e) {}
+    } else if ('setAppBadge' in navigator) {
+      try { await navigator.setAppBadge(badgeCount); } catch(e) {}
+    }
+
+    // Show system notification
+    await self.registration.showNotification(title, {
+      body,
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: 'solicitud-territorio',
+      data: { url },
+      vibrate: [200, 100, 200]
+    });
+  })());
+});
+
+// Clicking the notification opens/focuses the app
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/territorios.html';
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) {
+      if (client.url.includes('territorios.html')) {
+        client.focus();
+        return;
+      }
+    }
+    await self.clients.openWindow(url);
+  })());
+});
