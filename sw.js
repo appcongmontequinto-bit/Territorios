@@ -135,11 +135,13 @@ self.addEventListener('push', event => {
 
   event.waitUntil((async () => {
     // Update app icon badge — works even with app closed
-    if ('setAppBadge' in self.registration) {
-      try { await self.registration.setAppBadge(badgeCount); } catch(e) {}
-    } else if ('setAppBadge' in navigator) {
-      try { await navigator.setAppBadge(badgeCount); } catch(e) {}
-    }
+    try {
+      if ('setAppBadge' in self) {
+        await self.setAppBadge(badgeCount);
+      } else if ('setAppBadge' in navigator) {
+        await navigator.setAppBadge(badgeCount);
+      }
+    } catch(e) { console.warn('Badge error:', e); }
 
     // Show system notification
     await self.registration.showNotification(title, {
