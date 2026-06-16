@@ -3,7 +3,7 @@
 //  scope: /territorios.html
 // ============================================================
 
-const APP_VERSION = 'v1.1.0';
+const APP_VERSION = 'v1.2.0';
 const CACHE_STATIC = `territorios-static-${APP_VERSION}`;
 const CACHE_DYNAMIC = `territorios-dynamic-${APP_VERSION}`;
 
