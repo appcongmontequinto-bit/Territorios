@@ -4302,6 +4302,8 @@ function campaniaActiva(){
 
 function todayStr(){ return new Date().toISOString().split('T')[0]; }
 
+let _campSelIdx = 0; // which campaign is shown
+
 function renderCampanias(){
   const el=document.getElementById('campaniasContent');
   if(!el) return;
@@ -4311,51 +4313,110 @@ function renderCampanias(){
     return;
   }
 
-  el.innerHTML=S.campanias.map(c=>{
-    const today=todayStr();
-    const started=c.fecha_inicio<=today;
-    const ended=c.fecha_fin<today;
-    const running=started&&!ended&&c.activa;
-    const stCol=running?'var(--green)':ended?'var(--t3)':'var(--amber)';
-    const stLabel=running?'🟢 En curso':ended?'⬜ Finalizada':'🟡 Próxima';
+  // Clamp index
+  _campSelIdx=Math.max(0,Math.min(_campSelIdx,S.campanias.length-1));
+  const c=S.campanias[_campSelIdx];
+  const today=todayStr();
+  const started=c.fecha_inicio<=today;
+  const ended=c.fecha_fin<today;
+  const running=started&&!ended&&c.activa;
+  const stCol=running?'var(--green)':ended?'var(--t3)':'var(--amber)';
+  const stLabel=running?'🟢 En curso':ended?'⬜ Finalizada':'🟡 Próxima';
 
-    const cts=S.campaniaTerritorios.filter(ct=>ct.campania_id===c.id);
-    const total=cts.length;
-    const completados=cts.filter(ct=>ct.porcentaje!=null).length;
-    const mediaPorc=completados?Math.round(cts.filter(ct=>ct.porcentaje!=null).reduce((a,x)=>a+x.porcentaje,0)/completados):null;
+  const cts=S.campaniaTerritorios.filter(ct=>ct.campania_id===c.id);
+  const total=cts.length;
+  const conPorc=cts.filter(ct=>ct.porcentaje!=null);
+  const sinPorc=cts.filter(ct=>ct.porcentaje==null).length;
+  const mediaPorc=conPorc.length?Math.round(conPorc.reduce((a,x)=>a+x.porcentaje,0)/conPorc.length):null;
+  const porcTotal=total?Math.round(conPorc.reduce((a,x)=>a+x.porcentaje,0)/total):null; // includes 0 for unreported
 
-    const rows=cts.map(ct=>{
-      const t=S.territorios.find(x=>x.id===ct.territorio_id);
-      const p=S.publicadores.find(x=>x.id===ct.pub_id);
-      const porcCol=ct.porcentaje==null?'var(--t3)':ct.porcentaje>=80?'var(--green)':ct.porcentaje>=50?'var(--amber)':'var(--red)';
-      return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-        <span style="font-family:var(--font-mono);font-weight:700;min-width:40px">${t?.num||'—'}</span>
-        <span style="flex:1;font-size:13px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t?.nombre||'—'}</span>
-        <span style="font-size:12px;color:var(--t2);min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p?.nombre||'Sin asignar'}</span>
-        <span style="font-size:13px;font-weight:700;color:${porcCol};min-width:44px;text-align:right">${ct.porcentaje!=null?ct.porcentaje+'%':'—'}</span>
-        <button class="btn btn-ghost btn-xs" onclick="quitarTerritorioCampania(${ct.id})" title="Quitar">✕</button>
-      </div>`;
-    }).join('');
+  // Campaign selector pills
+  const selector=S.campanias.map((camp,i)=>{
+    const isRun=camp.activa&&camp.fecha_inicio<=today&&camp.fecha_fin>=today;
+    const col=isRun?'var(--green)':camp.fecha_fin<today?'var(--t3)':'var(--amber)';
+    return`<button onclick="_campSelIdx=${i};renderCampanias()" style="padding:6px 14px;border-radius:99px;border:1px solid ${i===_campSelIdx?col:'var(--border)'};background:${i===_campSelIdx?col+'20':'var(--s2)'};color:${i===_campSelIdx?col:'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--font)">${camp.nombre}</button>`;
+  }).join('');
 
-    return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;overflow:hidden">
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-            <span style="font-size:16px;font-weight:700">${c.nombre}</span>
-            <span style="font-size:12px;font-weight:600;color:${stCol}">${stLabel}</span>
-            ${!c.activa?'<span style="font-size:11px;color:var(--t3)">(desactivada)</span>':''}
-          </div>
-          <div style="font-size:12px;color:var(--t3)">${fmtDate(c.fecha_inicio)} → ${fmtDate(c.fecha_fin)}</div>
-          <div style="font-size:12px;color:var(--t2);margin-top:4px">${total} territorios · ${completados} completados${mediaPorc!=null?' · Media: '+mediaPorc+'%':''}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          ${running?`<button class="btn btn-primary btn-sm" onclick="abrirAsignarCampania(${c.id})">＋ Añadir territorios</button>`:''}
-          <button class="btn btn-ghost btn-sm" onclick="toggleCampania(${c.id},${!c.activa})">${c.activa?'Desactivar':'Activar'}</button>
-        </div>
-      </div>
-      ${total?`<div style="padding:8px 16px 12px">${rows}</div>`:'<div style="padding:12px 16px;font-size:13px;color:var(--t3)">Sin territorios asignados. Pulsa "Añadir territorios".</div>'}
+  // Progress bar for campaign
+  const pct=total?Math.round(conPorc.length/total*100):0;
+  const progBar=total?`<div style="margin:12px 0 4px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+      <span style="color:var(--t2);font-weight:600">Progreso de notificación</span>
+      <span style="color:var(--blue);font-weight:700">${conPorc.length}/${total} (${pct}%)</span>
+    </div>
+    <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .5s"></div>
+    </div>
+  </div>`:'';
+
+  // Summary KPIs
+  const kpis=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0">
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center">
+      <div style="font-size:22px;font-weight:800;color:var(--blue)">${total}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">TERRITORIOS</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center">
+      <div style="font-size:22px;font-weight:800;color:var(--green)">${conPorc.length}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">NOTIFICADOS</div>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center">
+      <div style="font-size:22px;font-weight:800;color:${mediaPorc!=null?'var(--purple)':'var(--t3)'}">${mediaPorc!=null?mediaPorc+'%':'—'}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px">MEDIA %</div>
+    </div>
+  </div>`;
+
+  // Territory rows — sorted: with % first, then without
+  const sorted=[...conPorc.sort((a,b)=>b.porcentaje-a.porcentaje), ...cts.filter(ct=>ct.porcentaje==null)];
+  const rows=sorted.map(ct=>{
+    const t=S.territorios.find(x=>x.id===ct.territorio_id);
+    const p=S.publicadores.find(x=>x.id===ct.pub_id);
+    const porcCol=ct.porcentaje==null?'var(--t3)':ct.porcentaje>=80?'var(--green)':ct.porcentaje>=50?'var(--amber)':'var(--red)';
+    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-family:var(--font-mono);font-weight:700;min-width:40px;font-size:13px">${t?.num||'—'}</span>
+      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t?.nombre||'—'}</span>
+      <span style="font-size:12px;color:var(--t2);min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">${p?.nombre||'—'}</span>
+      <span style="font-size:13px;font-weight:700;color:${porcCol};min-width:44px;text-align:right">${ct.porcentaje!=null?ct.porcentaje+'%':'—'}</span>
+      ${running?`<button class="btn btn-ghost btn-xs" onclick="quitarTerritorioCampania(${ct.id})" title="Quitar">✕</button>`:'<span style="width:28px"></span>'}
     </div>`;
   }).join('');
+
+  el.innerHTML=`
+    <!-- Campaign selector -->
+    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:12px;scrollbar-width:none;border-bottom:1px solid var(--border)">${selector}</div>
+
+    <!-- Campaign header -->
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:18px;font-weight:800">${c.nombre}</span>
+          <span style="font-size:12px;font-weight:600;color:${stCol};background:${stCol}20;padding:2px 10px;border-radius:99px">${stLabel}</span>
+        </div>
+        <div style="font-size:12px;color:var(--t3);margin-top:4px">${fmtDate(c.fecha_inicio)} → ${fmtDate(c.fecha_fin)}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${running?`<button class="btn btn-primary btn-sm" onclick="abrirAsignarCampania(${c.id})">＋ Añadir</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="toggleCampania(${c.id},${!c.activa})">${c.activa?'Desactivar':'Activar'}</button>
+      </div>
+    </div>
+
+    <!-- KPIs + progress -->
+    ${kpis}
+    ${progBar}
+    ${sinPorc>0&&running?`<div style="font-size:12px;color:var(--amber);margin-bottom:10px">⏳ ${sinPorc} territorio${sinPorc>1?'s':''} pendiente${sinPorc>1?'s':''} de notificar porcentaje</div>`:''}
+
+    <!-- Territory list -->
+    ${total?`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
+      <div style="display:flex;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="min-width:40px">Nº</span>
+        <span style="flex:1">Nombre</span>
+        <span style="min-width:90px;text-align:right">Publicador</span>
+        <span style="min-width:44px;text-align:right">%</span>
+        ${running?'<span style="width:28px"></span>':''}
+      </div>
+      <div style="padding:0">${rows}</div>
+    </div>`
+    :'<div style="padding:20px;text-align:center;font-size:13px;color:var(--t3)">Sin territorios. Los territorios asignados se añaden automáticamente al crear la campaña.</div>'}
+  `;
 }
 
 // ── Nueva campaña modal ──
@@ -4403,11 +4464,23 @@ async function guardarCampania(){
   setSyncStatus('syncing');
   try{
     const rows=await sbPost('campanias',{nombre,fecha_inicio:inicio,fecha_fin:fin,activa:true});
-    S.campanias.unshift(rows[0]);
+    const camp=rows[0];
+    S.campanias.unshift(camp);
+
+    // Auto-add ALL currently assigned territories
+    const asignados=S.territorios.filter(t=>t.pub_id&&t.estado==='asignado');
+    let added=0;
+    for(const t of asignados){
+      try{
+        const ct=await sbPost('campania_territorios',{campania_id:camp.id,territorio_id:t.id,pub_id:t.pub_id});
+        S.campaniaTerritorios.push(ct[0]);
+        added++;
+      }catch(e){console.warn(e);}
+    }
     document.getElementById('campModal')?.remove();
     setSyncStatus('ok');
     renderCampanias();
-    toast('🚩 Campaña creada','g');
+    toast(`🚩 Campaña creada · ${added} territorios añadidos automáticamente`,'g',5000);
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
