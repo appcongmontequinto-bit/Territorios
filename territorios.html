@@ -1519,6 +1519,12 @@ function initRealtime(){
     .on('postgres_changes', { event: '*', schema: 'public', table: 'solicitudes' }, () => {
       loadSolicitudes().then(()=>{if(currentView==='solicitudes') renderSolicitudes(); updateBadges();});
     })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'campanias' }, () => {
+      loadCampanias().then(()=>{ if(currentView==='campanias') renderCampanias(); });
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'campania_territorios' }, () => {
+      loadCampanias().then(()=>{ if(currentView==='campanias') renderCampanias(); });
+    })
           .subscribe((status) => {
         if(status === 'SUBSCRIBED') console.log('✓ Realtime conectado');
         if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') console.warn('Realtime desconectado, reintentando…');
@@ -1910,6 +1916,21 @@ async function ejecutarLotes(){
       updateBadges();
     }catch(e){console.warn('solicitud update error',e);}
     window._pendingSolicitudId=null;
+  }
+  // Update campaign for newly assigned territories
+  const campActiva=campaniaActiva();
+  if(campActiva && _assignedIds.length){
+    for(const id of _assignedIds){
+      const ct=S.campaniaTerritorios.find(x=>x.campania_id===campActiva.id&&x.territorio_id===id);
+      if(ct){
+        try{ await sbPatch('campania_territorios',{id:ct.id},{pub_id:pubId}); ct.pub_id=pubId; }catch(e){}
+      } else {
+        try{
+          const rows=await sbPost('campania_territorios',{campania_id:campActiva.id,territorio_id:id,pub_id:pubId});
+          S.campaniaTerritorios.push(rows[0]);
+        }catch(e){}
+      }
+    }
   }
   toast(`✅ ${ok} territorio${ok>1?'s':''} asignado${ok>1?'s':''} a ${pub?.nombre}${fail?` (${fail} errores)`:''}`,'g',5000);
 }
@@ -3006,6 +3027,21 @@ async function confirmarAsig(){
     closeModal('mTer');
     reloadAndRender();
     logAudit('asignar', t.id, pubId, {num:t.num, fecha_asig:fecha, fecha_vence:fechaVence});
+    // If there's an active campaign, update pub_id in campania_territorios
+    const campActiva=campaniaActiva();
+    if(campActiva){
+      const ct=S.campaniaTerritorios.find(x=>x.campania_id===campActiva.id&&x.territorio_id===t.id);
+      if(ct){
+        // Update pub_id
+        try{ await sbPatch('campania_territorios',{id:ct.id},{pub_id:pubId}); ct.pub_id=pubId; }catch(e){}
+      } else {
+        // New assignment during campaign — add it
+        try{
+          const rows=await sbPost('campania_territorios',{campania_id:campActiva.id,territorio_id:t.id,pub_id:pubId});
+          S.campaniaTerritorios.push(rows[0]);
+        }catch(e){}
+      }
+    }
     toast(`📌 Asignado a ${pubName(pubId)}`,'a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -4467,12 +4503,12 @@ async function guardarCampania(){
     const camp=rows[0];
     S.campanias.unshift(camp);
 
-    // Auto-add ALL currently assigned territories
-    const asignados=S.territorios.filter(t=>t.pub_id&&t.estado==='asignado');
+    // Auto-add ALL territories (assigned and unassigned)
+    const allTers=S.territorios;
     let added=0;
-    for(const t of asignados){
+    for(const t of allTers){
       try{
-        const ct=await sbPost('campania_territorios',{campania_id:camp.id,territorio_id:t.id,pub_id:t.pub_id});
+        const ct=await sbPost('campania_territorios',{campania_id:camp.id,territorio_id:t.id,pub_id:t.pub_id||null});
         S.campaniaTerritorios.push(ct[0]);
         added++;
       }catch(e){console.warn(e);}
