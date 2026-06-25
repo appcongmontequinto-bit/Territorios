@@ -769,6 +769,7 @@ body.light{
       <div class="nav-sect">Vistas</div>
       <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="dnb-grp">0</span></div>
       <div class="nav-item" data-v="dashboard" onclick="navDrawer(this)"><span class="nav-icon">🏠</span>Dashboard</div>
+      <div class="nav-item" data-v="campanias" onclick="navDrawer(this)"><span class="nav-icon">🚩</span>Campañas</div>
       <div class="nav-item" data-v="lotes" onclick="navDrawer(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
       <div class="nav-item" data-v="cambios" onclick="navDrawer(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
       <div class="nav-item" data-v="solicitudes" onclick="navDrawer(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic-d" style="display:none">0</span></div>
@@ -811,6 +812,7 @@ body.light{
   <div class="nav-item" data-v="historial" onclick="nav(this)"><span class="nav-icon">📋</span>Historial</div>
   <div class="nav-item" data-v="cambios" onclick="nav(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
   <div class="nav-item" data-v="solicitudes" onclick="nav(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic" style="display:none">0</span></div>
+  <div class="nav-item" data-v="campanias" onclick="nav(this)"><span class="nav-icon">🚩</span>Campañas<span class="nav-badge" id="nb-camp" style="display:none">0</span></div>
   <div class="nav-item" data-v="lotes" onclick="nav(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
   <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
   <div class="nav-sect">Estado rápido</div>
@@ -829,6 +831,18 @@ body.light{
 <main id="main">
 
 <!-- VIEW: TERRITORIOS -->
+<!-- VIEW: CAMPAÑAS -->
+<div id="view-campanias" class="view" style="flex-direction:column">
+  <div class="view-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px">
+    <div>
+      <div class="view-title">Campañas</div>
+      <div class="view-sub">Territorios en modo campaña con seguimiento de porcentaje</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openNuevaCampania()">＋ Nueva campaña</button>
+  </div>
+  <div class="view-scroll" id="campaniasContent"></div>
+</div>
+
 <!-- VIEW: DASHBOARD -->
 <div id="view-dashboard" class="view on" style="flex-direction:column">
   <div class="view-head"><div class="view-title">Dashboard</div><div class="view-sub" id="dashDate"></div></div>
@@ -1557,7 +1571,7 @@ async function sbStorageDelete(path) {
 }
 
 // ══ STATE ══
-let S = { territorios:[], publicadores:[], grupos:[], historial:[], auditLog:[], solicitudes:[] };
+let S = { territorios:[], publicadores:[], grupos:[], historial:[], auditLog:[], solicitudes:[], campanias:[], campaniaTerritorios:[] };
 let currentView='dashboard', currentFilter='todos', currentPeriod='year';
 let viewMode='list', searchQ='', editingTId=null, editingGId=null;
 let leafletMap=null, geoLayer=null;
@@ -2002,7 +2016,7 @@ async function logAudit(accion, territorioId=null, pubId=null, datos={}){
 async function initApp(){
   showLoader('Cargando datos…');
   try {
-    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial(),loadAuditLog(),loadSolicitudes()]);
+    await Promise.all([loadGrupos(),loadPublicadores(),loadTerritorios(),loadHistorial(),loadAuditLog(),loadSolicitudes(),loadCampanias()]);
     await checkVencidos();
     fillAllSels();
     renderView('dashboard');
@@ -2023,6 +2037,10 @@ async function loadTerritorios(){S.territorios=await sbGet('territorios',{select
 async function loadHistorial(){S.historial=await sbGet('historial',{select:'*',order:'created_at.desc',limit:2000});}
 async function loadAuditLog(){S.auditLog=await sbGet('audit_log',{select:'*',order:'created_at.desc',limit:200});}
 async function loadSolicitudes(){S.solicitudes=await sbGet('solicitudes',{select:'*',order:'created_at.desc'});}
+async function loadCampanias(){
+  S.campanias=await sbGet('campanias',{select:'*',order:'fecha_inicio.desc'});
+  S.campaniaTerritorios=await sbGet('campania_territorios',{select:'*'});
+}
 async function checkVencidos(){
   const venc=S.territorios.filter(t=>t.estado==='asignado'&&t.fecha_vence&&daysUntil(t.fecha_vence)<0);
   for(const t of venc){await sbPatch('territorios',{id:t.id},{estado:'vencido'});t.estado='vencido';}
@@ -2060,6 +2078,7 @@ function renderView(v){
   else if(v==='lotes') renderLotes();
   else if(v==='cambios') renderCambios();
   else if(v==='solicitudes') renderSolicitudes();
+  else if(v==='campanias') renderCampanias();
 }
 
 // ══ FILTERS ══
@@ -2208,6 +2227,7 @@ function renderListView(list){
           <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
           ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
           ${t.no_visitar?`<span style="font-size:10px;color:var(--red);font-weight:700">⚠️ No visitar</span>`:''}
+          ${S.campaniaTerritorios.some(ct=>ct.territorio_id===t.id)?`<span style="font-size:10px;color:#d97706;font-weight:700">🚩 Campaña</span>`:''}
         </span>
         <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,isGrupo(t))}</span>
       </div>`;
@@ -4268,6 +4288,202 @@ function abrirAsignarSolicitud(solicitudId, pubId){
     window._pendingSolicitudId=solicitudId;
     toast('Selecciona el territorio a asignar a '+pub.nombre,'a',4000);
   },100);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// CAMPAÑAS
+// ══════════════════════════════════════════════════════════════
+
+function campaniaActiva(){
+  const today=todayStr();
+  return S.campanias.find(c=>c.activa&&c.fecha_inicio<=today&&c.fecha_fin>=today)||null;
+}
+
+function todayStr(){ return new Date().toISOString().split('T')[0]; }
+
+function renderCampanias(){
+  const el=document.getElementById('campaniasContent');
+  if(!el) return;
+
+  if(!S.campanias.length){
+    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">No hay campañas. Crea la primera con el botón ＋</div>';
+    return;
+  }
+
+  el.innerHTML=S.campanias.map(c=>{
+    const today=todayStr();
+    const started=c.fecha_inicio<=today;
+    const ended=c.fecha_fin<today;
+    const running=started&&!ended&&c.activa;
+    const stCol=running?'var(--green)':ended?'var(--t3)':'var(--amber)';
+    const stLabel=running?'🟢 En curso':ended?'⬜ Finalizada':'🟡 Próxima';
+
+    const cts=S.campaniaTerritorios.filter(ct=>ct.campania_id===c.id);
+    const total=cts.length;
+    const completados=cts.filter(ct=>ct.porcentaje!=null).length;
+    const mediaPorc=completados?Math.round(cts.filter(ct=>ct.porcentaje!=null).reduce((a,x)=>a+x.porcentaje,0)/completados):null;
+
+    const rows=cts.map(ct=>{
+      const t=S.territorios.find(x=>x.id===ct.territorio_id);
+      const p=S.publicadores.find(x=>x.id===ct.pub_id);
+      const porcCol=ct.porcentaje==null?'var(--t3)':ct.porcentaje>=80?'var(--green)':ct.porcentaje>=50?'var(--amber)':'var(--red)';
+      return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-family:var(--font-mono);font-weight:700;min-width:40px">${t?.num||'—'}</span>
+        <span style="flex:1;font-size:13px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t?.nombre||'—'}</span>
+        <span style="font-size:12px;color:var(--t2);min-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p?.nombre||'Sin asignar'}</span>
+        <span style="font-size:13px;font-weight:700;color:${porcCol};min-width:44px;text-align:right">${ct.porcentaje!=null?ct.porcentaje+'%':'—'}</span>
+        <button class="btn btn-ghost btn-xs" onclick="quitarTerritorioCampania(${ct.id})" title="Quitar">✕</button>
+      </div>`;
+    }).join('');
+
+    return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:14px;overflow:hidden">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="font-size:16px;font-weight:700">${c.nombre}</span>
+            <span style="font-size:12px;font-weight:600;color:${stCol}">${stLabel}</span>
+            ${!c.activa?'<span style="font-size:11px;color:var(--t3)">(desactivada)</span>':''}
+          </div>
+          <div style="font-size:12px;color:var(--t3)">${fmtDate(c.fecha_inicio)} → ${fmtDate(c.fecha_fin)}</div>
+          <div style="font-size:12px;color:var(--t2);margin-top:4px">${total} territorios · ${completados} completados${mediaPorc!=null?' · Media: '+mediaPorc+'%':''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${running?`<button class="btn btn-primary btn-sm" onclick="abrirAsignarCampania(${c.id})">＋ Añadir territorios</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="toggleCampania(${c.id},${!c.activa})">${c.activa?'Desactivar':'Activar'}</button>
+        </div>
+      </div>
+      ${total?`<div style="padding:8px 16px 12px">${rows}</div>`:'<div style="padding:12px 16px;font-size:13px;color:var(--t3)">Sin territorios asignados. Pulsa "Añadir territorios".</div>'}
+    </div>`;
+  }).join('');
+}
+
+// ── Nueva campaña modal ──
+function openNuevaCampania(){
+  const today=todayStr();
+  const html=`<div style="padding:20px">
+    <div class="fg"><label class="fl">Nombre de la campaña</label>
+      <input class="fi" id="campNombre" placeholder="Ej: Campaña de verano 2026" style="width:100%;box-sizing:border-box">
+    </div>
+    <div class="frow" style="margin-top:12px">
+      <div class="fg"><label class="fl">Fecha inicio</label><input class="fi" id="campInicio" type="date" value="${today}"></div>
+      <div class="fg"><label class="fl">Fecha fin</label><input class="fi" id="campFin" type="date"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="this.closest('.modal-overlay-inner')?.remove()||document.getElementById('campModal')?.remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCampania()">Crear campaña</button>
+    </div>
+  </div>`;
+  showSimpleModal('Nueva campaña',html,'campModal');
+}
+
+function showSimpleModal(title,html,id){
+  document.getElementById(id)?.remove();
+  const ov=document.createElement('div');
+  ov.id=id;
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)';
+  ov.innerHTML=`<div style="background:var(--s1);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-size:17px;font-weight:700">${title}</div>
+      <button onclick="document.getElementById('${id}').remove()" style="background:var(--s3);border:none;border-radius:8px;padding:6px 10px;color:var(--t2);cursor:pointer;font-size:16px">✕</button>
+    </div>
+    ${html}
+  </div>`;
+  ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
+  document.body.appendChild(ov);
+}
+
+async function guardarCampania(){
+  const nombre=document.getElementById('campNombre')?.value.trim();
+  const inicio=document.getElementById('campInicio')?.value;
+  const fin=document.getElementById('campFin')?.value;
+  if(!nombre){toast('Indica el nombre de la campaña','am');return;}
+  if(!inicio||!fin){toast('Indica las fechas','am');return;}
+  if(fin<inicio){toast('La fecha fin debe ser posterior al inicio','am');return;}
+  setSyncStatus('syncing');
+  try{
+    const rows=await sbPost('campanias',{nombre,fecha_inicio:inicio,fecha_fin:fin,activa:true});
+    S.campanias.unshift(rows[0]);
+    document.getElementById('campModal')?.remove();
+    setSyncStatus('ok');
+    renderCampanias();
+    toast('🚩 Campaña creada','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function toggleCampania(id,activa){
+  try{
+    await sbPatch('campanias',{id},{activa});
+    const c=S.campanias.find(x=>x.id===id);
+    if(c) c.activa=activa;
+    renderCampanias();
+    toast(activa?'Campaña activada':'Campaña desactivada','a');
+  }catch(e){toast('Error: '+e.message,'r');}
+}
+
+// ── Asignar territorios a campaña ──
+function abrirAsignarCampania(campaniaId){
+  const c=S.campanias.find(x=>x.id===campaniaId);
+  if(!c) return;
+  const yaEnCamp=new Set(S.campaniaTerritorios.filter(ct=>ct.campania_id===campaniaId).map(ct=>ct.territorio_id));
+  const disponibles=S.territorios
+    .filter(t=>t.pub_id&&!yaEnCamp.has(t.id))
+    .sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+
+  if(!disponibles.length){
+    toast('No hay territorios asignados disponibles para añadir','am');
+    return;
+  }
+
+  const html=`<div style="padding:16px 20px">
+    <div style="font-size:13px;color:var(--t3);margin-bottom:12px">Selecciona los territorios a incluir en <b style="color:var(--text)">${c.nombre}</b>. Solo aparecen los que tienen publicador asignado.</div>
+    <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r)">
+      ${disponibles.map(t=>{
+        const pub=S.publicadores.find(p=>p.id===t.pub_id);
+        return`<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer">
+          <input type="checkbox" value="${t.id}" style="accent-color:var(--blue);width:16px;height:16px;flex-shrink:0">
+          <span style="font-family:var(--font-mono);font-weight:700;min-width:36px">${t.num}</span>
+          <span style="flex:1;font-size:13px">${t.nombre||t.num}</span>
+          <span style="font-size:12px;color:var(--t3)">${pub?.nombre||''}</span>
+        </label>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="document.getElementById('campAsigModal').remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAsignarCampania(${campaniaId})">Añadir seleccionados</button>
+    </div>
+  </div>`;
+  showSimpleModal('Añadir territorios a campaña',html,'campAsigModal');
+}
+
+async function confirmarAsignarCampania(campaniaId){
+  const checkboxes=document.querySelectorAll('#campAsigModal input[type=checkbox]:checked');
+  if(!checkboxes.length){toast('Selecciona al menos un territorio','am');return;}
+  const ids=[...checkboxes].map(cb=>parseInt(cb.value));
+  setSyncStatus('syncing');
+  let ok=0;
+  for(const terId of ids){
+    const t=S.territorios.find(x=>x.id===terId);
+    try{
+      const rows=await sbPost('campania_territorios',{campania_id:campaniaId,territorio_id:terId,pub_id:t?.pub_id||null});
+      S.campaniaTerritorios.push(rows[0]);
+      ok++;
+    }catch(e){console.warn(e);}
+  }
+  document.getElementById('campAsigModal')?.remove();
+  setSyncStatus('ok');
+  renderCampanias();
+  toast(`✓ ${ok} territorio${ok>1?'s':''} añadido${ok>1?'s':''} a la campaña`,'g');
+}
+
+async function quitarTerritorioCampania(ctId){
+  if(!confirm('¿Quitar este territorio de la campaña?')) return;
+  try{
+    await sbDelete('campania_territorios',{id:ctId});
+    S.campaniaTerritorios=S.campaniaTerritorios.filter(x=>x.id!==ctId);
+    renderCampanias();
+    toast('Territorio eliminado de la campaña','a');
+  }catch(e){toast('Error: '+e.message,'r');}
 }
 
 // ══ CONTAR VIVIENDAS ══ (Catastro INSPIRE)
