@@ -32,6 +32,7 @@
 
 <title>Territorios · Congregación</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
 /* ── iOS SYSTEM FONT STACK ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -934,6 +935,13 @@ body.light{
 <div id="view-mapa" class="view">
   <div id="mapContainer">
     <div id="leafletMapMain"></div>
+    <!-- Draw toolbar -->
+    <div id="mapDrawToolbar" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:8px 12px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+      <span style="font-size:13px;color:var(--t2);font-weight:600">Dibuja el polígono del territorio en el mapa</span>
+      <button class="btn btn-ghost btn-sm" onclick="cancelarDibujo()" style="color:var(--red)">✕ Cancelar</button>
+    </div>
+    <button id="btnNuevoTerMapa" onclick="activarDibujoTerritorio()" style="position:absolute;top:10px;right:60px;z-index:1000;padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.3)">✏️ Nuevo territorio</button>
+    <button onclick="descargarGeoJSON()" style="position:absolute;top:10px;right:220px;z-index:1000;padding:8px 14px;background:var(--s1);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.2)">⬇ GeoJSON</button>
     <div class="map-legend">
       <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Disponible</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Asignado</div>
@@ -1452,6 +1460,7 @@ body.light{
 
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
@@ -2339,6 +2348,214 @@ function updateBadges(){
 // ══ MAPA GEOJSON ══
 let mapInitialized=false;
 let selectedLayer=null;
+
+
+// ══════════════════════════════════════════════════════════════
+// DIBUJAR NUEVO TERRITORIO EN EL MAPA
+// ══════════════════════════════════════════════════════════════
+let _drawControl = null;
+let _drawnLayer = null;
+let _drawnCoords = null;
+let _drawGroup = null;
+
+function activarDibujoTerritorio(){
+  if(!leafletMap) return;
+  if(_drawControl) return; // already active
+
+  // Hide the button, show toolbar
+  document.getElementById('btnNuevoTerMapa').style.display='none';
+  document.getElementById('mapDrawToolbar').style.display='flex';
+
+  // Initialize draw layer group
+  _drawGroup = new L.FeatureGroup().addTo(leafletMap);
+
+  // Configure draw control — polygon only
+  _drawControl = new L.Control.Draw({
+    draw: {
+      polygon: {
+        allowIntersection: false,
+        showArea: true,
+        shapeOptions: {
+          color: '#0a84ff',
+          fillColor: '#0a84ff',
+          fillOpacity: 0.3,
+          weight: 2
+        },
+        guidelineDistance: 20,
+        metric: true,
+      },
+      polyline: false,
+      rectangle: false,
+      circle: false,
+      circlemarker: false,
+      marker: false,
+    },
+    edit: { featureGroup: _drawGroup, remove: false }
+  });
+  leafletMap.addControl(_drawControl);
+
+  // Auto-start polygon drawing
+  setTimeout(()=>{
+    const polygonHandler = _drawControl._toolbars.draw._modes.polygon.handler;
+    if(polygonHandler) polygonHandler.enable();
+  }, 100);
+
+  // Listen for completed polygon
+  leafletMap.on(L.Draw.Event.CREATED, e => {
+    _drawnLayer = e.layer;
+    _drawGroup.addLayer(_drawnLayer);
+    _drawnCoords = e.layer.getLatLngs()[0].map(ll => [ll.lng, ll.lat]);
+    // Close the polygon (GeoJSON needs first = last point)
+    _drawnCoords.push(_drawnCoords[0]);
+    mostrarFormularioNuevoTer();
+  });
+}
+
+function cancelarDibujo(){
+  if(_drawControl){ leafletMap.removeControl(_drawControl); _drawControl=null; }
+  if(_drawGroup){ leafletMap.removeLayer(_drawGroup); _drawGroup=null; }
+  leafletMap.off(L.Draw.Event.CREATED);
+  _drawnLayer=null; _drawnCoords=null;
+  document.getElementById('btnNuevoTerMapa').style.display='flex';
+  document.getElementById('mapDrawToolbar').style.display='none';
+}
+
+function mostrarFormularioNuevoTer(){
+  // Hide toolbar during form
+  document.getElementById('mapDrawToolbar').style.display='none';
+
+  const grupoOpts = S.grupos.sort((a,b)=>a.num-b.num)
+    .map(g=>`<option value="${g.id}">G${g.num} — ${g.nombre||''}</option>`).join('');
+
+  // Suggest next territory number
+  const nums = S.territorios.map(t=>parseInt(t.num)||0);
+  const nextNum = nums.length ? String(Math.max(...nums)+1).padStart(3,'0') : '001';
+
+  const html = `<div style="padding:20px">
+    <div style="font-size:13px;color:var(--t2);background:rgba(10,132,255,.1);border-radius:8px;padding:8px 12px;margin-bottom:14px">
+      ✅ Polígono dibujado con <b>${_drawnCoords.length-1} puntos</b>. Completa los datos del territorio.
+    </div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Número *</label>
+        <input class="fi" id="newTerNum" value="${nextNum}" placeholder="001">
+      </div>
+      <div class="fg"><label class="fl">Tipo *</label>
+        <select class="fs" id="newTerTipo">
+          <option value="Casa">Casa</option>
+          <option value="Bloque" selected>Bloque</option>
+          <option value="Especial">Especial</option>
+          <option value="Negocio">Negocio</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg" style="margin-top:8px"><label class="fl">Nombre / descripción</label>
+      <input class="fi" id="newTerNombre" placeholder="Ej: Calle Mayor bloques impares">
+    </div>
+    <div class="fg" style="margin-top:8px"><label class="fl">Grupo</label>
+      <select class="fs" id="newTerGrupo">
+        <option value="">Sin grupo</option>
+        ${grupoOpts}
+      </select>
+    </div>
+    <div style="background:var(--s3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--t3);margin-top:12px;line-height:1.6">
+      ⚠️ El polígono se guardará en memoria para esta sesión. Para que aparezca en el mapa tras recargar, <b>descarga el GeoJSON actualizado</b> y súbelo al repositorio.
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="cancelarDibujo();document.getElementById('nuevoTerMapaModal')?.remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarNuevoTerMapa()">💾 Crear territorio</button>
+    </div>
+  </div>`;
+
+  showSimpleModal('Nuevo territorio desde mapa', html, 'nuevoTerMapaModal');
+}
+
+async function confirmarNuevoTerMapa(){
+  const num = document.getElementById('newTerNum')?.value.trim();
+  const nombre = document.getElementById('newTerNombre')?.value.trim();
+  const tipo = document.getElementById('newTerTipo')?.value;
+  const grupoId = document.getElementById('newTerGrupo')?.value||null;
+
+  if(!num){ toast('⚠ El número es obligatorio','am'); return; }
+  if(S.territorios.find(t=>t.num===num)){ toast(`⚠ Ya existe el territorio ${num}`,'am'); return; }
+  if(!_drawnCoords){ toast('⚠ No hay polígono dibujado','am'); return; }
+
+  setSyncStatus('syncing');
+  try{
+    // Save territory to Supabase
+    const rows = await sbPost('territorios',{
+      num, nombre:nombre||num, tipo:tipo||'Bloque',
+      grupo_id:grupoId||null, estado:'disponible'
+    });
+    const newTer = rows[0];
+    S.territorios.push(newTer);
+
+    // Add polygon to in-memory GeoJSON and map layer
+    const feature = {
+      type: 'Feature',
+      properties: { Name: num },
+      geometry: { type: 'Polygon', coordinates: [_drawnCoords] }
+    };
+
+    // Add to live map
+    if(geoLayer){
+      L.geoJson(feature, {
+        style: styleGeoFeature,
+        onEachFeature: onEachGeoFeature
+      }).addTo(leafletMap);
+    }
+
+    // Update in-memory GeoJSON for download
+    if(!window._localGeoJSON) {
+      window._localGeoJSON = { type:'FeatureCollection', features:[] };
+    }
+    window._localGeoJSON.features.push(feature);
+
+    // Close modal and cleanup
+    document.getElementById('nuevoTerMapaModal')?.remove();
+    cancelarDibujo();
+    setSyncStatus('ok');
+    updateBadges();
+    logAudit('crear', newTer.id, null, {num, nombre:nombre||num});
+
+    // Offer GeoJSON download
+    toast(`✅ Territorio ${num} creado`, 'g', 3000);
+    setTimeout(()=>{
+      if(confirm(`Territorio ${num} creado correctamente.\n\n¿Descargar el GeoJSON actualizado para subir al repositorio?`)){
+        descargarGeoJSON();
+      }
+    }, 500);
+  }catch(e){
+    setSyncStatus('error');
+    toast('Error: '+e.message,'r');
+  }
+}
+
+async function descargarGeoJSON(){
+  // Fetch current geojson and merge with new territories
+  let base = {type:'FeatureCollection', features:[]};
+  try{
+    const r = await fetch(GEOJSON_URL);
+    if(r.ok) base = await r.json();
+  }catch(e){}
+
+  // Add any new territories from this session
+  if(window._localGeoJSON){
+    const existingNames = new Set(base.features.map(f=>f.properties.Name));
+    window._localGeoJSON.features.forEach(f=>{
+      if(!existingNames.has(f.properties.Name)) base.features.push(f);
+    });
+  }
+
+  // Sort by territory number
+  base.features.sort((a,b)=>String(a.properties.Name).localeCompare(String(b.properties.Name),undefined,{numeric:true}));
+
+  const blob = new Blob([JSON.stringify(base, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zonas.geojson';
+  a.click();
+  toast('📥 zonas.geojson descargado — súbelo al repositorio','a',5000);
+}
 
 async function initMapView(){
   if(mapInitialized){updateMapColors();return;}
