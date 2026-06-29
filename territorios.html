@@ -775,6 +775,7 @@ body.light{
       <div class="nav-item" data-v="cambios" onclick="navDrawer(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
       <div class="nav-item" data-v="solicitudes" onclick="navDrawer(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic-d" style="display:none">0</span></div>
       <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📖</span>Historial</div>
+      <div class="nav-item" data-v="backup" onclick="navDrawer(this)"><span class="nav-icon">☁️</span>Copias de seguridad</div>
       <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
       <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
       <div class="nav-sect">Filtros rápidos</div>
@@ -816,6 +817,8 @@ body.light{
   <div class="nav-item" data-v="campanias" onclick="nav(this)"><span class="nav-icon">🚩</span>Campañas<span class="nav-badge" id="nb-camp" style="display:none">0</span></div>
   <div class="nav-item" data-v="lotes" onclick="nav(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
   <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
+  <div class="nav-sect">SISTEMA</div>
+  <div class="nav-item" data-v="backup" onclick="nav(this)"><span class="nav-icon">☁️</span>Copias de seguridad</div>
   <div class="nav-sect">Estado rápido</div>
   <div class="nav-item" data-filter="disponible" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="nb-disp">0</span></div>
   <div class="nav-item" data-filter="asignado" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="nb-asig">0</span></div>
@@ -1119,6 +1122,15 @@ body.light{
     </div>
   </div>
   <div class="view-scroll" id="solicitudesList"></div>
+</div>
+
+<!-- VIEW: BACKUP -->
+<div id="view-backup" class="view" style="flex-direction:column">
+  <div class="view-head">
+    <div class="view-title">☁️ Copias de seguridad</div>
+    <div class="view-sub">Backup automático semanal a Google Drive</div>
+  </div>
+  <div class="view-scroll" id="backupContent" style="padding:16px"></div>
 </div>
 
 <div id="view-s13" class="view">
@@ -2109,6 +2121,7 @@ function renderView(v){
   else if(v==='cambios') renderCambios();
   else if(v==='solicitudes') renderSolicitudes();
   else if(v==='campanias') renderCampanias();
+  else if(v==='backup') renderBackupView();
 }
 
 // ══ FILTERS ══
@@ -5298,6 +5311,161 @@ async function quitarTerritorioCampania(ctId){
     renderCampanias();
     toast('Territorio eliminado de la campaña','a');
   }catch(e){toast('Error: '+e.message,'r');}
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// COPIAS DE SEGURIDAD — Google Drive
+// ══════════════════════════════════════════════════════════════
+const BACKUP_FN_URL  = `${SB_URL}/functions/v1/backup-to-drive`;
+const RESTORE_FN_URL = `${SB_URL}/functions/v1/restore-from-drive`;
+const FN_HEADERS = { 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+async function renderBackupView(){
+  const el = document.getElementById('backupContent');
+  if(!el) return;
+
+  el.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Manual backup -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px">☁️ Backup manual</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:12px">Exporta todos los datos y el mapa a Google Drive ahora mismo.</div>
+        <button class="btn btn-primary" onclick="ejecutarBackup()" id="btnBackupNow">
+          ☁️ Hacer backup ahora
+        </button>
+      </div>
+
+      <!-- Auto backup info -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px">🕐 Backup automático</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:8px">
+          Configurado para ejecutarse <b>cada lunes a las 3:00 AM</b> via pg_cron.<br>
+          Cada backup crea una carpeta con la fecha en Google Drive.
+        </div>
+        <div style="font-size:12px;background:rgba(10,132,255,.1);border-radius:8px;padding:8px 12px;color:var(--blue)">
+          📁 Carpeta Drive: <b>Backups Montequinto</b>
+        </div>
+      </div>
+
+      <!-- Restore -->
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px">♻️ Restaurar datos</div>
+        <div style="font-size:13px;color:var(--t2);margin-bottom:12px">
+          Restaura todos los datos desde una copia de seguridad.<br>
+          <span style="color:var(--red);font-weight:600">⚠️ Esto sobreescribirá todos los datos actuales.</span>
+        </div>
+        <button class="btn btn-ghost" onclick="cargarListaBackups()" id="btnListBackups">
+          📋 Ver copias disponibles
+        </button>
+        <div id="backupList" style="margin-top:12px"></div>
+      </div>
+
+      <!-- Last backup status -->
+      <div id="backupStatus"></div>
+    </div>
+  `;
+}
+
+async function ejecutarBackup(){
+  const btn = document.getElementById('btnBackupNow');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Ejecutando backup…'; }
+  try{
+    const r = await fetch(BACKUP_FN_URL, { method:'POST', headers:FN_HEADERS, body:'{}' });
+    const data = await r.json();
+    if(data.ok){
+      const total = data.total_rows || 0;
+      const tables = Object.keys(data.tables||{}).length;
+      document.getElementById('backupStatus').innerHTML = `
+        <div style="background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.3);border-radius:var(--r);padding:12px 16px">
+          <div style="font-weight:700;color:var(--green)">✅ Backup completado</div>
+          <div style="font-size:13px;color:var(--t2);margin-top:6px">
+            <b>${data.title}</b><br>
+            ${tables} pestañas · ${total.toLocaleString()} registros
+          </div>
+          ${data.url?`<a href="${data.url}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:8px 14px;background:var(--green);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none">
+            📊 Abrir en Google Sheets
+          </a>`:''}
+        </div>`;
+      toast('✅ Backup completado en Google Sheets','g',5000);
+    } else {
+      throw new Error(data.error||'Error desconocido');
+    }
+  }catch(e){
+    document.getElementById('backupStatus').innerHTML = `
+      <div style="background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.3);border-radius:var(--r);padding:12px 16px;color:var(--red)">
+        ❌ Error: ${e.message}
+      </div>`;
+    toast('Error en backup: '+e.message,'r');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='☁️ Hacer backup ahora'; }
+  }
+}
+
+async function cargarListaBackups(){
+  const btn = document.getElementById('btnListBackups');
+  const list = document.getElementById('backupList');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Cargando…'; }
+  try{
+    const r = await fetch(RESTORE_FN_URL, {
+      method:'POST', headers:FN_HEADERS,
+      body: JSON.stringify({action:'list'})
+    });
+    const data = await r.json();
+    if(!data.ok) throw new Error(data.error);
+    const backups = data.backups||[];
+    if(!backups.length){
+      list.innerHTML='<div style="font-size:13px;color:var(--t3);padding:8px">No hay copias de seguridad disponibles.</div>';
+      return;
+    }
+    list.innerHTML = backups.map((b)=>{
+      const date = new Date(b.createdTime).toLocaleString('es-ES');
+      return `<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${b.name}</div>
+          <div style="font-size:12px;color:var(--t3)">${date}</div>
+        </div>
+        <a href="${b.webViewLink||'#'}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">📊 Ver</a>
+        <button class="btn btn-danger btn-sm" onclick="confirmarRestaurar('${b.id}','${b.name}')">♻️ Restaurar</button>
+      </div>`;
+    }).join('');
+  }catch(e){
+    list.innerHTML=`<div style="color:var(--red);font-size:13px">Error: ${e.message}</div>`;
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='📋 Ver copias disponibles'; }
+  }
+}
+
+async function confirmarRestaurar(folderId, folderName){
+  if(!confirm(
+    `⚠️ RESTAURAR desde: ${folderName}\n\n` +
+    `Esto SOBREESCRIBIRÁ todos los datos actuales de Supabase.\n` +
+    `Esta acción NO se puede deshacer.\n\n` +
+    `¿Confirmas que quieres restaurar?`
+  )) return;
+
+  showLoader('Restaurando datos… esto puede tardar unos segundos');
+  try{
+    const r = await fetch(RESTORE_FN_URL, {
+      method:'POST', headers:FN_HEADERS,
+      body: JSON.stringify({action:'restore', spreadsheet_id: folderId})
+    });
+    const data = await r.json();
+    hideLoader();
+    if(data.ok){
+      const tables = Object.entries(data.restored||{})
+        .map(([t,v])=>`${t}: ${v}`).join(', ');
+      toast('✅ Datos restaurados correctamente','g',6000);
+      // Reload all data
+      await reloadAndRender();
+      renderBackupView();
+    } else {
+      throw new Error(data.error||'Error desconocido');
+    }
+  }catch(e){
+    hideLoader();
+    toast('Error restaurando: '+e.message,'r',6000);
+  }
 }
 
 // ══ CONTAR VIVIENDAS ══ (Catastro INSPIRE)
