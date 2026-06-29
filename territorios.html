@@ -1936,21 +1936,7 @@ async function ejecutarLotes(){
     }catch(e){console.warn('solicitud update error',e);}
     window._pendingSolicitudId=null;
   }
-  // Update campaign for newly assigned territories
-  const campActiva=campaniaActiva();
-  if(campActiva && _assignedIds.length){
-    for(const id of _assignedIds){
-      const ct=S.campaniaTerritorios.find(x=>x.campania_id===campActiva.id&&x.territorio_id===id);
-      if(ct){
-        try{ await sbPatch('campania_territorios',{id:ct.id},{pub_id:pubId}); ct.pub_id=pubId; }catch(e){}
-      } else {
-        try{
-          const rows=await sbPost('campania_territorios',{campania_id:campActiva.id,territorio_id:id,pub_id:pubId});
-          S.campaniaTerritorios.push(rows[0]);
-        }catch(e){}
-      }
-    }
-  }
+  // pub_id always read live from territorios — no campaign sync needed
   toast(`✅ ${ok} territorio${ok>1?'s':''} asignado${ok>1?'s':''} a ${pub?.nombre}${fail?` (${fail} errores)`:''}`,'g',5000);
 }
 
@@ -3528,21 +3514,7 @@ async function confirmarAsig(){
     closeModal('mTer');
     reloadAndRender();
     logAudit('asignar', t.id, pubId, {num:t.num, fecha_asig:fecha, fecha_vence:fechaVence});
-    // If there's an active campaign, update pub_id in campania_territorios
-    const campActiva=campaniaActiva();
-    if(campActiva){
-      const ct=S.campaniaTerritorios.find(x=>x.campania_id===campActiva.id&&x.territorio_id===t.id);
-      if(ct){
-        // Update pub_id
-        try{ await sbPatch('campania_territorios',{id:ct.id},{pub_id:pubId}); ct.pub_id=pubId; }catch(e){}
-      } else {
-        // New assignment during campaign — add it
-        try{
-          const rows=await sbPost('campania_territorios',{campania_id:campActiva.id,territorio_id:t.id,pub_id:pubId});
-          S.campaniaTerritorios.push(rows[0]);
-        }catch(e){}
-      }
-    }
+    // pub_id always read live from territorios — no campaign sync needed
     toast(`📌 Asignado a ${pubName(pubId)}`,'a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
@@ -4906,13 +4878,15 @@ function renderCampanias(){
   const sorted=[...conPorc.sort((a,b)=>b.porcentaje-a.porcentaje), ...cts.filter(ct=>ct.porcentaje==null)];
   const rows=sorted.map(ct=>{
     const t=S.territorios.find(x=>x.id===ct.territorio_id);
-    const p=S.publicadores.find(x=>x.id===ct.pub_id);
+    // Always use live pub_id from territorios, not the snapshot in campania_territorios
+    const livePubId=t?.pub_id||null;
+    const p=S.publicadores.find(x=>x.id===livePubId);
     const porcCol=ct.porcentaje==null?'var(--t3)':ct.porcentaje>=80?'var(--green)':ct.porcentaje>=50?'var(--amber)':'var(--red)';
     return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <span style="font-family:var(--font-mono);font-weight:700;min-width:40px;font-size:13px">${t?.num||'—'}</span>
-      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t?.nombre||'—'}</span>
-      <span style="font-size:12px;color:var(--t2);min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">${p?.nombre||'—'}</span>
-      <span style="font-size:13px;font-weight:700;color:${porcCol};min-width:44px;text-align:right">${ct.porcentaje!=null?ct.porcentaje+'%':'—'}</span>
+      <span style="font-family:var(--font-mono);font-weight:700;min-width:40px;font-size:13px">${t?.num||'-'}</span>
+      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t?.nombre||'-'}</span>
+      <span style="font-size:12px;color:${p?'var(--t2)':'var(--t3)'};min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">${p?.nombre||'Sin asignar'}</span>
+      <span style="font-size:13px;font-weight:700;color:${porcCol};min-width:44px;text-align:right">${ct.porcentaje!=null?ct.porcentaje+'%':'-'}</span>
       ${running?`<button class="btn btn-ghost btn-xs" onclick="quitarTerritorioCampania(${ct.id})" title="Quitar">✕</button>`:'<span style="width:28px"></span>'}
     </div>`;
   }).join('');
@@ -5011,7 +4985,7 @@ async function guardarCampania(){
     let added=0;
     for(const t of allTers){
       try{
-        const ct=await sbPost('campania_territorios',{campania_id:camp.id,territorio_id:t.id,pub_id:t.pub_id||null});
+        const ct=await sbPost('campania_territorios',{campania_id:camp.id,territorio_id:t.id});
         S.campaniaTerritorios.push(ct[0]);
         added++;
       }catch(e){console.warn(e);}
@@ -5141,7 +5115,7 @@ async function confirmarAsignarCampania(campaniaId){
   for(const terId of ids){
     const t=S.territorios.find(x=>x.id===terId);
     try{
-      const rows=await sbPost('campania_territorios',{campania_id:campaniaId,territorio_id:terId,pub_id:t?.pub_id||null});
+      const rows=await sbPost('campania_territorios',{campania_id:campaniaId,territorio_id:terId});
       S.campaniaTerritorios.push(rows[0]);
       ok++;
     }catch(e){console.warn(e);}
