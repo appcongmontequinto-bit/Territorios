@@ -829,6 +829,10 @@ body.light{
   </div>
 </nav>
 
+<div id="ptrIndicator" style="position:fixed;top:54px;left:50%;transform:translateX(-50%) translateY(-60px);z-index:200;background:var(--s2);border:1px solid var(--border2);border-radius:99px;padding:6px 16px;font-size:13px;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:8px;transition:transform .2s ease,opacity .2s ease;opacity:0;pointer-events:none;box-shadow:0 2px 12px rgba(0,0,0,.2)">
+  <span id="ptrIcon" style="display:inline-block;transition:transform .3s">↓</span>
+  <span id="ptrText">Desliza para actualizar</span>
+</div>
 <main id="main">
 
 <!-- VIEW: TERRITORIOS -->
@@ -3485,7 +3489,16 @@ async function cancelarAsignacion(){
   if(!confirm(`¿Cancelar la asignación de ${t.num} a ${pubName(t.pub_id)}? El territorio quedará disponible sin añadir entrada al historial.`)) return;
   setSyncStatus('syncing');
   try{
-    const rows=await sbPatch('territorios',{id:t.id},{estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,es_grupo:false});
+    // Restore ultimo_trabajado to the last dev date from historial (before this assignment)
+    const prevHist=S.historial
+      .filter(h=>h.territorio_id===t.id&&h.fecha_dev)
+      .sort((a,b)=>b.fecha_dev.localeCompare(a.fecha_dev));
+    const prevUltimoTrabajado=prevHist[0]?.fecha_dev||null;
+    const rows=await sbPatch('territorios',{id:t.id},{
+      estado:'disponible',pub_id:null,fecha_asig:null,fecha_vence:null,
+      es_grupo:false,
+      ultimo_trabajado:prevUltimoTrabajado  // restore to real last worked date
+    });
     Object.assign(t,rows[0]);
     setSyncStatus('ok');
     document.getElementById('btnCancelarAsig').style.display='none';
@@ -4562,6 +4575,71 @@ function toast(msg,type='',dur=3500){
   el.innerHTML=`<span style="color:${col}">●</span> ${msg}`;
   c.appendChild(el);setTimeout(()=>el.remove(),3500);
 }
+
+// ══ PULL TO REFRESH ══
+(function(){
+  let startY=0, currentY=0, pulling=false, triggered=false;
+  const THRESHOLD=80; // px to trigger refresh
+  const indicator=()=>document.getElementById('ptrIndicator');
+  const icon=()=>document.getElementById('ptrIcon');
+  const text=()=>document.getElementById('ptrText');
+
+  function getScrollTop(){
+    // Find the currently visible scrollable view
+    const view=document.querySelector('.view.on .view-scroll, .view.on');
+    return view?view.scrollTop:0;
+  }
+
+  document.addEventListener('touchstart', e=>{
+    if(getScrollTop()>0) return; // only when at top
+    startY=e.touches[0].clientY;
+    pulling=true;
+    triggered=false;
+  },{passive:true});
+
+  document.addEventListener('touchmove', e=>{
+    if(!pulling) return;
+    if(getScrollTop()>5){ pulling=false; return; }
+    currentY=e.touches[0].clientY;
+    const dist=Math.max(0,currentY-startY);
+    if(dist<5) return;
+    const progress=Math.min(dist/THRESHOLD,1);
+    const el=indicator();
+    if(!el) return;
+    const translateY=Math.min(dist*0.5,50)-60;
+    el.style.transform=`translateX(-50%) translateY(${translateY}px)`;
+    el.style.opacity=String(progress);
+    if(icon()) icon().style.transform=`rotate(${progress*180}deg)`;
+    if(text()) text().textContent=progress>=1?'Suelta para actualizar':'Desliza para actualizar';
+    if(progress>=1&&!triggered){ triggered=true; }
+  },{passive:true});
+
+  document.addEventListener('touchend', ()=>{
+    if(!pulling) return;
+    pulling=false;
+    const el=indicator();
+    if(el){
+      if(triggered){
+        // Show loading state
+        if(icon()) icon().style.transform='rotate(360deg)';
+        if(text()) text().textContent='Actualizando…';
+        el.style.transform='translateX(-50%) translateY(-10px)';
+        el.style.opacity='1';
+        // Reload data
+        reloadAndRender().then(()=>{
+          if(el){ el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(-60px)'; }
+          toast('✓ Datos actualizados','g');
+        }).catch(()=>{
+          if(el){ el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(-60px)'; }
+        });
+      } else {
+        el.style.opacity='0';
+        el.style.transform='translateX(-50%) translateY(-60px)';
+      }
+    }
+    triggered=false;
+  },{passive:true});
+})();
 
 // ══ SERVICE WORKER REGISTRATION + AUTO-UPDATE ══
 if ('serviceWorker' in navigator) {
