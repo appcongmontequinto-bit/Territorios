@@ -943,7 +943,13 @@ body.light{
     </div>
     <div style="position:absolute;top:10px;left:10px;z-index:1000;display:flex;gap:6px">
       <button id="btnNuevoTerMapa" onclick="activarDibujoTerritorio()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.3)">✏️ Nuevo territorio</button>
-      <button onclick="descargarGeoJSON()" style="padding:8px 14px;background:var(--s1);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.2)">⬇ GeoJSON</button>
+      <div style="position:relative">
+        <button onclick="toggleMapDownloadMenu()" id="btnMapDownload" style="padding:8px 14px;background:var(--s1);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.2)">⬇ Exportar ▾</button>
+        <div id="mapDownloadMenu" style="display:none;position:absolute;top:100%;left:0;margin-top:4px;background:var(--s2);border:1px solid var(--border2);border-radius:10px;overflow:hidden;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:2000">
+          <div onclick="descargarGeoJSON();toggleMapDownloadMenu()" style="padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">📄 GeoJSON</div>
+          <div onclick="descargarKMZ();toggleMapDownloadMenu()" style="padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;border-top:1px solid var(--border)" onmouseenter="this.style.background='var(--s3)'" onmouseleave="this.style.background=''">🗺 KMZ (Google Earth)</div>
+        </div>
+      </div>
     </div>
     <div class="map-legend">
       <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Disponible</div>
@@ -1464,6 +1470,7 @@ body.light{
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════════
@@ -2503,10 +2510,12 @@ async function confirmarNuevoTerMapa(){
 
   setSyncStatus('syncing');
   try{
-    // Save territory to Supabase
+    // Save territory to Supabase including polygon geometry
+    const geometry = { type:'Polygon', coordinates:[_drawnCoords] };
     const rows = await sbPost('territorios',{
       num, nombre:nombre||num, tipo:tipo||'Bloque',
-      grupo_id:grupoId||null, estado:'disponible'
+      grupo_id:grupoId||null, estado:'disponible',
+      geojson: geometry
     });
     const newTer = rows[0];
     S.territorios.push(newTer);
@@ -2552,6 +2561,128 @@ async function confirmarNuevoTerMapa(){
   }
 }
 
+function toggleMapDownloadMenu(){
+  const m = document.getElementById('mapDownloadMenu');
+  if(!m) return;
+  m.style.display = m.style.display==='none' ? 'block' : 'none';
+}
+// Close menu when clicking outside
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#btnMapDownload')&&!e.target.closest('#mapDownloadMenu')){
+    const m=document.getElementById('mapDownloadMenu');
+    if(m) m.style.display='none';
+  }
+});
+
+async function getExportGeoJSON(){
+  // Build merged GeoJSON from file + Supabase
+  let base = {type:'FeatureCollection', features:[]};
+  try{
+    const r = await fetch(GEOJSON_URL);
+    if(r.ok) base = await r.json();
+  }catch(e){}
+  if(window._localGeoJSON){
+    const existingNames = new Set(base.features.map(f=>f.properties.Name));
+    window._localGeoJSON.features.forEach(f=>{
+      if(!existingNames.has(f.properties.Name)) base.features.push(f);
+    });
+  }
+  base.features.sort((a,b)=>String(a.properties.Name).localeCompare(String(b.properties.Name),undefined,{numeric:true}));
+  return base;
+}
+
+async function descargarGeoJSON(){
+  const base = await getExportGeoJSON();
+  const blob = new Blob([JSON.stringify(base, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'zonas.geojson';
+  a.click();
+  toast('📥 zonas.geojson descargado — súbelo al repositorio','a',5000);
+}
+
+async function descargarKMZ(){
+  const base = await getExportGeoJSON();
+
+  // Build KML content
+  const placemarks = base.features.map(f=>{
+    const num = f.properties.Name;
+    const t = S.territorios.find(x=>x.num===String(num).trim());
+    const name = t?.nombre||`Territorio ${num}`;
+    const estado = t?statusOf(t):'disponible';
+    const pub = t?.pub_id ? pubName(t.pub_id) : '';
+
+    // Color by status (KML uses aabbggrr format)
+    const kmlColor = {
+      disponible: 'ff30d158',  // green
+      asignado:   'ff0a84ff',  // blue
+      proximo:    'ff9f0aff',  // amber (approx)
+      vencido:    'ff453aff',  // red
+      grupo:      'fff25abf',  // purple
+    }[estado] || 'ff636366';
+
+    // Get polygon coordinates
+    const geom = f.geometry;
+    if(!geom||geom.type!=='Polygon') return '';
+    const coords = geom.coordinates[0]
+      .map(c=>`${c[0].toFixed(7)},${c[1].toFixed(7)},0`)
+      .join(' ');
+
+    return `
+  <Placemark>
+    <name>${num} — ${name}</name>
+    <description>${pub?`Publicador: ${pub}
+`:''}Estado: ${estado}</description>
+    <Style>
+      <PolyStyle>
+        <color>${kmlColor}</color>
+        <colorMode>normal</colorMode>
+        <fill>1</fill>
+        <outline>0</outline>
+      </PolyStyle>
+    </Style>
+    <Polygon>
+      <tessellate>1</tessellate>
+      <outerBoundaryIs>
+        <LinearRing>
+          <coordinates>${coords}</coordinates>
+        </LinearRing>
+      </outerBoundaryIs>
+    </Polygon>
+  </Placemark>`;
+  }).filter(Boolean).join('');
+
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Territorios Montequinto</name>
+    <description>Exportado el ${new Date().toLocaleDateString('es-ES')}</description>
+    ${placemarks}
+  </Document>
+</kml>`;
+
+  // KMZ = ZIP containing doc.kml
+  // Use JSZip if available, otherwise fall back to plain KML
+  if(typeof JSZip !== 'undefined'){
+    const zip = new JSZip();
+    zip.file('doc.kml', kml);
+    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'territorios_montequinto.kmz';
+    a.click();
+    toast('📥 KMZ descargado — ábrel en Google Earth o Maps','a',5000);
+  } else {
+    // No JSZip — download as KML instead (Google Earth also accepts KML)
+    const blob = new Blob([kml], {type:'application/vnd.google-earth.kml+xml'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'territorios_montequinto.kml';
+    a.click();
+    toast('📥 KML descargado (sin JSZip disponible)','a',5000);
+  }
+}
+
 async function descargarGeoJSON(){
   // Fetch current geojson and merge with new territories
   let base = {type:'FeatureCollection', features:[]};
@@ -2589,21 +2720,60 @@ async function initMapView(){
       maxZoom:19,attribution:'© OpenStreetMap · © CARTO'
     }).addTo(leafletMap);
 
-    fetch(GEOJSON_URL)
-      .then(r=>r.json())
-      .then(data=>{
-        geoLayer=L.geoJson(data,{
-          style:styleGeoFeature,
-          onEachFeature:onEachGeoFeature
-        }).addTo(leafletMap);
-        leafletMap.setView(MAP_CENTER,MAP_ZOOM);
-        mapInitialized=true;
-      })
-      .catch(()=>{
-        // GeoJSON not available - show message
-        document.getElementById('mapContainer').innerHTML+='<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:300;pointer-events:none"><div style="background:rgba(28,28,30,.9);border:1px solid var(--border2);border-radius:16px;padding:20px 28px;text-align:center;color:var(--t2);font-size:14px">⚠ Coloca <b>zonas.geojson</b> en la misma carpeta que este archivo</div></div>';
-      });
+    loadMapLayers();
   },100);
+}
+
+async function loadMapLayers(){
+  // Build merged GeoJSON: file + Supabase polygons
+  let features = [];
+
+  // 1. Load from file
+  try{
+    const r = await fetch(GEOJSON_URL);
+    if(r.ok){
+      const data = await r.json();
+      features = [...data.features];
+    }
+  }catch(e){ console.warn('GeoJSON file not found, using Supabase only'); }
+
+  // 2. Add/override with polygons stored in Supabase
+  const terWithGeo = S.territorios.filter(t=>t.geojson);
+  const fileNums = new Set(features.map(f=>String(f.properties.Name).trim()));
+
+  terWithGeo.forEach(t=>{
+    const feature = {
+      type:'Feature',
+      properties:{ Name: t.num },
+      geometry: t.geojson
+    };
+    if(fileNums.has(t.num)){
+      // Override file version with Supabase version
+      const idx = features.findIndex(f=>String(f.properties.Name).trim()===t.num);
+      if(idx>=0) features[idx] = feature;
+    } else {
+      // New territory not in file
+      features.push(feature);
+    }
+  });
+
+  if(!features.length){
+    document.getElementById('mapContainer').innerHTML+=
+      '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:300;pointer-events:none"><div style="background:rgba(28,28,30,.9);border:1px solid var(--border2);border-radius:16px;padding:20px 28px;text-align:center;color:var(--t2);font-size:14px">⚠ No hay polígonos disponibles</div></div>';
+    mapInitialized=true;
+    return;
+  }
+
+  const merged = { type:'FeatureCollection', features };
+  window._localGeoJSON = merged; // keep reference for download
+
+  if(geoLayer) leafletMap.removeLayer(geoLayer);
+  geoLayer = L.geoJson(merged,{
+    style:styleGeoFeature,
+    onEachFeature:onEachGeoFeature
+  }).addTo(leafletMap);
+  leafletMap.setView(MAP_CENTER,MAP_ZOOM);
+  mapInitialized=true;
 }
 
 function colorFor(t){
@@ -2716,7 +2886,13 @@ async function openMapPanel(num,t){
   // Actions
   const acts=document.getElementById('mpActions');
   if(t){
-    acts.innerHTML=`<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openTerDetail(${t.id})">✏️ Gestionar territorio</button>`;
+    const hasGeo = t.geojson || (num && window._localGeoJSON?.features.some(f=>String(f.properties.Name).trim()===num));
+    acts.innerHTML=`
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openTerDetail(${t.id})">✏️ Gestionar territorio</button>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="editarPoligonoMapa(${t.id},'${num}')">🗺 ${hasGeo?'Editar polígono':'Añadir polígono'}</button>
+        ${hasGeo?`<button class="btn btn-danger btn-sm" onclick="eliminarPoligonoMapa(${t.id},'${num}')">🗑</button>`:''}
+      </div>`;
   } else {
     acts.innerHTML='';
   }
@@ -2726,6 +2902,92 @@ function closeMapPanel(){
   document.getElementById('mapPanel').classList.remove('open');
   if(selectedLayer){geoLayer.resetStyle(selectedLayer);selectedLayer=null;}
   setTimeout(()=>leafletMap&&leafletMap.invalidateSize(),300);
+}
+
+function editarPoligonoMapa(terId, num){
+  const t = S.territorios.find(x=>x.id===terId);
+  if(!t) return;
+  closeMapPanel();
+
+  // Show toolbar
+  document.getElementById('btnNuevoTerMapa').closest('div').style.display='none';
+  document.getElementById('mapDrawToolbar').style.display='flex';
+  document.getElementById('mapDrawMsg').textContent=`Dibuja el nuevo polígono para Terr. ${num}`;
+  document.getElementById('btnRedibujar').style.display='none';
+
+  // Initialize draw group
+  if(_drawGroup) leafletMap.removeLayer(_drawGroup);
+  _drawGroup = new L.FeatureGroup().addTo(leafletMap);
+
+  if(!_drawControl){
+    _drawControl = new L.Control.Draw({
+      draw:{
+        polygon:{
+          allowIntersection:false,
+          shapeOptions:{color:'#0a84ff',fillColor:'#0a84ff',fillOpacity:0.3,weight:2},
+          metric:true
+        },
+        polyline:false,rectangle:false,circle:false,circlemarker:false,marker:false
+      },
+      edit:{ featureGroup:_drawGroup, remove:false }
+    });
+    leafletMap.addControl(_drawControl);
+  }
+
+  // Auto-start drawing
+  setTimeout(()=>{
+    const h = _drawControl._toolbars.draw._modes.polygon.handler;
+    if(h) h.enable();
+  }, 100);
+
+  // When polygon drawn, save to Supabase
+  leafletMap.off(L.Draw.Event.CREATED);
+  leafletMap.on(L.Draw.Event.CREATED, async e => {
+    _drawnLayer = e.layer;
+    _drawGroup.addLayer(_drawnLayer);
+    _drawnCoords = e.layer.getLatLngs()[0].map(ll=>[ll.lng,ll.lat]);
+    _drawnCoords.push(_drawnCoords[0]);
+
+    document.getElementById('mapDrawMsg').textContent=`✅ Polígono listo — guardando…`;
+    document.getElementById('btnRedibujar').style.display='';
+
+    const geometry = {type:'Polygon', coordinates:[_drawnCoords]};
+    try{
+      setSyncStatus('syncing');
+      const rows = await sbPatch('territorios',{id:terId},{geojson:geometry});
+      Object.assign(t, rows[0]);
+      setSyncStatus('ok');
+      cancelarDibujo();
+      // Reload map layers
+      mapInitialized=false;
+      geoLayer=null;
+      await loadMapLayers();
+      toast(`✅ Polígono de ${num} actualizado`,'g');
+    }catch(err){
+      setSyncStatus('error');
+      toast('Error: '+err.message,'r');
+    }
+  });
+}
+
+async function eliminarPoligonoMapa(terId, num){
+  if(!confirm(`¿Eliminar el polígono del territorio ${num}?\n\nEl territorio seguirá en la base de datos pero dejará de verse en el mapa hasta que se añada un nuevo polígono.`)) return;
+  try{
+    setSyncStatus('syncing');
+    const rows = await sbPatch('territorios',{id:terId},{geojson:null});
+    const t = S.territorios.find(x=>x.id===terId);
+    if(t) t.geojson=null;
+    setSyncStatus('ok');
+    closeMapPanel();
+    // Reload map
+    mapInitialized=false;
+    geoLayer=null;
+    await loadMapLayers();
+    toast(`🗑 Polígono de ${num} eliminado`,'a');
+  }catch(e){
+    setSyncStatus('error');
+    toast('Error: '+e.message,'r');
+  }
 }
 
 // ══ PRIORIDAD ══
