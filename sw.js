@@ -3,7 +3,7 @@
 //  scope: /territorios.html
 // ============================================================
 
-const APP_VERSION = 'v1.2.0';
+const APP_VERSION = 'v1.3.0';
 const CACHE_STATIC = `territorios-static-${APP_VERSION}`;
 const CACHE_DYNAMIC = `territorios-dynamic-${APP_VERSION}`;
 
@@ -120,6 +120,13 @@ function offlineResponse(request) {
   }
   return new Response('', { status: 503 });
 }
+
+// ══ MESSAGE HANDLER — allows page to trigger SW update ══
+self.addEventListener('message', event => {
+  if(event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // ══ PUSH NOTIFICATIONS ══
 // Receives push from Supabase Edge Function when a new solicitud arrives.
