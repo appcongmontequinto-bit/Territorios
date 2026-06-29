@@ -937,11 +937,14 @@ body.light{
     <div id="leafletMapMain"></div>
     <!-- Draw toolbar -->
     <div id="mapDrawToolbar" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:8px 12px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.3)">
-      <span style="font-size:13px;color:var(--t2);font-weight:600">Dibuja el polígono del territorio en el mapa</span>
+      <span id="mapDrawMsg" style="font-size:13px;color:var(--t2);font-weight:600">Haz clic para añadir vértices · doble clic para cerrar</span>
+      <button id="btnRedibujar" class="btn btn-ghost btn-sm" onclick="redibujarPoligono()" style="display:none">↩ Redibujar</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelarDibujo()" style="color:var(--red)">✕ Cancelar</button>
     </div>
-    <button id="btnNuevoTerMapa" onclick="activarDibujoTerritorio()" style="position:absolute;top:10px;right:60px;z-index:1000;padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.3)">✏️ Nuevo territorio</button>
-    <button onclick="descargarGeoJSON()" style="position:absolute;top:10px;right:220px;z-index:1000;padding:8px 14px;background:var(--s1);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.2)">⬇ GeoJSON</button>
+    <div style="position:absolute;top:10px;left:10px;z-index:1000;display:flex;gap:6px">
+      <button id="btnNuevoTerMapa" onclick="activarDibujoTerritorio()" style="padding:8px 14px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.3)">✏️ Nuevo territorio</button>
+      <button onclick="descargarGeoJSON()" style="padding:8px 14px;background:var(--s1);color:var(--text);border:1px solid var(--border2);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.2)">⬇ GeoJSON</button>
+    </div>
     <div class="map-legend">
       <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Disponible</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Asignado</div>
@@ -2363,7 +2366,7 @@ function activarDibujoTerritorio(){
   if(_drawControl) return; // already active
 
   // Hide the button, show toolbar
-  document.getElementById('btnNuevoTerMapa').style.display='none';
+  document.getElementById('btnNuevoTerMapa').closest('div').style.display='none';
   document.getElementById('mapDrawToolbar').style.display='flex';
 
   // Initialize draw layer group
@@ -2405,8 +2408,10 @@ function activarDibujoTerritorio(){
     _drawnLayer = e.layer;
     _drawGroup.addLayer(_drawnLayer);
     _drawnCoords = e.layer.getLatLngs()[0].map(ll => [ll.lng, ll.lat]);
-    // Close the polygon (GeoJSON needs first = last point)
-    _drawnCoords.push(_drawnCoords[0]);
+    _drawnCoords.push(_drawnCoords[0]); // close polygon for GeoJSON
+    // Show redraw button and update message
+    document.getElementById('mapDrawMsg').textContent = `✅ Polígono dibujado (${_drawnCoords.length-1} vértices)`;
+    document.getElementById('btnRedibujar').style.display = '';
     mostrarFormularioNuevoTer();
   });
 }
@@ -2416,8 +2421,25 @@ function cancelarDibujo(){
   if(_drawGroup){ leafletMap.removeLayer(_drawGroup); _drawGroup=null; }
   leafletMap.off(L.Draw.Event.CREATED);
   _drawnLayer=null; _drawnCoords=null;
-  document.getElementById('btnNuevoTerMapa').style.display='flex';
+  document.getElementById('btnNuevoTerMapa').closest('div').style.display='flex';
   document.getElementById('mapDrawToolbar').style.display='none';
+  document.getElementById('btnRedibujar').style.display='none';
+  document.getElementById('mapDrawMsg').textContent='Haz clic para añadir vértices · doble clic para cerrar';
+}
+
+function redibujarPoligono(){
+  // Remove drawn polygon and re-enable drawing tool
+  if(_drawGroup) _drawGroup.clearLayers();
+  _drawnLayer=null; _drawnCoords=null;
+  document.getElementById('btnRedibujar').style.display='none';
+  document.getElementById('mapDrawMsg').textContent='Haz clic para añadir vértices · doble clic para cerrar';
+  // Close any open modal
+  document.getElementById('nuevoTerMapaModal')?.remove();
+  // Re-enable polygon drawing
+  if(_drawControl){
+    const h=_drawControl._toolbars.draw._modes.polygon.handler;
+    if(h) h.enable();
+  }
 }
 
 function mostrarFormularioNuevoTer(){
