@@ -4431,7 +4431,9 @@ function renderCampanias(){
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${running?`<button class="btn btn-primary btn-sm" onclick="abrirAsignarCampania(${c.id})">＋ Añadir</button>`:''}
+        <button class="btn btn-ghost btn-sm" onclick="editarCampania(${c.id})">✏️ Editar</button>
         <button class="btn btn-ghost btn-sm" onclick="toggleCampania(${c.id},${!c.activa})">${c.activa?'Desactivar':'Activar'}</button>
+        <button class="btn btn-danger btn-sm" onclick="borrarCampania(${c.id})">🗑</button>
       </div>
     </div>
 
@@ -4517,6 +4519,70 @@ async function guardarCampania(){
     setSyncStatus('ok');
     renderCampanias();
     toast(`🚩 Campaña creada · ${added} territorios añadidos automáticamente`,'g',5000);
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+function editarCampania(id){
+  const c=S.campanias.find(x=>x.id===id);
+  if(!c) return;
+  const html=`<div style="padding:20px">
+    <div class="fg"><label class="fl">Nombre de la campaña</label>
+      <input class="fi" id="campEditNombre" placeholder="Ej: Campaña de verano 2026" value="${c.nombre}" style="width:100%;box-sizing:border-box">
+    </div>
+    <div class="frow" style="margin-top:12px">
+      <div class="fg"><label class="fl">Fecha inicio</label><input class="fi" id="campEditInicio" type="date" value="${c.fecha_inicio}"></div>
+      <div class="fg"><label class="fl">Fecha fin</label><input class="fi" id="campEditFin" type="date" value="${c.fecha_fin}"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="document.getElementById('campEditModal')?.remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEditCampania(${id})">💾 Guardar cambios</button>
+    </div>
+  </div>`;
+  showSimpleModal('Editar campaña',html,'campEditModal');
+}
+
+async function guardarEditCampania(id){
+  const nombre=document.getElementById('campEditNombre')?.value.trim();
+  const inicio=document.getElementById('campEditInicio')?.value;
+  const fin=document.getElementById('campEditFin')?.value;
+  if(!nombre||!inicio||!fin){toast('⚠ Completa todos los campos','am');return;}
+  if(fin<inicio){toast('⚠ La fecha fin debe ser posterior al inicio','am');return;}
+  setSyncStatus('syncing');
+  try{
+    await sbPatch('campanias',{id},{nombre,fecha_inicio:inicio,fecha_fin:fin});
+    const c=S.campanias.find(x=>x.id===id);
+    if(c){c.nombre=nombre;c.fecha_inicio=inicio;c.fecha_fin=fin;}
+    document.getElementById('campEditModal')?.remove();
+    setSyncStatus('ok');
+    renderCampanias();
+    toast('✅ Campaña actualizada','g');
+  }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
+}
+
+async function borrarCampania(id){
+  const c=S.campanias.find(x=>x.id===id);
+  if(!c) return;
+  const cts=S.campaniaTerritorios.filter(x=>x.campania_id===id);
+  if(!confirm(`¿Eliminar la campaña "${c.nombre}"?
+
+Esto borrará también los ${cts.length} registros de porcentaje asociados. Esta acción no se puede deshacer.`)) return;
+  setSyncStatus('syncing');
+  try{
+    // Delete campania_territorios first (cascade should handle it but just in case)
+    if(cts.length){
+      await fetch(`${SB_URL}/rest/v1/campania_territorios?campania_id=eq.${id}`,{
+        method:'DELETE',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+      });
+    }
+    await sbDelete('campanias',{id});
+    S.campanias=S.campanias.filter(x=>x.id!==id);
+    S.campaniaTerritorios=S.campaniaTerritorios.filter(x=>x.campania_id!==id);
+    // Select previous campaign if available
+    _campSelIdx=Math.max(0,_campSelIdx-1);
+    setSyncStatus('ok');
+    renderCampanias();
+    toast('🗑 Campaña eliminada','a');
   }catch(e){setSyncStatus('error');toast('Error: '+e.message,'r');}
 }
 
