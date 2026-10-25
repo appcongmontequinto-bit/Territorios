@@ -69,18 +69,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 /* ── LIGHT MODE ── */
 body.light{
-  --topbar-bg:rgba(255,253,250,.9);
-  --bg:#f7f3ee;--s1:#fff;--s2:#f2ede6;--s3:#e9e2d8;--s4:#d4ccbf;
-  --border:rgba(29,27,58,.09);--border2:rgba(29,27,58,.16);
-  --text:#1d1b3a;--t2:rgba(29,27,58,.68);--t3:rgba(29,27,58,.45);
-  --blue:#4f46e5;--blue-dim:rgba(79,70,229,.11);
-  --green:#16a34a;--green-dim:rgba(22,163,74,.12);
-  --red:#e11d48;--red-dim:rgba(225,29,72,.11);
-  --amber:#d97706;--amber-dim:rgba(217,119,6,.13);
-  --purple:#7c3aed;--purple-dim:rgba(124,58,237,.12);
-  --teal:#0891b2;--teal-dim:rgba(8,145,178,.12);
-  --sh:0 10px 30px rgba(29,27,58,.14);
-  --card-sh:0 1px 2px rgba(29,27,58,.04),0 8px 22px rgba(29,27,58,.06);
+  --topbar-bg:rgba(255,255,255,.88);
+  --bg:#f3f4fa;--s1:#fff;--s2:#eceef7;--s3:#e0e3f1;--s4:#c9cee3;
+  --border:rgba(24,24,60,.08);--border2:rgba(24,24,60,.15);
+  --text:#14142b;--t2:rgba(20,20,43,.66);--t3:rgba(20,20,43,.42);
+  --blue:#4f46e5;--blue-dim:rgba(79,70,229,.10);
+  --green:#16a34a;--green-dim:rgba(22,163,74,.11);
+  --red:#e11d48;--red-dim:rgba(225,29,72,.10);
+  --amber:#d97706;--amber-dim:rgba(217,119,6,.12);
+  --purple:#7c3aed;--purple-dim:rgba(124,58,237,.11);
+  --teal:#0891b2;--teal-dim:rgba(8,145,178,.11);
+  --sh:0 10px 30px rgba(24,24,60,.14);
+  --card-sh:0 1px 2px rgba(24,24,60,.04),0 8px 24px rgba(24,24,60,.06);
 }
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -1070,6 +1070,86 @@ body.light{
 .edit-details>summary::-webkit-details-marker{display:none}
 .edit-details[open]>summary{border-bottom:1px solid var(--border)}
 .edit-details>div{margin:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+
+/* ── Tarjetas de grupo ── */
+#gruposGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.gcard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:16px;cursor:pointer;box-shadow:var(--card-sh);transition:transform .12s,border-color .12s}
+.gcard:hover{transform:translateY(-1px);border-color:var(--border2)}
+.gc-top{display:flex;align-items:center;gap:12px}
+.gc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:16px 0 14px}
+.gc-kpis b{display:block;font-size:22px;line-height:1.1;letter-spacing:-.4px}
+.gc-kpis span{font-size:11px;color:var(--t2);font-weight:600}
+.gc-bar{height:6px;background:var(--s3);border-radius:99px;overflow:hidden}
+.gc-bar i{display:block;height:100%;border-radius:99px}
+.gc-foot{display:flex;justify-content:space-between;font-size:11.5px;color:var(--t2);margin-top:7px}
+
+/* ══ DISEÑO v2: cabeceras, controles y componentes unificados ══ */
+.ico.sm{width:16px;height:16px}
+.btn .ico{margin-right:-1px}
+.view-head{padding:20px 22px 4px}
+.view-title{display:flex;align-items:center;gap:12px;font-size:25px;font-weight:800;letter-spacing:-.6px}
+.ph-ico{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:grid;place-items:center;box-shadow:0 8px 18px rgba(79,70,229,.28);flex:none}
+.ph-ico .ico{width:21px;height:21px}
+.view-sub{margin:4px 0 0 54px;font-size:13px}
+.view-scroll{padding:14px 22px 24px}
+/* controles de formulario */
+.fi,.fs,.ft{background:var(--s1);border:1.5px solid var(--border2);border-radius:14px;padding:11px 14px;transition:border-color .15s,box-shadow .15s}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-dim)}
+.fs{appearance:none;-webkit-appearance:none;padding-right:38px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+body:not(.light) .fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23bbb' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")}
+.fl{font-weight:700;font-size:12.5px;color:var(--t2)}
+.btn{border-radius:13px;font-weight:700}
+.btn-ghost{background:var(--s1);border:1.5px solid var(--border2);color:var(--text)}
+.btn-ghost:hover{border-color:var(--blue);color:var(--blue);background:var(--s1)}
+.btn-danger{background:var(--red-dim);color:var(--red)}
+.xbtn{border-radius:12px;background:var(--s2)}
+.tgl-btn{border-radius:11px;background:var(--s1);border:1.5px solid var(--border2)}
+.tgl-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+/* filtros de Territorios: barra limpia */
+.filter-bar{gap:8px;margin:12px 0 14px}
+.filter-bar .fi{border-radius:99px;padding:8px 36px 8px 14px;font-size:13px;font-weight:600;min-width:150px}
+.chip.pu{background:var(--s1);border:1.5px solid var(--border2);font-weight:700}
+.chip.pu.on{background:var(--purple);border-color:var(--purple);color:#fff}
+/* tablas y listas: mismas esquinas y sombras que el resto */
+.tbl-wrap{border-radius:var(--r2);box-shadow:var(--card-sh);border:1px solid var(--border)}
+.tbl-head{background:var(--s2)}
+.tbl-row:hover{background:color-mix(in srgb,var(--blue) 5%,var(--s1))}
+.pill{font-weight:700}
+/* barra superior */
+#topbar{height:58px;border-bottom:1px solid var(--border)}
+.logo{font-size:18px;font-weight:800}
+.topbar-search{background:var(--s2);border:0;border-radius:14px;height:38px}
+.topbar-search:focus-within{box-shadow:0 0 0 3px var(--blue-dim);background:var(--s1)}
+.sync-pill{background:var(--green-dim);color:var(--green);border-radius:99px;padding:5px 11px;font-weight:700}
+/* modales */
+.modal{border-radius:26px;border:0;box-shadow:0 30px 80px rgba(20,20,43,.35)}
+.mtitle{font-weight:800}
+.tabs{border-bottom:0;gap:4px;background:var(--s2);padding:3px;border-radius:14px;display:flex}
+.tab{flex:1;text-align:center;border:0;margin:0;border-radius:11px;padding:8px 10px}
+.tab.on{background:var(--s1);color:var(--blue);box-shadow:0 1px 4px rgba(20,20,43,.14)}
+@media(max-width:700px){
+  .view-head{padding:14px 14px 2px}
+  .view-title{font-size:21px;gap:10px}
+  .ph-ico{width:36px;height:36px;border-radius:12px}.ph-ico .ico{width:18px;height:18px}
+  .view-sub{margin-left:0;font-size:12px}
+  .view-scroll{padding:10px 14px 20px}
+  #topbar{height:56px}
+  .filter-bar .fi{min-width:130px}
+}
+
+/* ── Fila de territorio (móvil) ── */
+.trow{display:grid!important;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:12px 14px!important;min-height:0}
+.trow .pr-num{min-width:0;padding:8px 0;font-size:14px}
+.tr-main{display:flex;flex-direction:column;gap:3px;min-width:0;overflow:visible!important;padding:0!important}
+.tr-main b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-main small{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tr-flag{font-style:normal;font-size:10.5px;font-weight:800;color:var(--amber)}.tr-flag.bad{color:var(--red)}
+.tr-end{padding:0!important;display:flex!important;align-items:center}
+.tr-days{display:flex;flex-direction:column;align-items:center;min-width:58px;border-radius:14px;padding:7px 8px;background:var(--s2);line-height:1.1}
+.tr-days b{font-size:19px;font-weight:800}
+.tr-days i{font-style:normal;font-size:9.5px;font-weight:700;color:var(--t2);text-align:center}
+.tr-days.warn{background:var(--amber-dim);color:var(--amber)}.tr-days.warn i{color:var(--amber)}
+.tr-days.bad{background:var(--red-dim);color:var(--red)}.tr-days.bad i{color:var(--red)}
 </style>
 </head>
 <body>
@@ -1093,6 +1173,14 @@ body.light{
 <symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
 <symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
 <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+<symbol id="i-archive" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.9" y1="4.9" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.1" y2="19.1"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.9" y1="19.1" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.1" y2="4.9"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
 </defs></svg>
 
@@ -1105,15 +1193,15 @@ body.light{
   <button id="menuBtn" onclick="toggleDrawer()" style="width:36px;height:36px;background:var(--s2);border:1px solid var(--border);border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;color:var(--text)"><svg class="ico"><use href="#i-menu"/></svg></button>
   <div class="logo"><div class="logo-mark"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
   <div class="topbar-search">
-    <span style="color:var(--t3);font-size:14px">⌕</span>
-    <input id="gSearch" type="text" placeholder="Buscar territorio, publicador…" oninput="onSearch()">
+    <svg class="ico" style="width:16px;height:16px;color:var(--t3)"><use href="#i-search"/></svg>
+    <input id="gSearch" type="text" placeholder="Buscar…" oninput="onSearch()">
   </div>
   <div class="topbar-right">
     <div class="sync-pill"><div class="sync-dot" id="syncDot"></div><span id="syncTxt">Conectado</span></div>
-    <button class="btn btn-ghost btn-sm" onclick="openTerModal()">＋ Territorio</button>
-    <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Publicador</button>
+    <button class="btn btn-ghost btn-sm" onclick="openTerModal()"><svg class="ico sm"><use href="#i-plus"/></svg> Territorio</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('mPub')"><svg class="ico sm"><use href="#i-plus"/></svg> Publicador</button>
     <button id="installBtn" onclick="installPWA()" style="display:none;padding:6px 12px;background:var(--green-dim);color:var(--green);border:1px solid rgba(48,209,88,.25);border-radius:9px;font-family:var(--font);font-size:12px;font-weight:600;cursor:pointer;align-items:center;gap:5px;flex-shrink:0">⬇ Instalar</button>
-    <button onclick="toggleTheme()" id="themeBtn" title="Cambiar tema" style="width:32px;height:32px;background:var(--s2);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0">🌙</button>
+    <button onclick="toggleTheme()" id="themeBtn" title="Cambiar tema" style="width:34px;height:34px;background:var(--s2);border:1px solid var(--border);border-radius:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text)"></button>
     <button id="addTerBtn" onclick="openTerModal()" style="width:36px;height:36px;background:var(--blue);border:none;border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;color:#fff;flex-shrink:0">＋</button>
   </div>
 </div>
@@ -1231,10 +1319,10 @@ body.light{
 <div id="view-campanias" class="view" style="flex-direction:column">
   <div class="view-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px">
     <div>
-      <div class="view-title">Campañas</div>
+      <div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-flag"/></svg></span><span>Campañas</span></div>
       <div class="view-sub">Territorios en modo campaña con seguimiento de porcentaje</div>
     </div>
-    <button class="btn btn-primary btn-sm" onclick="openNuevaCampania()">＋ Nueva campaña</button>
+    <button class="btn btn-primary btn-sm" onclick="openNuevaCampania()"><svg class="ico sm"><use href="#i-plus"/></svg> Nueva campaña</button>
   </div>
   <div class="view-scroll" id="campaniasContent"></div>
 </div>
@@ -1248,7 +1336,7 @@ body.light{
 <!-- VIEW: LOTES -->
 <div id="view-lotes" class="view" style="flex-direction:column">
   <div class="view-head">
-    <div class="view-title">Asignar por lotes</div>
+    <div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-layers"/></svg></span><span>Asignar por lotes</span></div>
     <div class="view-sub">Elige a quién y marca los territorios que le entregas</div>
   </div>
   <div class="lotes-body">
@@ -1291,9 +1379,9 @@ body.light{
 <div id="view-territorios" class="view">
 <div class="view-head" style="padding-bottom:0">
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
-      <div><div class="view-title">Territorios</div><div class="view-sub" id="tbl-count"></div></div>
+      <div><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-grid"/></svg></span><span>Territorios</span></div><div class="view-sub" id="tbl-count"></div></div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-ghost btn-sm" onclick="exportarVista()" title="Exportar vista actual a Excel">⬇ Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarVista()" title="Exportar vista actual a Excel"><svg class="ico sm"><use href="#i-download"/></svg> Excel</button>
         <div class="tgl-btn on" id="tgl-list" onclick="setViewMode('list')" title="Lista">☰</div>
         <div class="tgl-btn" id="tgl-card" onclick="setViewMode('card')" title="Tarjetas">⊞</div>
       </div>
@@ -1394,9 +1482,9 @@ body.light{
 <div id="view-prioridad" class="view">
   <div class="view-head">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div><div class="view-title">Sin trabajar</div><div class="view-sub">Disponibles ordenados por última fecha trabajada real</div></div>
+      <div><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-hour"/></svg></span><span>Sin trabajar</span></div><div class="view-sub">Disponibles ordenados por última fecha trabajada real</div></div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="exportarPrioridad()">⬇ Excel</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarPrioridad()"><svg class="ico sm"><use href="#i-download"/></svg> Excel</button>
         <select class="fi" id="prioSort" style="width:auto;padding:6px 12px;font-size:13px" onchange="renderPrioridad()">
           <option value="antiguo">Más antiguos primero</option>
           <option value="reciente">Más recientes primero</option>
@@ -1412,7 +1500,7 @@ body.light{
 <div id="view-estadisticas" class="view">
   <div class="view-head">
     <div class="vh-row">
-      <div><div class="view-title">Estadísticas</div><div class="view-sub">Actividad y cobertura</div></div>
+      <div><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-chart"/></svg></span><span>Estadísticas</span></div><div class="view-sub">Actividad y cobertura</div></div>
       <div class="segc" id="periodSeg">
         <button class="on" data-period="year" onclick="setPeriod(this)">Este año</button>
         <button data-period="6m" onclick="setPeriod(this)">6 meses</button>
@@ -1446,11 +1534,11 @@ body.light{
 <div id="view-publicadores" class="view">
   <div class="view-head">
     <div class="vh-row">
-      <div><div class="view-title">Publicadores</div><div class="view-sub" id="pubSub">Todos los publicadores registrados</div></div>
+      <div><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-users"/></svg></span><span>Publicadores</span></div><div class="view-sub" id="pubSub">Todos los publicadores registrados</div></div>
       <div class="vh-actions">
-        <button class="btn btn-ghost btn-sm" onclick="exportarPublicadores()">⬇ Excel</button>
-        <button class="btn btn-ghost btn-sm" id="toggleArchivadosBtn" onclick="_showArchivados=!_showArchivados;_pubGrupo='todos';renderPublicadores()">📦 Archivados</button>
-        <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Añadir</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportarPublicadores()"><svg class="ico sm"><use href="#i-download"/></svg> Excel</button>
+        <button class="btn btn-ghost btn-sm" id="toggleArchivadosBtn" onclick="_showArchivados=!_showArchivados;_pubGrupo='todos';renderPublicadores()"><svg class="ico sm"><use href="#i-archive"/></svg> Archivados</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('mPub')"><svg class="ico sm"><use href="#i-plus"/></svg> Añadir</button>
       </div>
     </div>
     <div class="pgbar" id="pubGroupBar"></div>
@@ -1464,8 +1552,8 @@ body.light{
 <div id="view-grupos" class="view">
   <div class="view-head">
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
-      <div><div class="view-title">Grupos</div><div class="view-sub">Organización por grupos y siervos</div></div>
-      <button class="btn btn-primary btn-sm" onclick="abrirNuevoGrupo()">＋ Nuevo grupo</button>
+      <div><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-group"/></svg></span><span>Grupos</span></div><div class="view-sub">Organización por grupos y siervos</div></div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNuevoGrupo()"><svg class="ico sm"><use href="#i-plus"/></svg> Nuevo grupo</button>
     </div>
   </div>
   <div class="view-scroll"><div id="gruposGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div></div>
@@ -1475,8 +1563,8 @@ body.light{
 <div id="view-historial" class="view">
   <div class="view-head">
     <div class="vh-row">
-      <div><div class="view-title">Historial</div><div class="view-sub" id="histSub">Toca un registro para ver y editar sus asignaciones</div></div>
-      <div class="vh-actions"><button class="btn btn-ghost btn-sm" onclick="exportarHistorial()">⬇ Excel</button></div>
+      <div><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-clock"/></svg></span><span>Historial</span></div><div class="view-sub" id="histSub">Toca un registro para ver y editar sus asignaciones</div></div>
+      <div class="vh-actions"><button class="btn btn-ghost btn-sm" onclick="exportarHistorial()"><svg class="ico sm"><use href="#i-download"/></svg> Excel</button></div>
     </div>
     <div class="vh-row" style="margin-top:12px;align-items:center">
       <div class="segc" id="histModeSeg">
@@ -1506,7 +1594,7 @@ body.light{
 <!-- VIEW: ÚLTIMOS CAMBIOS -->
 <div id="view-cambios" class="view" style="flex-direction:column">
   <div class="view-head">
-    <div class="view-title">Últimos cambios</div>
+    <div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-refresh"/></svg></span><span>Últimos cambios</span></div>
     <div class="view-sub">Registro de actividad reciente</div>
   </div>
   <div class="view-scroll" id="cambiosList"></div>
@@ -1516,7 +1604,7 @@ body.light{
 <div id="view-solicitudes" class="view" style="flex-direction:column">
   <div class="view-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:10px">
     <div>
-      <div class="view-title">Solicitudes</div>
+      <div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-inbox"/></svg></span><span>Solicitudes</span></div>
       <div class="view-sub">Peticiones de territorio de los publicadores</div>
     </div>
   </div>
@@ -1526,14 +1614,14 @@ body.light{
 <!-- VIEW: BACKUP -->
 <div id="view-backup" class="view" style="flex-direction:column">
   <div class="view-head">
-    <div class="view-title">☁️ Copias de seguridad</div>
+    <div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-cloud"/></svg></span><span>☁️ Copias de seguridad</span></div>
     <div class="view-sub">Backup automático semanal a Google Drive</div>
   </div>
   <div class="view-scroll" id="backupContent" style="padding:16px"></div>
 </div>
 
 <div id="view-s13" class="view">
-  <div class="view-head"><div class="view-title">Exportar S-13</div><div class="view-sub">Registro oficial de asignación de territorio</div></div>
+  <div class="view-head"><div class="view-title"><span class="ph-ico"><svg class="ico"><use href="#i-doc"/></svg></span><span>Exportar S-13</span></div><div class="view-sub">Registro oficial de asignación de territorio</div></div>
   <div class="view-scroll">
     <div class="tbl-wrap" style="padding:24px;max-width:580px">
       <div style="font-size:15px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px">Configurar exportación</div>
@@ -2693,16 +2781,20 @@ function renderListView(list){
         subLine=`Último trabajo: ${fmtDate(t.ultimo_trabajado)}`;
       }
 
-      return`<div class="tbl-row${rowCls(st)}" style="grid-template-columns:44px 1fr auto;gap:0;min-height:52px" onclick="openTerDetail(${t.id})">
-        <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);padding:14px 4px 0;font-weight:600">${t.num}</span>
-        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow:hidden;min-width:0">
-          <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
-          ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
+      const dN=(t.estado==='asignado'||t.estado==='vencido')&&t.fecha_vence?daysUntil(t.fecha_vence):null;
+      const endB=dN!==null
+        ?`<span class="tr-days ${dN<0?'bad':dN<=WARN_DAYS?'warn':''}"><b>${Math.abs(dN)}</b><i>${dN<0?'días de retraso':'días'}</i></span>`
+        :pillHtml(st,isGrupo(t));
+      return`<div class="tbl-row trow${rowCls(st)}" onclick="openTerDetail(${t.id})">
+        <span class="pr-num">${t.num}</span>
+        <span class="tr-main">
+          <b style="color:${col}">${mainLine}</b>
+          ${subLine?`<small>${subLine}</small>`:''}
           ${barOf(t)}
-          ${t.no_visitar?`<span style="font-size:10px;color:var(--red);font-weight:700">⚠️ No visitar</span>`:''}
-          ${S.campaniaTerritorios.some(ct=>ct.territorio_id===t.id)?`<span style="font-size:10px;color:#d97706;font-weight:700">🚩 Campaña</span>`:''}
+          ${t.no_visitar?`<em class="tr-flag bad">⚠ No visitar</em>`:''}
+          ${S.campaniaTerritorios.some(ct=>ct.territorio_id===t.id)?`<em class="tr-flag">🚩 Campaña</em>`:''}
         </span>
-        <span style="padding:12px 0 12px 8px;flex-shrink:0">${pillHtml(st,isGrupo(t))}</span>
+        <span class="tr-end">${endB}</span>
       </div>`;
     }
 
@@ -3550,7 +3642,7 @@ function setPubGrupo(v){_pubGrupo=v;renderPublicadores();}
 function renderPublicadores(){
   const el=document.getElementById('pubTable');
   const btn=document.getElementById('toggleArchivadosBtn');
-  if(btn) btn.textContent=_showArchivados?'👤 Activos':'📦 Archivados';
+  if(btn) btn.innerHTML=_showArchivados?'<svg class="ico sm"><use href="#i-users"/></svg> Activos':'<svg class="ico sm"><use href="#i-archive"/></svg> Archivados';
   if(!S.publicadores.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin publicadores</div>`;return;}
   const q=searchQ;
   const base=[...S.publicadores].filter(p=>_showArchivados ? p.activo===false : p.activo!==false)
@@ -3710,33 +3802,47 @@ async function guardarPubDesdeDetalle(id){
 
 
 // ══ GRUPOS ══
+// Un grupo se mide por su zona (territorios con ese grupo) y por lo que tienen en mano
+// y han completado sus publicadores. Un grupo nuevo, sin zona asignada aún, tiene datos igualmente.
+function grupoScope(gId){
+  const gN=Number(gId);
+  const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gN&&p.activo!==false);
+  const pubIds=new Set(pubs.map(p=>p.id));
+  const zona=S.territorios.filter(t=>Number(t.grupo_id)===gN);
+  const zonaIds=new Set(zona.map(t=>t.id));
+  const enMano=S.territorios.filter(t=>t.pub_id&&pubIds.has(t.pub_id)&&(t.estado==='asignado'||t.estado==='vencido'));
+  const activos=[...new Map([...zona.filter(t=>t.estado==='asignado'||t.estado==='vencido'),...enMano].map(t=>[t.id,t])).values()];
+  const hist=S.historial.filter(h=>h.fecha_dev&&(zonaIds.has(h.territorio_id)||pubIds.has(h.pub_id)));
+  const anio=getAnioServicio();
+  return{pubs,pubIds,zona,activos,hist,
+    histAnio:hist.filter(h=>h.fecha_dev>=anio.start&&h.fecha_dev<=anio.end),
+    disp:zona.filter(t=>t.estado==='disponible').length,
+    venc:activos.filter(t=>t.estado==='vencido').length,
+    prox:activos.filter(t=>statusOf(t)==='proximo').length};
+}
 function renderGrupos(){
   const el=document.getElementById('gruposGrid');
-  el.innerHTML=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{
-    const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===Number(g.id)&&p.activo!==false);
-    const ters=S.territorios.filter(t=>Number(t.grupo_id)===Number(g.id));
-    const venc=ters.filter(t=>t.estado==='vencido').length;
-    const asig=ters.filter(t=>t.estado==='asignado').length;
-    const disp=ters.filter(t=>t.estado==='disponible').length;
+  el.innerHTML=[...S.grupos].sort((a,b)=>a.num-b.num).map(g=>{
+    const sc=grupoScope(g.id);
     const siervo=S.publicadores.find(p=>p.id===g.siervo_id);
-    // Publishers WITH active territory
-    const pubsConTer=pubs.filter(p=>S.territorios.some(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')));
-    return`<div class="grp-card" style="cursor:pointer;transition:border-color .15s" onclick="editarGrupo(${g.id})" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-        <div>
-          <div style="font-size:19px;font-weight:700;letter-spacing:-.4px">Grupo ${g.num}</div>
-          <div style="font-size:13px;color:var(--t2);margin-top:2px">${g.nombre||''} ${siervo?'· <b>'+siervo.nombre+'</b>':''}</div>
-        </div>
-        <span class="nav-badge a" style="font-size:12px;padding:3px 9px">${pubs.length} publicadores</span>
+    const pubsConTer=sc.pubs.filter(p=>sc.activos.some(t=>t.pub_id===p.id));
+    const col=grpColor(g);
+    const pctAct=sc.pubs.length?Math.round(pubsConTer.length/sc.pubs.length*100):0;
+    return`<div class="gcard" onclick="editarGrupo(${g.id})">
+      <div class="gc-top">
+        <div class="pav" style="background:color-mix(in srgb,${col} 16%,transparent);color:${col};width:46px;height:46px;font-size:17px">G${g.num}</div>
+        <div class="pmain"><div class="pname" style="font-size:16px">${g.nombre||'Grupo '+g.num}</div>
+          <div class="psub">${siervo?'Siervo: <b style="color:var(--text)">'+siervo.nombre+'</b>':'Sin siervo asignado'}</div></div>
+        <span class="pstate ok" style="background:var(--s2);color:var(--t2)">${sc.pubs.length} publ.</span>
       </div>
-      <div class="grp-stats">
-        <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
-        <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
-        <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
-        <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
+      <div class="gc-kpis">
+        <div><b>${sc.activos.length}</b><span>en mano</span></div>
+        <div><b style="color:${sc.venc?'var(--red)':'inherit'}">${sc.venc}</b><span>vencidos</span></div>
+        <div><b>${sc.histAnio.length}</b><span>completados año</span></div>
+        <div><b>${sc.zona.length}</b><span>de su zona</span></div>
       </div>
-      ${ters.length?'':'<div style="font-size:12px;color:var(--amber);font-weight:600;margin-top:10px">Aún no tiene territorios asignados al grupo</div>'}
-      <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} publicadores con territorio activo · Toca para ver detalles</div>
+      <div class="gc-bar"><i style="width:${pctAct}%;background:${col}"></i></div>
+      <div class="gc-foot"><span>${pubsConTer.length} de ${sc.pubs.length} publicadores con territorio</span><span>${pctAct}%</span></div>
     </div>`;
   }).join('');
 }
@@ -4290,16 +4396,11 @@ function renderGrupoTers(gId){
 function renderGrupoStats(gId){
   const gIdN=Number(gId);
   const g=S.grupos.find(x=>Number(x.id)===gIdN);
-  const ters=S.territorios.filter(t=>Number(t.grupo_id)===gIdN);
-  const pubs=S.publicadores.filter(p=>Number(p.grupo_id)===gIdN&&p.activo!==false);
-  const terIds=new Set(ters.map(t=>t.id));
-  const hist=S.historial.filter(h=>terIds.has(h.territorio_id));
-
-  const disp=ters.filter(t=>t.estado==='disponible').length;
-  const asig=ters.filter(t=>t.estado==='asignado').length;
-  const venc=ters.filter(t=>t.estado==='vencido').length;
-  const prox=ters.filter(t=>statusOf(t)==='proximo').length;
-  const comp=hist.filter(h=>h.fecha_dev).length;
+  const sc=grupoScope(gIdN);
+  const ters=sc.zona, pubs=sc.pubs;
+  const hist=sc.hist;
+  const disp=sc.disp, asig=sc.activos.length, venc=sc.venc, prox=sc.prox;
+  const comp=sc.histAnio.length;
 
   // Per-publisher analysis — show ALL active territories, not just the first
   const pubAnalysis = pubs.map(p=>{
@@ -4327,12 +4428,12 @@ function renderGrupoStats(gId){
   document.getElementById('grupoStats').innerHTML=`
     <!-- KPI Grid -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px">
-      <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
-      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Disponibles</div></div>
-      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
+      <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">De su zona</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${disp}</div><div class="grp-stat-lbl">Zona disponible</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">En mano</div></div>
       <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
       <div class="grp-stat"><div class="grp-stat-val" style="color:var(--amber)">${prox}</div><div class="grp-stat-lbl">Próx. vencer</div></div>
-      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${comp}</div><div class="grp-stat-lbl">Completados</div></div>
+      <div class="grp-stat"><div class="grp-stat-val" style="color:var(--green)">${comp}</div><div class="grp-stat-lbl">Completados año</div></div>
     </div>
 
     <!-- Publishers WITH territory — show every territory -->
@@ -4596,25 +4697,14 @@ function buildS13Sheet(XLSX, territories, year){
 
   // ── DATA ROWS ──
   for(const t of territories){
-    const allHist = S.historial
-      .filter(h=>h.territorio_id===t.id)
-      .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
-
-    // S-13: only last closed assignment + current active one (if any)
-    const closed = allHist.filter(h=>h.fecha_dev);
-    const open   = allHist.filter(h=>!h.fecha_dev);
-    const lastClosed = closed.slice(-1); // ONLY the most recent closure
-    const hist = [...lastClosed, ...open.slice(0,1)]; // + current if active
-
-    // Pad to 4
-    while(hist.length<4) hist.push({pub_id:null, fecha_asig:'', fecha_dev:''});
+    const hist = _getS13Hist(t);
 
     const rA = R, rB = R+1;
 
     // Num — spans 2 rows
     set(rA, 0, t.num, SNUM); merge(rA,0, rB,0);
     // Ultimo — spans 2 rows
-    set(rA, 1, t.ultimo_trabajado ? fmtDate(t.ultimo_trabajado) : '', SULT); merge(rA,1, rB,1);
+    set(rA, 1, s13Last(t) ? fmtDate(s13Last(t)) : '', SULT); merge(rA,1, rB,1);
     // Empty bottom of merged cells
     set(rB, 0, '', SNUM);
     set(rB, 1, '', SULT);
@@ -4685,12 +4775,24 @@ function buildS13Sheet(XLSX, territories, year){
 }
 
 // Build the S-13 preview HTML table (shared by inline + modal)
+// S-13 — fuente de verdad:
+//  · "Asignado ahora" sale SIEMPRE del propio territorio (estado, publicador y fecha de entrega).
+//    Las filas abiertas del historial son restos antiguos (hay territorios con varias abiertas,
+//    disponibles con abiertas y asignados sin ninguna), por eso no se usan.
+//  · Lo último completado sale de las devoluciones registradas (fecha_dev más reciente).
+function s13Last(t){
+  const closed=S.historial.filter(h=>h.territorio_id===t.id&&h.fecha_dev);
+  const fromHist=closed.reduce((m,h)=>h.fecha_dev>m?h.fecha_dev:m,'');
+  const own=t.estado==='disponible'?(t.ultimo_trabajado||''):'';
+  return fromHist>own?fromHist:own;
+}
 function _getS13Hist(t){
-  const allHist=S.historial.filter(h=>h.territorio_id===t.id)
-    .sort((a,b)=>(a.fecha_asig||'').localeCompare(b.fecha_asig||''));
-  const closed=allHist.filter(h=>h.fecha_dev);
-  const open=allHist.filter(h=>!h.fecha_dev);
-  const hist=[...closed.slice(-1),...open.slice(0,1)];
+  const closed=S.historial.filter(h=>h.territorio_id===t.id&&h.fecha_dev)
+    .sort((a,b)=>a.fecha_dev.localeCompare(b.fecha_dev)||(a.id-b.id));
+  const hist=[...closed.slice(-1)];
+  if((t.estado==='asignado'||t.estado==='vencido')&&t.pub_id){
+    hist.push({pub_id:t.pub_id,fecha_asig:t.fecha_asig||'',fecha_dev:''});
+  }
   while(hist.length<4) hist.push({pub_id:null,fecha_asig:'',fecha_dev:''});
   return hist;
 }
@@ -4705,7 +4807,7 @@ function buildS13TableHTML(ters,year){
     const hist=_getS13Hist(t);
     rows+='<tr>'
       +'<td rowspan="2" style="'+td+';font-weight:700;font-size:13px">'+t.num+'</td>'
-      +'<td rowspan="2" style="'+td+';color:var(--t2);font-size:11px">'+fmtDate(t.ultimo_trabajado)+'</td>'
+      +'<td rowspan="2" style="'+td+';color:var(--t2);font-size:11px">'+fmtDate(s13Last(t))+'</td>'
       +hist.map(h=>'<td colspan="2" style="'+td+';font-size:11px">'+(h.pub_id?pubName(h.pub_id):'')+'</td>').join('')
       +'</tr><tr>'
       +hist.map(h=>'<td style="'+td+';color:var(--t2);font-size:10px">'+(h.fecha_asig?fmtDate(h.fecha_asig):'')+'</td><td style="'+td+';color:var(--t2);font-size:10px">'+(h.fecha_dev?fmtDate(h.fecha_dev):'')+'</td>').join('')
@@ -4758,7 +4860,7 @@ function buildS13CardsHTML(ters,year){
       +'<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--s3)">'
       +'<span style="font-family:var(--font-mono);font-size:15px;font-weight:700;min-width:36px;color:'+stCol+'">'+t.num+'</span>'
       +'<span style="font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.nombre+'</span>'
-      +'<span style="font-size:11px;color:var(--t3)">Últ: '+(t.ultimo_trabajado?fmtDate(t.ultimo_trabajado):'—')+'</span>'
+      +'<span style="font-size:11px;color:var(--t3)">Últ: '+(s13Last(t)?fmtDate(s13Last(t)):'—')+'</span>'
       +'</div>'
       +(active.length
         ?'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:4px 10px 2px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em"><span>Publicador</span><span>Entrega</span><span>Devolución</span></div>'+rows
@@ -6282,17 +6384,23 @@ function cvDescargarJSON(){
   a.download='viviendas_'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
 // ══ THEME ══
+function setThemeIcon(){
+  const btn=document.getElementById('themeBtn'); if(!btn) return;
+  const light=document.body.classList.contains('light');
+  btn.innerHTML=`<svg class="ico"><use href="#i-${light?'sun':'moon'}"/></svg>`;
+}
 function toggleTheme(){
   const isLight=document.body.classList.toggle('light');
   localStorage.setItem('ter_theme2',isLight?'light':'dark');
-  document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
+  setThemeIcon();
   // Refresh map colors for new theme
   updateMapColors();
 }
 // Con el rediseño el tema claro cálido es el predeterminado (clave nueva: no hereda la preferencia antigua).
 (function initTheme(){
   const saved=localStorage.getItem('ter_theme2');
-  if(saved!=='dark'){document.body.classList.add('light');const btn=document.getElementById('themeBtn');if(btn)btn.textContent='☀️';}
+  if(saved!=='dark'){document.body.classList.add('light');}
+  setThemeIcon();
 })();
 
 // ══ INIT ══
