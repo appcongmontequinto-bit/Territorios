@@ -1150,6 +1150,29 @@ body:not(.light) .fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 .tr-days i{font-style:normal;font-size:9.5px;font-weight:700;color:var(--t2);text-align:center}
 .tr-days.warn{background:var(--amber-dim);color:var(--amber)}.tr-days.warn i{color:var(--amber)}
 .tr-days.bad{background:var(--red-dim);color:var(--red)}.tr-days.bad i{color:var(--red)}
+
+/* ── Mapa y ubicación del territorio ── */
+.tm-map{height:300px;border-radius:18px;overflow:hidden;border:1px solid var(--border);background:var(--s2);isolation:isolate}
+.tm-map.small{height:170px;cursor:pointer;border-radius:16px 16px 0 0;border-bottom:0}
+.tm-empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--t2);font-size:13px;padding:20px}
+.tm-mini-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--s1);border:1px solid var(--border);border-top:0;border-radius:0 0 16px 16px;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--t2)}
+.tm-meta{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--t2);margin:12px 2px}
+.tm-img{margin-top:6px}
+.tm-img-h{font-size:12.5px;font-weight:800;margin-bottom:8px}.tm-img-h small{font-weight:500;color:var(--t3);margin-left:6px}
+.tm-img img{width:100%;border-radius:16px;border:1px solid var(--border);cursor:zoom-in;display:block;background:#fff}
+.tm-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.tm-actions .btn{flex:1;justify-content:center;text-decoration:none;min-width:140px}
+#mTerMapa .mtitle{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.lmap{position:absolute;right:8px;bottom:8px;display:inline-flex;align-items:center;gap:4px;border:0;background:var(--s1);color:var(--blue);font:inherit;font-size:11px;font-weight:800;border-radius:99px;padding:4px 9px;cursor:pointer;box-shadow:0 1px 4px rgba(20,20,43,.18)}
+.ltile{padding-bottom:36px}
+@media(max-width:700px){.tm-map{height:260px}.tm-actions .btn{min-width:0}}
+
+/* ── Tarjetas-filtro de Territorios: que no se corte el número ni el aro de selección ── */
+#view-territorios .view-scroll{padding-top:8px!important}
+#statStrip{padding-top:6px!important;padding-bottom:8px!important;align-items:stretch}
+.sx{line-height:1.25;overflow:visible}
+.sx .n{line-height:1.35;padding:1px 0;overflow:visible}
+.sx .l{line-height:1.3}
 </style>
 </head>
 <body>
@@ -1181,6 +1204,7 @@ body:not(.light) .fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
 <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
 <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></symbol>
+<symbol id="i-nav" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
 </defs></svg>
 
@@ -1738,6 +1762,10 @@ body:not(.light) .fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
             onclick="openLb(this.src)">
           <div style="position:absolute;bottom:6px;right:8px;font-size:10px;background:rgba(0,0,0,.55);color:#fff;padding:2px 8px;border-radius:99px;pointer-events:none">🔍 Ver completa</div>
         </div>
+        <div id="terMiniWrap" style="display:none;margin-bottom:12px">
+          <div id="terMini" class="tm-map small"></div>
+          <div class="tm-mini-bar"><span>📍 Ubicación del territorio</span><button class="btn btn-ghost btn-xs" onclick="openTerMapa(editingTId)">Ampliar</button></div>
+        </div>
         <div id="asigStatus" style="margin-bottom:14px"></div>
 
         <!-- VENCIDO: fecha de recepción primero -->
@@ -1870,6 +1898,22 @@ body:not(.light) .fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http
     <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;margin-top:auto;border-top:1px solid var(--border)">
       Desarrollada por <b style="color:var(--t2)">Manuel Fernández</b><br>
       Congregación <b style="color:var(--t2)">Montequinto</b>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: MAPA Y UBICACIÓN DEL TERRITORIO ═══ -->
+<div class="overlay" id="mTerMapa" onclick="if(event.target===this)closeTerMapa()">
+  <div class="modal">
+    <div class="mhead"><div class="mtitle" id="tmTitle"></div><button class="xbtn" onclick="closeTerMapa()">✕</button></div>
+    <div class="mbody">
+      <div id="tmMap" class="tm-map"></div>
+      <div class="tm-meta" id="tmMeta"></div>
+      <div id="tmImgWrap" class="tm-img" style="display:none">
+        <div class="tm-img-h">Tarjeta del territorio <small>toca para ampliar</small></div>
+        <img id="tmImg" alt="Tarjeta del territorio" onclick="openLb(this.src)">
+      </div>
+      <div class="tm-actions" id="tmActions"></div>
     </div>
   </div>
 </div>
@@ -2192,13 +2236,13 @@ function renderDashboard(){
   const fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
   const ic=n=>`<svg class="ico"><use href="#i-${n}"/></svg>`;
 
-  // Pulso del año: asignaciones por mes (sep → ago)
+  // Actividad del año: asignaciones por mes (sep → ago)
   const ms=['S','O','N','D','E','F','M','A','M','J','J','A'], mi=[8,9,10,11,0,1,2,3,4,5,6,7];
   const cnt=mi.map(m=>S.historial.filter(h=>h.fecha_asig&&h.fecha_asig>=anio.start&&h.fecha_asig<=anio.end&&new Date(h.fecha_asig+'T00:00:00').getMonth()===m).length);
   const mx=Math.max(1,...cnt), nowIdx=mi.indexOf(now.getMonth());
   const bars=cnt.map((v,i)=>`<div class="${i===nowIdx?'now':i>nowIdx?'fut':''}" style="height:${i>nowIdx?14:Math.max(6,v/mx*100)}%" title="${v}"></div>`).join('');
 
-  // Territorios dormidos (disponibles sin trabajar más de un año)
+  // Territorios sin trabajar más de un año (disponibles)
   const hace365=addDays(today(),-365);
   const dorm=ters.filter(t=>t.estado==='disponible'&&(!t.ultimo_trabajado||t.ultimo_trabajado<hace365))
     .sort((a,b)=>(a.ultimo_trabajado||'').localeCompare(b.ultimo_trabajado||'')).slice(0,10);
@@ -2238,9 +2282,9 @@ function renderDashboard(){
     <button onclick="openTerModal()"><i>${ic('plus')}</i>Territorio</button>
     <button onclick="openModal('mPub')"><i>${ic('user')}</i>Publicador</button>
     <button onclick="goView('s13')"><i>${ic('doc')}</i>S-13</button></div></section>`;
-  const pulse=`<section class="dx-sec dx-s-pulse"><h3>Pulso del año</h3><div class="dx-card"><div class="dx-bars">${bars}</div><div class="dx-lab">${ms.map(m=>`<span>${m}</span>`).join('')}</div>
+  const pulse=`<section class="dx-sec dx-s-pulse"><h3>Actividad del año</h3><div class="dx-card"><div class="dx-bars">${bars}</div><div class="dx-lab">${ms.map(m=>`<span>${m}</span>`).join('')}</div>
     <div class="dx-kp"><div><b>${histAnio.length}</b><span>devueltos</span></div><div><b>${pubsAct}</b><span>publicadores</span></div><div><b>${avg?avg+' d':'—'}</b><span>media por asignación</span></div></div></div></section>`;
-  const dormS=`<section class="dx-sec dx-s-dorm"><h3>Territorios dormidos <em>+1 año</em></h3><div class="dx-rail">${dormH}</div>${dorm.length?`<div style="font-size:12px;color:var(--t2);text-align:right;cursor:pointer" onclick="goView('prioridad')">Ver todos en «Sin trabajar» →</div>`:''}</section>`;
+  const dormS=`<section class="dx-sec dx-s-dorm"><h3>Sin trabajar en más de un año</h3><div class="dx-rail">${dormH}</div>${dorm.length?`<div style="font-size:12px;color:var(--t2);text-align:right;cursor:pointer" onclick="goView('prioridad')">Ver todos en «Sin trabajar» →</div>`:''}</section>`;
 
   el.innerHTML=`<div class="dx-wrap"><div class="dx-grid">${hero}${attS}</div><div class="dx-g2">${pulse}<div class="dx-col">${qa}${dormS}</div></div></div>`;
 }
@@ -2301,6 +2345,7 @@ function _renderLotesList(){
     const sel=_lotesSelected.has(t.id);
     return`<div class="ltile${sel?' on':''}" data-id="${t.id}" onclick="lotesToggle(${t.id},this)">
       <span class="lchk">${sel?'✓':''}</span>
+      <button class="lmap" title="Ver mapa y ubicación" onclick="event.stopPropagation();openTerMapa(${t.id},'lotes')"><svg class="ico sm"><use href="#i-map"/></svg> Mapa</button>
       <span class="lt-num">${t.num}</span>
       <span class="lt-name">${(t.nombre||'').replace(/ — .*/,'')||t.tipo||''}</span>
       <span class="lt-meta"><span style="color:${col};font-weight:700">${diasStr}</span>${g?` · G${g.num}`:''}</span>
@@ -3990,6 +4035,8 @@ function openTerModal(){
   document.getElementById('asigStatus').innerHTML='';
   document.getElementById('terHistorial').innerHTML='<div style="color:var(--t3);font-size:13px;padding:8px">Sin historial previo</div>';
   document.getElementById('fileList').innerHTML='';
+  if(_tmInline){_tmInline.map.remove();_tmInline=null;}
+  document.getElementById('terMiniWrap').style.display='none';
   switchTabByName('mTer','datos');
   openModal('mTer');
 }
@@ -4023,6 +4070,110 @@ async function openTerDetail(id){
   openModal('mTer');
   loadTerFiles(id);
   loadTerImgPreview(t);
+  renderTerMini(t);
+}
+
+// ══ MAPA Y UBICACIÓN DE UN TERRITORIO ══
+let _zonasCache=null;
+async function loadZonas(){
+  if(_zonasCache) return _zonasCache;
+  try{const r=await fetch(GEOJSON_URL);_zonasCache=r.ok?(await r.json()).features||[]:[];}
+  catch(e){_zonasCache=[];}
+  return _zonasCache;
+}
+async function terFeature(t){
+  if(t.geojson) return{type:'Feature',properties:{Name:t.num},geometry:t.geojson};
+  return (await loadZonas()).find(f=>String(f.properties.Name).trim()===t.num)||null;
+}
+async function terImageUrl(t){
+  try{
+    const archs=await sbGet('archivos',{select:'*',territorio_id:`eq.${t.id}`});
+    const a=archs.find(f=>f.tipo_mime?.startsWith('image/')||f.nombre?.match(/\.(jpg|jpeg|png|webp)$/i));
+    if(a) return sbUrl(a.storage_path);
+  }catch(e){}
+  const url=`${SB_URL}/storage/v1/object/public/${BUCKET}/${t.num}/Territorio-${t.num.padStart(4,'0')}.jpg`;
+  return new Promise(res=>{const im=new Image();im.onload=()=>res(url);im.onerror=()=>res(null);im.src=url;});
+}
+// Dibuja el territorio resaltado y el resto de zonas atenuadas como contexto.
+async function drawTerMap(containerId,t,{interactive,onClick}={}){
+  const feat=await terFeature(t);
+  if(!feat) return null;
+  const all=await loadZonas();
+  const map=L.map(containerId,{zoomControl:!!interactive,attributionControl:true,dragging:!!interactive,scrollWheelZoom:!!interactive,touchZoom:!!interactive,doubleClickZoom:!!interactive,boxZoom:false,keyboard:false});
+  map.attributionControl.setPrefix('');
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© OpenStreetMap · © CARTO'}).addTo(map);
+  const col={vencido:'#e11d48',proximo:'#d97706',asignado:'#4f46e5',disponible:'#16a34a',grupo:'#7c3aed'}[statusOf(t)]||'#4f46e5';
+  L.geoJson({type:'FeatureCollection',features:all.filter(f=>String(f.properties.Name).trim()!==t.num)},
+    {style:{color:'#64748b',weight:1,opacity:.45,fillOpacity:.05},interactive:false}).addTo(map);
+  const layer=L.geoJson(feat,{style:{color:col,weight:3,opacity:1,fillColor:col,fillOpacity:.28}}).addTo(map);
+  const b=layer.getBounds();
+  map.fitBounds(b,{padding:[28,28],maxZoom:18});
+  if(onClick) map.on('click',onClick);
+  return{map,bounds:b};
+}
+let _tmSheet=null,_tmInline=null;
+async function openTerMapa(id,ctx){
+  const t=S.territorios.find(x=>x.id===id); if(!t) return;
+  setTerHeader(t,'tmTitle');
+  const g=grupoOf(t), st=statusOf(t);
+  const holder=t.pub_id&&(st==='asignado'||st==='proximo'||st==='vencido')?`En manos de <b>${pubName(t.pub_id)}</b>`:'';
+  document.getElementById('tmMeta').innerHTML=
+    `<span>${t.descripcion?t.descripcion+' · ':''}${t.num_dirs?t.num_dirs+' puertas · ':''}${t.ultimo_trabajado?'Último trabajo '+fmtDate(t.ultimo_trabajado):'Nunca trabajado'}</span>${holder?`<span>${holder}</span>`:''}${t.no_visitar?`<span style="color:var(--red);font-weight:700">⚠ No visitar: ${t.no_visitar}</span>`:''}`;
+  document.getElementById('tmActions').innerHTML='';
+  document.getElementById('tmImgWrap').style.display='none';
+  const mapEl=document.getElementById('tmMap');
+  if(_tmSheet){_tmSheet.remove();_tmSheet=null;}
+  mapEl.innerHTML='<div class="tm-empty">Cargando mapa…</div>';
+  openModal('mTerMapa');
+  setTimeout(async()=>{
+    mapEl.innerHTML='';
+    const r=await drawTerMap('tmMap',t,{interactive:true});
+    const acts=[];
+    if(!r){
+      mapEl.innerHTML='<div class="tm-empty">Este territorio aún no tiene su zona dibujada en el mapa.</div>';
+    } else {
+      _tmSheet=r.map; setTimeout(()=>{r.map.invalidateSize();r.map.fitBounds(r.bounds,{padding:[28,28],maxZoom:18});},120);
+      const c=r.bounds.getCenter();
+      acts.push(`<a class="btn btn-ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}"><svg class="ico sm"><use href="#i-nav"/></svg> Cómo llegar</a>`);
+    }
+    if(ctx==='lotes'){
+      const on=_lotesSelected.has(t.id);
+      acts.unshift(`<button class="btn ${on?'btn-ghost':'btn-primary'}" onclick="tmToggleLote(${t.id})">${on?'Quitar de la selección':'Seleccionar para asignar'}</button>`);
+    } else if(ctx!=='ficha'&&t.estado==='disponible'){
+      acts.unshift(`<button class="btn btn-primary" onclick="closeTerMapa();openTerDetailTab(${t.id},'asignar')">Asignar este territorio</button>`);
+    }
+    document.getElementById('tmActions').innerHTML=acts.join('');
+    const url=await terImageUrl(t);
+    if(url){document.getElementById('tmImg').src=url;document.getElementById('tmImgWrap').style.display='';}
+  },120);
+}
+function tmToggleLote(id){
+  const tile=document.querySelector(`.ltile[data-id="${id}"]`);
+  lotesToggle(id,tile);
+  closeTerMapa();
+  toast(_lotesSelected.has(id)?'✓ Territorio seleccionado':'Quitado de la selección','g');
+}
+function closeTerMapa(){
+  closeModal('mTerMapa');
+  if(_tmSheet){_tmSheet.remove();_tmSheet=null;}
+}
+// Mini mapa dentro de la pestaña Asignación del detalle
+async function renderTerMini(t){
+  const wrap=document.getElementById('terMiniWrap');
+  if(!wrap) return;
+  if(_tmInline){_tmInline.map.remove();_tmInline=null;}
+  document.getElementById('terMini').innerHTML='';
+  wrap.style.display='none';
+  const r=await drawTerMap('terMini',t,{interactive:false,onClick:()=>openTerMapa(t.id,'ficha')});
+  if(!r) return;
+  wrap.style.display='';
+  _tmInline=r;
+  setTimeout(fitTerMini,150);
+}
+function fitTerMini(){
+  if(!_tmInline) return;
+  _tmInline.map.invalidateSize();
+  _tmInline.map.fitBounds(_tmInline.bounds,{padding:[22,22],maxZoom:18});
 }
 
 function showAsignarPanels(st){
@@ -4056,12 +4207,12 @@ async function loadTerImgPreview(t){
   img.src=directUrl;
 }
 
-function setTerHeader(t){
+function setTerHeader(t,elId='mTerTitle'){
   const st=statusOf(t);
   const lbl={disponible:'Disponible',asignado:'Asignado',vencido:'Vencido',proximo:'Por vencer',grupo:'De grupo'}[st]||'';
   const cls={disponible:'ok',asignado:'ac',vencido:'bad',proximo:'warn',grupo:'pu'}[st]||'ok';
   const g=grupoOf(t);
-  document.getElementById('mTerTitle').innerHTML=
+  document.getElementById(elId).innerHTML=
     `<span class="mt-num">${t.num}</span><span class="mt-info"><b>${(t.nombre||'').replace(/ — .*/,'')||'Territorio'}</b><small>${t.tipo||''}${g?` · Grupo ${g.num}`:''}${t.num_dirs?` · ${t.num_dirs} puertas`:''}</small></span><span class="mt-pill ${cls}">${lbl}</span>`;
 }
 function renderAsigStatus(t){
@@ -5215,6 +5366,7 @@ function switchTab(modalId,el){
   modal.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));
   el.classList.add('on');
   modal.dataset.tab=el.dataset.tp;
+  if(modalId==='mTer'&&el.dataset.tp==='asignar') setTimeout(fitTerMini,60);
   const pane=document.getElementById('tp-'+el.dataset.tp);
   if(pane) pane.classList.add('on');
 }
