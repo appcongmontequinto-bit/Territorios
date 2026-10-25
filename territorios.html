@@ -37,27 +37,28 @@
 /* ── iOS SYSTEM FONT STACK ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --topbar-bg:rgba(28,28,30,.92);
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --topbar-bg:rgba(26,24,54,.9);
+  --font: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Menlo", monospace;
 
-  /* Dark palette */
-  --bg:#000;
-  --s1:#1c1c1e;--s2:#2c2c2e;--s3:#3a3a3c;--s4:#48484a;
-  --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.16);
+  /* Dark palette (índigo profundo) */
+  --bg:#0f0e22;
+  --s1:#1a1836;--s2:#242148;--s3:#312d5e;--s4:#46427a;
+  --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.18);
 
-  /* iOS semantic colors */
-  --blue:#0a84ff;--blue-dim:rgba(10,132,255,.14);
-  --green:#30d158;--green-dim:rgba(48,209,88,.14);
-  --red:#ff453a;--red-dim:rgba(255,69,58,.14);
-  --amber:#ff9f0a;--amber-dim:rgba(255,159,10,.14);
-  --purple:#bf5af2;--purple-dim:rgba(191,90,242,.14);
-  --teal:#5ac8fa;--teal-dim:rgba(90,200,250,.14);
+  /* Semantic colors */
+  --blue:#7a73ff;--blue-dim:rgba(122,115,255,.18);
+  --green:#34d399;--green-dim:rgba(52,211,153,.15);
+  --red:#fb7185;--red-dim:rgba(251,113,133,.16);
+  --amber:#fbbf24;--amber-dim:rgba(251,191,36,.15);
+  --purple:#c084fc;--purple-dim:rgba(192,132,252,.16);
+  --teal:#38bdf8;--teal-dim:rgba(56,189,248,.15);
 
-  --text:#fff;--t2:rgba(255,255,255,.6);--t3:rgba(255,255,255,.3);
+  --text:#fff;--t2:rgba(255,255,255,.68);--t3:rgba(255,255,255,.4);
 
-  --r:12px;--r2:16px;--r3:20px;
+  --r:14px;--r2:20px;--r3:26px;
   --sh:0 8px 32px rgba(0,0,0,.6);
+  --card-sh:none;
 }
 
 html,body{height:100%;overflow:hidden}
@@ -68,16 +69,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex
 
 /* ── LIGHT MODE ── */
 body.light{
-  --topbar-bg:rgba(255,255,255,.92);
-  --bg:#f2f2f7;--s1:#fff;--s2:#f2f2f7;--s3:#e5e5ea;--s4:#d1d1d6;
-  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.16);
-  --text:#1c1c1e;--t2:#3c3c43;--t3:#8e8e93;
-  --blue:#007aff;--blue-dim:rgba(0,122,255,.12);
-  --green:#34c759;--green-dim:rgba(52,199,89,.12);
-  --red:#ff3b30;--red-dim:rgba(255,59,48,.12);
-  --amber:#ff9500;--amber-dim:rgba(255,149,0,.12);
-  --purple:#af52de;--purple-dim:rgba(175,82,222,.12);
-  --teal:#5ac8fa;--teal-dim:rgba(90,200,250,.12);
+  --topbar-bg:rgba(255,253,250,.9);
+  --bg:#f7f3ee;--s1:#fff;--s2:#f2ede6;--s3:#e9e2d8;--s4:#d4ccbf;
+  --border:rgba(29,27,58,.09);--border2:rgba(29,27,58,.16);
+  --text:#1d1b3a;--t2:rgba(29,27,58,.68);--t3:rgba(29,27,58,.45);
+  --blue:#4f46e5;--blue-dim:rgba(79,70,229,.11);
+  --green:#16a34a;--green-dim:rgba(22,163,74,.12);
+  --red:#e11d48;--red-dim:rgba(225,29,72,.11);
+  --amber:#d97706;--amber-dim:rgba(217,119,6,.13);
+  --purple:#7c3aed;--purple-dim:rgba(124,58,237,.12);
+  --teal:#0891b2;--teal-dim:rgba(8,145,178,.12);
+  --sh:0 10px 30px rgba(29,27,58,.14);
+  --card-sh:0 1px 2px rgba(29,27,58,.04),0 8px 22px rgba(29,27,58,.06);
 }
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -700,9 +703,398 @@ body.light{
   #mobileDrawer{display:none!important}
   #mobileTabBar{display:none!important}
 }
+
+/* ══════════════════════════════════════════════════════════════
+   REDISEÑO 2026 — tema cálido, menú nuevo, portada y lista de territorios
+   (va al final para sobrescribir lo anterior sin tocar el resto)
+   ══════════════════════════════════════════════════════════════ */
+.ico{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.logo-mark{background:linear-gradient(135deg,#4f46e5,#7c3aed)}
+.topbar-search{border-radius:12px;height:36px}
+.btn{border-radius:12px}
+.btn-primary{box-shadow:0 6px 16px color-mix(in srgb,var(--blue) 32%,transparent)}
+.tbl-wrap,.stat-box,.grp-card,.tcard,.asign-card,.prio-item{box-shadow:var(--card-sh)}
+.modal{border-radius:var(--r3)}
+
+/* ── Barra lateral (escritorio) ── */
+#sidebar{width:236px;padding:12px 12px 16px}
+.nav-sect{font-size:10.5px;letter-spacing:.1em;padding:16px 10px 6px;margin-top:0;font-weight:700}
+.nav-item{gap:11px;padding:9px 10px;border-radius:12px;font-weight:600;font-size:13.5px}
+.nav-item .nav-icon{width:20px;font-size:inherit;display:grid;place-items:center}
+.nav-item.on{background:var(--blue-dim);color:var(--blue)}
+
+/* ── Hojas inferiores (menú Más y Crear) ── */
+.sheet-grab{width:42px;height:5px;border-radius:9px;background:var(--border2);margin:0 auto 14px}
+.sh-sec{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--t3);margin:16px 2px 8px;font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.tiles.one{grid-template-columns:1fr}
+.tile{position:relative;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:13px 6px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:var(--text);text-align:center;cursor:pointer;box-shadow:var(--card-sh);line-height:1.2}
+.tile i{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:var(--blue-dim);color:var(--blue);font-style:normal}
+.tile .nav-badge{position:absolute;top:7px;right:8px;margin:0}
+.tiles.one .tile{flex-direction:row;padding:12px 14px;gap:12px;font-size:14px;text-align:left}
+#createSheet{position:fixed;inset:0;z-index:900;pointer-events:none}
+#createSheet.open{pointer-events:all}
+#createOverlay{position:absolute;inset:0;background:rgba(29,27,58,.45);opacity:0;transition:opacity .25s;backdrop-filter:blur(3px)}
+#createSheet.open #createOverlay{opacity:1}
+#createPanel{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:28px 28px 0 0;padding:10px 16px calc(22px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.9,.3,1);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+#createSheet.open #createPanel{transform:translateY(0)}
+@media(min-width:701px){#createSheet{display:none}}
+
+/* ── Portada ── */
+#view-dashboard .view-head{display:none}
+#dashContent{padding:16px 18px 110px!important}
+.dx-wrap{max-width:1180px;margin:0 auto}
+.dx-hero{position:relative;border-radius:28px;padding:22px 20px;color:#fff;background:radial-gradient(circle at 88% -10%,rgba(251,191,36,.55),transparent 42%),radial-gradient(circle at 0% 110%,rgba(124,58,237,.7),transparent 50%),linear-gradient(145deg,#1d1b3a,#2f2a78);box-shadow:0 16px 36px rgba(47,42,120,.35)}
+.dx-hi{font-size:13px;opacity:.78}
+.dx-h1{font-size:25px;line-height:1.15;letter-spacing:-.5px;margin:4px 0 14px;max-width:16em;font-weight:800}
+.dx-row{display:flex;gap:18px;align-items:center}
+.dx-ring{--p:0;flex:none;width:104px;height:104px;border-radius:50%;background:conic-gradient(#fbbf24 calc(var(--p)*1%),rgba(255,255,255,.16) 0);display:grid;place-items:center}
+.dx-ring div{width:82px;height:82px;border-radius:50%;background:#26235f;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.dx-ring strong{font-size:26px;line-height:1}.dx-ring span{font-size:10px;opacity:.7;margin-top:2px}
+.dx-mini{display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;flex:1}
+.dx-mini div{cursor:pointer}
+.dx-mini b{display:block;font-size:20px;line-height:1.1}.dx-mini span{font-size:11px;opacity:.72}
+.dx-mini .warn b{color:#fbbf24}.dx-mini .bad b{color:#fda4af}
+.dx-yr{margin-top:14px;font-size:12px;opacity:.72}
+.dx-sec{margin-top:22px}
+.dx-sec h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:8px;font-weight:700}
+.dx-sec h3 em{font-style:normal;font-size:11px;background:var(--blue-dim);color:var(--blue);border-radius:99px;padding:2px 9px;font-weight:700}
+.dx-card{background:var(--s1);border:1px solid var(--border);border-radius:22px;padding:14px 16px;box-shadow:var(--card-sh)}
+.dx-att{display:flex;flex-direction:column;gap:9px}
+.dx-item{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:12px 14px;box-shadow:var(--card-sh)}
+.dx-ico{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex:none}
+.dx-tx{flex:1;min-width:0}.dx-tx b{display:block;font-size:14px}.dx-tx span{font-size:12px;color:var(--t2)}
+.dx-go{border:0;border-radius:11px;padding:8px 13px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;background:var(--blue-dim);color:var(--blue)}
+.dx-bad .dx-ico,.dx-bad .dx-go{background:var(--red-dim);color:var(--red)}
+.dx-warn .dx-ico,.dx-warn .dx-go{background:var(--amber-dim);color:var(--amber)}
+.dx-ac .dx-ico{background:var(--blue-dim);color:var(--blue)}
+.dx-ok .dx-ico{background:var(--green-dim);color:var(--green)}
+.dx-note{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--t2)}.dx-note .ico{width:16px;height:16px;color:var(--amber)}
+.dx-num{font-weight:800;font-size:15px;font-family:var(--font-mono)}
+.dx-bars{display:flex;align-items:flex-end;gap:6px;height:84px;margin:6px 0 4px}
+.dx-bars div{flex:1;border-radius:8px 8px 4px 4px;background:var(--blue-dim);min-height:5px}
+.dx-bars div.now{background:linear-gradient(180deg,#7c3aed,#4f46e5)}
+.dx-bars div.fut{background:repeating-linear-gradient(45deg,transparent 0 4px,var(--s3) 4px 8px);border:1px dashed var(--border)}
+.dx-lab{display:flex;gap:6px;font-size:10px;color:var(--t3)}.dx-lab span{flex:1;text-align:center}
+.dx-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.dx-kp b{display:block;font-size:20px}.dx-kp span{font-size:11px;color:var(--t2)}
+.dx-rail{display:flex;gap:10px;overflow:auto;padding:2px 2px 10px;scrollbar-width:none}
+.dx-chip{flex:none;width:112px;background:var(--s1);border:1px solid var(--border);border-radius:18px;padding:12px;box-shadow:var(--card-sh);cursor:pointer}
+.dx-chip b{font-size:18px;font-family:var(--font-mono)}.dx-chip span{display:block;font-size:11px;color:var(--red);font-weight:700;margin-top:2px}
+.dx-chip small{font-size:11px;color:var(--t2);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx-qa{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.dx-qa button{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:14px 4px 11px;display:flex;flex-direction:column;align-items:center;gap:7px;font:inherit;font-weight:700;font-size:11.5px;color:var(--text);cursor:pointer;box-shadow:var(--card-sh)}
+.dx-qa i{width:40px;height:40px;border-radius:14px;background:var(--blue-dim);color:var(--blue);display:grid;place-items:center;font-style:normal}
+@media(min-width:1000px){
+  .dx-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start}
+  .dx-grid .dx-sec{margin-top:0}
+  .dx-hero{padding:28px 30px}.dx-h1{font-size:30px}
+  .dx-g2{margin-top:22px;display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start}
+  .dx-g2 .dx-sec{margin-top:0}.dx-col{display:flex;flex-direction:column;gap:22px}
+}
+@media(max-width:999px){.dx-g2{display:flex;flex-direction:column}.dx-col{display:contents}.dx-s-qa{order:1}.dx-s-pulse{order:2}.dx-s-dorm{order:3}}
+
+/* ── Territorios: tarjetas que filtran, urgencia visible ── */
+#statStrip{display:grid!important;grid-template-columns:repeat(5,1fr);gap:10px;margin:0 0 14px!important;padding:0!important;overflow:visible!important}
+.sx{appearance:none;font:inherit;color:inherit;text-align:left;background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;cursor:pointer;box-shadow:var(--card-sh);transition:box-shadow .15s,transform .15s}
+.sx:hover{transform:translateY(-1px)}
+.sx .n{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1;color:var(--c,var(--text))}
+.sx .l{font-size:12px;color:var(--t2);margin-top:2px;font-weight:600}
+.sx.on{box-shadow:0 0 0 2px var(--c,var(--blue)),var(--card-sh);background:color-mix(in srgb,var(--c,var(--blue)) 8%,var(--s1))}
+.sx.alert .n::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-left:8px;vertical-align:middle;animation:pulse 1.4s ease-in-out infinite}
+.filter-bar .chip:not(.pu){display:none}
+.tcols{grid-template-columns:60px minmax(140px,1fr) 70px 50px 84px 120px 104px 84px}
+.tbl-row.r-venc{box-shadow:inset 3px 0 0 var(--red)}
+.tbl-row.r-prox{box-shadow:inset 3px 0 0 var(--amber)}
+.tbl-row .pill-asig,.tbl-row .pill-disp{background:var(--s2);color:var(--t2)}
+.dbar{height:4px;border-radius:9px;background:var(--s3);overflow:hidden;margin-top:5px;width:100%}
+.dbar i{display:block;height:100%;border-radius:9px}
+.rq{opacity:0;transition:opacity .12s;border:0;background:var(--blue-dim);color:var(--blue);border-radius:9px;padding:5px 10px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.tbl-row:hover .rq{opacity:1}
+.tcard{border-radius:var(--r2)}
+
+/* ── Móvil ── */
+@media(max-width:700px){
+  #main{padding-bottom:104px}
+  #addTerBtn{display:none!important}
+  #mobileTabBar{display:grid!important;grid-template-columns:1fr 1fr 62px 1fr 1fr;align-items:center;left:10px;right:10px;bottom:calc(12px + env(safe-area-inset-bottom));height:66px;padding:0 6px;border-radius:26px;background:color-mix(in srgb,var(--s1) 86%,transparent);border:1px solid var(--border2);box-shadow:0 14px 34px rgba(29,27,58,.22);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4)}
+  body:not(.light) #mobileTabBar{box-shadow:0 14px 34px rgba(0,0,0,.55)}
+  .mtab{padding:0;gap:3px;font-size:9.5px;letter-spacing:-.01em;height:100%;justify-content:center;overflow:visible}
+  .mtab span:not(.mtab-badge){max-width:100%;white-space:nowrap}
+  .mtab.on{color:var(--blue)}
+  .mtab.on .ico{background:var(--blue-dim);width:42px;height:28px;padding:4px 10px;border-radius:12px;box-sizing:border-box}
+  .mtab-badge{top:6px;right:calc(50% - 22px)}
+  .mtab-fab{display:flex;justify-content:center}
+  #fabBtn{width:56px;height:56px;border-radius:20px;margin-top:-28px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:4px solid var(--bg);display:grid;place-items:center;box-shadow:0 12px 24px rgba(79,70,229,.45);cursor:pointer;padding:0}
+  #fabBtn .ico{width:26px;height:26px;stroke-width:2.4}
+  #drawerPanel{left:0;right:0;top:auto;bottom:0;width:100%;max-width:none;max-height:88%;border-right:0;border-radius:28px 28px 0 0;background:var(--bg);padding:10px 16px calc(22px + env(safe-area-inset-bottom));transform:translateY(105%);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+  #mobileDrawer.open #drawerPanel{transform:translateY(0)}
+  #drawerOverlay{background:rgba(29,27,58,.45)}
+  #toast-wrap{bottom:100px}
+  #updateBanner{bottom:106px!important}
+  #mapPanel{bottom:92px}
+  .map-legend{bottom:104px}
+  #statStrip{display:flex!important;flex-wrap:nowrap;overflow-x:auto!important;gap:8px;margin:2px -12px 8px!important;padding:0 12px 2px!important;scrollbar-width:none}
+  #statStrip::-webkit-scrollbar{display:none}
+  .sx{flex:none;min-width:92px;padding:9px 12px}
+  .sx .n{font-size:21px}
+  .sx .l{font-size:11px}
+  .dx-h1{font-size:23px}
+  .dx-row{gap:14px}
+  .dx-ring{width:96px;height:96px}.dx-ring div{width:76px;height:76px}
+  #dashContent{padding:12px 12px 120px!important}
+}
+
+/* ── Publicadores ── */
+.vh-row{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vh-actions{display:flex;gap:6px;flex-wrap:wrap}
+.pgbar{display:flex;gap:7px;overflow-x:auto;padding:12px 0 6px;scrollbar-width:none}
+.pgbar::-webkit-scrollbar{display:none}
+.pchip{flex:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--s1);color:var(--t2);border-radius:99px;padding:7px 13px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:var(--card-sh)}
+.pchip b{font-size:11px;font-weight:700;color:var(--t3)}
+.pchip i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pchip.on{background:var(--blue);border-color:var(--blue);color:#fff}.pchip.on b{color:rgba(255,255,255,.75)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;padding-bottom:20px}
+.pcard{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:12px 12px 12px 14px;cursor:pointer;box-shadow:var(--card-sh);transition:transform .12s,box-shadow .12s}
+.pcard:hover{transform:translateY(-1px);border-color:var(--border2)}
+.pav{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:15px;flex:none;letter-spacing:.02em}
+.pmain{flex:1;min-width:0}
+.pname{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.psub{font-size:12px;color:var(--t2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gdot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.pend{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.pstate{font-size:11px;font-weight:700;border-radius:99px;padding:2px 9px;white-space:nowrap}
+.pstate.ok{background:var(--green-dim);color:var(--green)}.pstate.warn{background:var(--amber-dim);color:var(--amber)}.pstate.bad{background:var(--red-dim);color:var(--red)}
+.pcomp{font-size:11px;color:var(--t3)}
+.pbtn{border:0;background:var(--s2);border-radius:10px;width:32px;height:32px;cursor:pointer;font-size:14px;opacity:.55;flex:none}
+.pcard:hover .pbtn{opacity:1}
+@media(max-width:700px){.pgrid{grid-template-columns:1fr}.pbtn{display:none}.vh-actions .btn{min-height:36px;padding:6px 11px;font-size:13px}.pgbar{margin:0 -14px;padding:12px 14px 6px}}
+
+/* ── Estadísticas ── */
+.segc{display:inline-flex;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:3px;gap:2px}
+.segc button{border:0;background:none;color:var(--t2);font:inherit;font-size:13px;font-weight:700;padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.segc button.on{background:var(--s1);color:var(--blue);box-shadow:0 1px 4px rgba(29,27,58,.12)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--card-sh);border-top:3px solid var(--c)}
+.kpi .n{font-size:30px;font-weight:800;letter-spacing:-.8px;line-height:1;color:var(--c)}
+.kpi .l{font-size:13px;font-weight:700;margin-top:6px}
+.kpi .sub{font-size:11.5px;color:var(--t2);margin-top:2px}
+.stgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;padding-bottom:20px}
+.stcard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:16px;box-shadow:var(--card-sh)}
+.stcard.wide{grid-column:1/-1}
+.stcard h3{font-size:14.5px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.stcard h3 em{font-style:normal;font-size:11px;font-weight:700;background:var(--blue-dim);color:var(--blue);border-radius:99px;padding:2px 9px}
+.st-empty{padding:20px;text-align:center;color:var(--t3);font-size:13px}
+.rrow{display:flex;align-items:center;gap:10px;padding:5px 0}
+.rk{flex:none;width:24px;height:24px;border-radius:8px;background:var(--s2);color:var(--t2);font-size:12px;font-weight:800;display:grid;place-items:center}
+.rk.r1{background:#fef3c7;color:#b45309}.rk.r2{background:#e5e7eb;color:#4b5563}.rk.r3{background:#fde4cf;color:#9a3412}
+.rmain{flex:1;min-width:0}
+.rtop{display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:5px}
+.rlab{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rval{font-weight:800;font-family:var(--font-mono);font-size:12.5px;flex:none}
+.rtrack{height:7px;background:var(--s3);border-radius:99px;overflow:hidden}
+.rtrack i{display:block;height:100%;border-radius:99px;transition:width .5s}
+.mbars{display:flex;align-items:flex-end;gap:5px;height:150px;padding-top:6px}
+.mb{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-width:0}
+.mb i{display:block;width:100%;background:var(--blue-dim);border-radius:7px 7px 3px 3px;min-height:4px}
+.mb.now i{background:linear-gradient(180deg,#7c3aed,#4f46e5)}
+.mb.fut i{background:repeating-linear-gradient(45deg,transparent 0 3px,var(--s3) 3px 6px);border:1px dashed var(--border)}
+.mb .mv{font-size:10px;font-weight:700;color:var(--t2);height:12px}
+.mb .ml{font-size:9.5px;color:var(--t3);font-weight:600}
+.mb.now .ml{color:var(--blue)}
+.mtot{margin-top:12px;font-size:12px;color:var(--t2);text-align:center}.mtot b{color:var(--text);font-size:14px}
+@media(max-width:700px){
+  .kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi{padding:12px 14px}.kpi .n{font-size:26px}
+  .stgrid{grid-template-columns:1fr}
+  .segc button{padding:6px 9px;font-size:12px}
+}
+
+/* ── Historial ── */
+.hsearch{flex:1;min-width:180px;max-width:340px;padding:8px 12px;font-size:14px;border-radius:12px}
+.hlist{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--card-sh)}
+.hmonth{position:sticky;top:0;z-index:2;background:var(--s2);color:var(--t2);font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:8px 14px;border-bottom:1px solid var(--border)}
+.hrow{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;min-height:56px}
+.hrow:last-child{border-bottom:0}.hrow:hover{background:var(--s2)}
+.hdot{width:9px;height:9px;border-radius:50%;flex:none}
+.hdot.done{background:var(--green)}.hdot.open{background:var(--blue);box-shadow:0 0 0 4px var(--blue-dim)}
+.hnum{font-family:var(--font-mono);font-weight:800;font-size:13px;width:38px;flex:none}
+.hmain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.hmain b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hmain small{font-size:12px;color:var(--t2)}
+.hdur{flex:none;font-size:12px;font-weight:800;color:var(--t2);background:var(--s2);border-radius:99px;padding:3px 10px}
+.hdur.open{background:var(--blue-dim);color:var(--blue)}
+.hempty{padding:40px;text-align:center;color:var(--t3)}
+@media(max-width:700px){.hsearch{max-width:none;width:100%;flex:1 1 100%}.hmonth{top:0}}
+
+/* ── Asignar por lotes ── */
+.lotes-body{flex:1;overflow-y:auto;padding:12px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.lstep{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;box-shadow:var(--card-sh)}
+.lstep-h{display:flex;align-items:center;gap:10px;font-weight:800;font-size:14.5px;margin-bottom:12px}
+.lnum{width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;display:grid;place-items:center;flex:none}
+.lcount{margin-left:auto;font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-dim);border-radius:99px;padding:3px 10px}
+.lcount:empty{display:none}
+.lform{display:grid;grid-template-columns:1fr 200px;gap:12px;align-items:end}
+.lf-pub{position:relative}
+.ltools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.ltools .fi{flex:1;min-width:160px}
+.lall{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--t2);margin:2px 0 12px;cursor:pointer}
+.lall input{accent-color:var(--blue);width:17px;height:17px}
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px}
+.ltile{position:relative;background:var(--s2);border:2px solid transparent;border-radius:16px;padding:12px 12px 11px;cursor:pointer;transition:all .12s;user-select:none}
+.ltile:hover{border-color:var(--border2)}
+.ltile.on{border-color:var(--blue);background:var(--blue-dim)}
+.lchk{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:50%;border:2px solid var(--border2);display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.ltile.on .lchk{background:var(--blue);border-color:var(--blue)}
+.lt-num{display:block;font-family:var(--font-mono);font-weight:800;font-size:17px;padding-right:26px}
+.lt-name{display:block;font-size:12px;color:var(--t2);margin:2px 0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lt-meta{font-size:11.5px;color:var(--t3)}
+.lbar{flex:none;display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--s1);border-top:1px solid var(--border);box-shadow:0 -6px 20px rgba(29,27,58,.06)}
+.lbar-info{flex:1;font-size:13px;color:var(--t2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbar-info b{color:var(--text);font-size:16px}
+@media(max-width:700px){
+  .lotes-body{padding:10px 12px 8px}
+  .lform{grid-template-columns:1fr 132px;gap:8px}.lf-date .fl{display:none}
+  .lgrid{grid-template-columns:repeat(2,1fr)}
+  .lbar{padding:10px 12px}
+  .lbar .btn{padding:8px 14px}
+  .ltools .segc{width:100%}.ltools .segc button{flex:1}
+}
+
+/* ── Detalle de territorio (modal) ── */
+#mTer .mhead{padding:18px 22px 4px}
+#mTer .mtitle{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.mt-num{font-family:var(--font-mono);font-weight:800;font-size:22px;background:var(--blue-dim);color:var(--blue);border-radius:14px;padding:6px 12px;flex:none}
+.mt-info{display:flex;flex-direction:column;min-width:0;flex:1}
+.mt-info b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt-info small{font-size:12px;color:var(--t2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt-pill{flex:none;font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 11px}
+.mt-pill.ok{background:var(--green-dim);color:var(--green)}.mt-pill.ac{background:var(--blue-dim);color:var(--blue)}
+.mt-pill.bad{background:var(--red-dim);color:var(--red)}.mt-pill.warn{background:var(--amber-dim);color:var(--amber)}.mt-pill.pu{background:var(--purple-dim);color:var(--purple)}
+#mTer .mhead .xbtn{margin-left:8px;flex:none}
+#mTerTabs{display:flex;background:var(--s2);border:1px solid var(--border);border-radius:14px;padding:3px;gap:2px;margin:10px 0 16px;border-bottom:1px solid var(--border)}
+#mTerTabs .tab{flex:1;text-align:center;border:0;margin:0;border-radius:11px;padding:8px 6px;font-size:13px}
+#mTerTabs .tab.on{background:var(--s1);color:var(--blue);box-shadow:0 1px 4px rgba(29,27,58,.14)}
+.as-card{display:flex;gap:14px;align-items:flex-start;border-radius:var(--r2);padding:14px 16px;border:1px solid var(--border);background:var(--s1);box-shadow:var(--card-sh)}
+.as-ico{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;font-size:18px;font-weight:800;flex:none}
+.as-card.ok .as-ico{background:var(--green-dim);color:var(--green)}.as-card.ac .as-ico,.as-card.pu .as-ico{background:var(--blue-dim);color:var(--blue)}
+.as-card.bad .as-ico{background:var(--red-dim);color:var(--red)}.as-card.warn .as-ico{background:var(--amber-dim);color:var(--amber)}
+.as-main{flex:1;min-width:0}
+.as-title{font-size:16px;font-weight:800;letter-spacing:-.2px}
+.as-sub{font-size:12.5px;color:var(--t2);margin-top:2px}
+.as-bar{height:7px;background:var(--s3);border-radius:99px;overflow:hidden;margin-top:12px}
+.as-bar i{display:block;height:100%;border-radius:99px;background:var(--blue)}
+.as-card.warn .as-bar i{background:var(--amber)}.as-card.bad .as-bar i{background:var(--red)}
+.as-days{font-size:12px;font-weight:700;margin-top:6px;color:var(--t2)}
+.as-card.bad .as-days{color:var(--red)}.as-card.warn .as-days{color:var(--amber)}
+#btnGuardarDatos{display:none}
+#mTer[data-tab="datos"] #btnGuardarDatos{display:inline-flex}
+.mbody .factions{position:sticky;bottom:0;background:var(--s1);margin:18px -22px -22px;padding:12px 22px calc(12px + env(safe-area-inset-bottom));z-index:5}
+@media(max-width:700px){
+  #mTer .mhead{padding:14px 14px 2px;position:static}
+  .mt-num{font-size:19px;padding:5px 10px}
+  .mt-pill{display:none}
+  #mTer .factions .btn-ghost{display:none}
+  #mTer .factions .btn{min-height:40px;padding:8px 14px;font-size:13px}
+  .mbody .factions{margin:16px -16px -20px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));flex-wrap:wrap}
+  .asign-card-head{padding:12px 14px}
+}
+
+/* ── Sin trabajar / Cambios / Solicitudes ── */
+.prow{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;margin-bottom:9px;cursor:pointer;box-shadow:var(--card-sh)}
+.prow:hover{border-color:var(--border2)}
+.pr-num{font-family:var(--font-mono);font-weight:800;font-size:15px;background:var(--s2);border-radius:12px;padding:8px 10px;min-width:54px;text-align:center;flex:none}
+.pr-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pr-main b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-main small{font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-age{flex:none;font-size:12px;font-weight:800;border-radius:99px;padding:4px 11px}
+.pr-age.bad{background:var(--red-dim);color:var(--red)}.pr-age.warn{background:var(--amber-dim);color:var(--amber)}.pr-age.ok{background:var(--s2);color:var(--t2)}
+.rq.on{opacity:1}
+.cico{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;font-size:15px;font-weight:800;flex:none;background:var(--s2);color:var(--t2)}
+.cico.blue{background:var(--blue-dim);color:var(--blue)}.cico.green{background:var(--green-dim);color:var(--green)}.cico.amber{background:var(--amber-dim);color:var(--amber)}.cico.red{background:var(--red-dim);color:var(--red)}
+.cnum{font-family:var(--font-mono)}
+.ctime{font-size:11.5px;color:var(--t3);flex:none}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.scard{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:14px;box-shadow:var(--card-sh)}
+.scard.pend{border-color:color-mix(in srgb,var(--amber) 45%,var(--border))}
+.sc-top{display:flex;align-items:center;gap:12px}
+.sc-note{margin-top:12px;font-size:13px;color:var(--t2);background:var(--s2);border-radius:12px;padding:10px 12px;font-style:italic}
+.sc-ter{margin-top:10px;font-size:12.5px;color:var(--blue)}
+.sc-act{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.segc b{font-size:11px;color:var(--t3);margin-left:4px}.segc button.on b{color:var(--blue)}
+@media(max-width:700px){.prow{padding:11px 12px;gap:10px}.prow .rq{display:none}.pr-num{min-width:46px;padding:7px 8px;font-size:14px}.sgrid{grid-template-columns:1fr}}
+
+/* ── Campañas ── */
+.camp-hero{border-radius:var(--r3);padding:18px 18px 16px;color:#fff;margin-bottom:12px;box-shadow:0 14px 30px rgba(29,27,58,.18)}
+.camp-hero.run{background:radial-gradient(circle at 90% -10%,rgba(255,255,255,.28),transparent 45%),linear-gradient(135deg,#f59e0b,#d97706)}
+.camp-hero.soon{background:linear-gradient(135deg,#6366f1,#4f46e5)}
+.camp-hero.end{background:linear-gradient(135deg,#6b6a85,#3d3b5c)}
+.ch-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ch-state,.ch-days{font-size:12px;font-weight:800;background:rgba(255,255,255,.2);border-radius:99px;padding:3px 11px}
+.ch-name{font-size:21px;line-height:1.15;letter-spacing:-.4px;margin:12px 0 4px;font-weight:800}
+.ch-dates{font-size:12.5px;opacity:.85}
+.ch-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 14px}
+.ch-kpis b{display:block;font-size:24px;line-height:1.1}.ch-kpis span{font-size:11.5px;opacity:.85}
+.ch-bar{height:8px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden}
+.ch-bar i{display:block;height:100%;background:#fff;border-radius:99px}
+.ch-barl{font-size:12px;margin-top:7px;opacity:.9}
+.camp-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.camp-warn{font-size:12.5px;color:var(--amber);font-weight:700;margin-bottom:10px}
+.cplist{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--card-sh)}
+.cprow{display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.cprow:last-child{border-bottom:0}
+.cprow .pr-main b{font-size:14px}
+.cptrack{display:block;height:5px;background:var(--s3);border-radius:99px;overflow:hidden;margin-top:6px}
+.cptrack i{display:block;height:100%;border-radius:99px}
+.cpval{font-weight:800;font-family:var(--font-mono);font-size:13px;min-width:42px;text-align:right}
+@media(max-width:700px){.ch-name{font-size:19px}.ch-kpis b{font-size:21px}}
+
+/* ── Mapa ── */
+#btnNuevoTerMapa,#btnMapDownload{border-radius:12px!important;box-shadow:0 4px 14px rgba(29,27,58,.18)}
+.map-legend{border-radius:var(--r2);background:color-mix(in srgb,var(--s1) 92%,transparent);color:var(--text);border-color:var(--border2)}
+.lg-toggle{display:none;width:100%;background:none;border:0;font:inherit;font-weight:800;font-size:12px;color:var(--text);cursor:pointer;padding:0;text-align:left}
+.lg-toggle span{float:right;opacity:.6}
+.map-legend.open .lg-toggle{margin-bottom:8px}
+@media(max-width:700px){
+  .lg-toggle{display:block}
+  .map-legend:not(.open) .legend-item{display:none}
+  .map-legend:not(.open){padding:8px 12px}
+  #mapDrawMsg{font-size:12px!important}
+  #btnNuevoTerMapa,#btnMapDownload{padding:7px 11px!important;font-size:12px!important}
+}
+
+/* ── Detalle de publicador ── */
+#mPubDet .mtitle{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.edit-details{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);margin:16px 0;box-shadow:var(--card-sh)}
+.edit-details>summary{cursor:pointer;padding:13px 16px;font-weight:800;font-size:13.5px;list-style:none;color:var(--blue)}
+.edit-details>summary::-webkit-details-marker{display:none}
+.edit-details[open]>summary{border-bottom:1px solid var(--border)}
+.edit-details>div{margin:0!important;border:0!important;border-radius:0!important;background:transparent!important}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+<symbol id="i-group" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+<symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+<symbol id="i-hour" viewBox="0 0 24 24"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22"/><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+</defs></svg>
 
 <!-- LOGIN -->
 <!-- LOADER -->
@@ -710,7 +1102,7 @@ body.light{
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <button id="menuBtn" onclick="toggleDrawer()" style="width:36px;height:36px;background:var(--s2);border:1px solid var(--border);border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0">☰</button>
+  <button id="menuBtn" onclick="toggleDrawer()" style="width:36px;height:36px;background:var(--s2);border:1px solid var(--border);border-radius:9px;display:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;color:var(--text)"><svg class="ico"><use href="#i-menu"/></svg></button>
   <div class="logo"><div class="logo-mark"><svg width="14" height="16" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
   <div class="topbar-search">
     <span style="color:var(--t3);font-size:14px">⌕</span>
@@ -728,64 +1120,42 @@ body.light{
 
 <div id="app">
 
-<!-- MOBILE BOTTOM TAB BAR -->
+<!-- MOBILE BOTTOM TAB BAR (barra flotante) -->
 <nav id="mobileTabBar">
-  <div class="mtab on" data-v="territorios" onclick="navTab(this)">
-    <div class="mtab-icon">📋</div>
-    <span>Territorios</span>
-    <span class="mtab-badge" id="mtb-venc" style="display:none">0</span>
-  </div>
-  <div class="mtab" data-v="mapa" onclick="navTab(this)">
-    <div class="mtab-icon">🗺</div>
-    <span>Mapa</span>
-  </div>
-  <div class="mtab" data-v="prioridad" onclick="navTab(this)">
-    <div class="mtab-icon">⏳</div>
-    <span>Pendiente</span>
-    <span class="mtab-badge" id="mtb-old" style="display:none">0</span>
-  </div>
-  <div class="mtab" data-v="publicadores" onclick="navTab(this)">
-    <div class="mtab-icon">👥</div>
-    <span>Hermanos</span>
-  </div>
-  <div class="mtab" data-v="grupos" onclick="navTab(this)">
-    <div class="mtab-icon" style="color:var(--purple)">⬟</div>
-    <span>Grupos</span>
-  </div>
-  <div class="mtab" data-v="__menu" onclick="toggleDrawer()">
-    <div class="mtab-icon">☰</div>
-    <span>Más</span>
-  </div>
+  <div class="mtab on" data-v="dashboard" onclick="navTab(this)"><svg class="ico"><use href="#i-home"/></svg><span>Inicio</span></div>
+  <div class="mtab" data-v="territorios" onclick="navTab(this)"><svg class="ico"><use href="#i-grid"/></svg><span>Territorios</span><span class="mtab-badge" id="mtb-venc" style="display:none">0</span></div>
+  <div class="mtab-fab"><button id="fabBtn" onclick="toggleCreate()" aria-label="Crear"><svg class="ico"><use href="#i-plus"/></svg></button></div>
+  <div class="mtab" data-v="mapa" onclick="navTab(this)"><svg class="ico"><use href="#i-map"/></svg><span>Mapa</span></div>
+  <div class="mtab" data-v="publicadores" onclick="navTab(this)"><svg class="ico"><use href="#i-users"/></svg><span>Publicadores</span></div>
 </nav>
 
-<!-- MOBILE DRAWER -->
+<!-- MOBILE DRAWER (menú Más como hoja inferior) -->
 <div id="mobileDrawer">
   <div id="drawerOverlay" onclick="toggleDrawer()"></div>
   <div id="drawerPanel">
-    <div class="drawer-head">
-      <div class="drawer-logo"><div class="logo-mark" style="width:26px;height:26px"><svg width="12" height="14" viewBox="0 0 14 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 0C4.24 0 2 2.24 2 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5A1.5 1.5 0 1 1 7 3.5a1.5 1.5 0 0 1 0 3z" fill="white"/></svg></div>Territorios</div>
-      <button class="drawer-close" onclick="toggleDrawer()">✕</button>
+    <div class="sheet-grab"></div>
+    <div class="sh-sec" style="margin-top:0">Personas</div>
+    <div class="tiles">
+      <div class="tile" data-v="publicadores" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-users"/></svg></i><span>Publicadores</span></div>
+      <div class="tile" data-v="grupos" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-group"/></svg></i><span>Grupos</span><span class="nav-badge" id="dnb-grp">0</span></div>
+      <div class="tile" data-v="solicitudes" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-inbox"/></svg></i><span>Solicitudes</span><span class="nav-badge r" id="nb-solic-d" style="display:none">0</span></div>
     </div>
-    <div class="drawer-nav">
-      <div class="nav-sect">Vistas</div>
-      <div class="nav-item" data-v="grupos" onclick="navDrawer(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="dnb-grp">0</span></div>
-      <div class="nav-item" data-v="dashboard" onclick="navDrawer(this)"><span class="nav-icon">🏠</span>Dashboard</div>
-      <div class="nav-item" data-v="campanias" onclick="navDrawer(this)"><span class="nav-icon">🚩</span>Campañas</div>
-      <div class="nav-item" data-v="lotes" onclick="navDrawer(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
-      <div class="nav-item" data-v="cambios" onclick="navDrawer(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
-      <div class="nav-item" data-v="solicitudes" onclick="navDrawer(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic-d" style="display:none">0</span></div>
-      <div class="nav-item" data-v="historial" onclick="navDrawer(this)"><span class="nav-icon">📖</span>Historial</div>
-      <div class="nav-item" data-v="backup" onclick="navDrawer(this)"><span class="nav-icon">☁️</span>Copias de seguridad</div>
-      <div class="nav-item" data-v="estadisticas" onclick="navDrawer(this)"><span class="nav-icon">📊</span>Estadísticas</div>
-      <div class="nav-item" data-v="s13" onclick="navDrawer(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
-      <div class="nav-sect">Filtros rápidos</div>
-      <div class="nav-item" data-filter="disponible" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="dnb-disp">0</span></div>
-      <div class="nav-item" data-filter="asignado" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="dnb-asig">0</span></div>
-      <div class="nav-item" data-filter="vencido" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="dnb-venc">0</span></div>
-      <div class="nav-item" data-filter="proximo" onclick="quickFilterDrawer(this)"><span class="nav-icon" style="color:var(--amber)">●</span>Próx. vencer<span class="nav-badge am" id="dnb-prox">0</span></div>
-      <div class="nav-sect">Acciones</div>
-      <div class="nav-item" onclick="toggleDrawer();openTerModal()"><span class="nav-icon">➕</span>Nuevo territorio</div>
-      <div class="nav-item" onclick="toggleDrawer();openModal('mPub')"><span class="nav-icon">👤</span>Nuevo publicador</div>
+    <div class="sh-sec">Trabajo</div>
+    <div class="tiles">
+      <div class="tile" data-v="lotes" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-layers"/></svg></i><span>Asignar por lotes</span></div>
+      <div class="tile" data-v="campanias" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-flag"/></svg></i><span>Campañas</span></div>
+      <div class="tile" data-v="prioridad" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-hour"/></svg></i><span>Sin trabajar</span></div>
+    </div>
+    <div class="sh-sec">Informes</div>
+    <div class="tiles">
+      <div class="tile" data-v="estadisticas" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-chart"/></svg></i><span>Estadísticas</span></div>
+      <div class="tile" data-v="historial" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-clock"/></svg></i><span>Historial</span></div>
+      <div class="tile" data-v="cambios" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-refresh"/></svg></i><span>Últimos cambios</span></div>
+      <div class="tile" data-v="s13" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-doc"/></svg></i><span>Exportar S-13</span></div>
+    </div>
+    <div class="sh-sec">Sistema</div>
+    <div class="tiles">
+      <div class="tile" data-v="backup" onclick="navDrawer(this)"><i><svg class="ico"><use href="#i-cloud"/></svg></i><span>Copias de seguridad</span></div>
     </div>
     <div id="drawerInstallWrap" style="display:none;padding:10px 16px;border-top:1px solid var(--border)">
       <button onclick="installPWA();toggleDrawer()" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(48,209,88,.3);background:var(--green-dim);color:var(--green);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">⬇ Instalar app en este dispositivo</button>
@@ -798,7 +1168,6 @@ body.light{
         else if(status==='unsupported') toast('Este navegador no admite notificaciones push','r');
         else toast('Error al activar notificaciones. Inténtalo de nuevo','r');
         renderDrawerNotifBtn();
-        logAudit('push_debug',null,null,r.dbg);
       })" id="notifBtn" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(10,132,255,.3);background:rgba(10,132,255,.1);color:var(--blue);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">🔔 Activar notificaciones</button>
     </div>
     <div style="padding:14px 16px;font-size:10px;color:var(--t3);line-height:1.5;border-top:1px solid var(--border)">
@@ -808,32 +1177,43 @@ body.light{
   </div>
 </div>
 
+
+<!-- HOJA "CREAR" (botón + de la barra flotante) -->
+<div id="createSheet">
+  <div id="createOverlay" onclick="toggleCreate()"></div>
+  <div id="createPanel">
+    <div class="sheet-grab"></div>
+    <div class="sh-sec" style="margin-top:0">Crear</div>
+    <div class="tiles one">
+      <div class="tile" onclick="toggleCreate();goView('lotes')"><i><svg class="ico"><use href="#i-pin"/></svg></i><span>Asignar territorios</span></div>
+      <div class="tile" onclick="toggleCreate();openTerModal()"><i><svg class="ico"><use href="#i-plus"/></svg></i><span>Nuevo territorio</span></div>
+      <div class="tile" onclick="toggleCreate();openModal('mPub')"><i><svg class="ico"><use href="#i-user"/></svg></i><span>Nuevo publicador</span></div>
+    </div>
+  </div>
+</div>
+
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="nav-sect">Principal</div>
-  <div class="nav-item on" data-v="dashboard" onclick="nav(this)"><span class="nav-icon">🏠</span>Dashboard</div>
-  <div class="nav-item" data-v="territorios" onclick="nav(this)"><span class="nav-icon">📋</span>Territorios<span class="nav-badge a" id="nb-tot">0</span></div>
-  <div class="nav-item" data-v="mapa" onclick="nav(this)"><span class="nav-icon">🗺</span>Mapa<span class="nav-badge" id="nb-map">204</span></div>
-  <div class="nav-item" data-v="prioridad" onclick="nav(this)"><span class="nav-icon">⏳</span>Sin trabajar<span class="nav-badge am" id="nb-old">0</span></div>
-  <div class="nav-item" data-v="estadisticas" onclick="nav(this)"><span class="nav-icon">📊</span>Estadísticas</div>
-  <div class="nav-sect">Gestión</div>
-  <div class="nav-item" data-v="publicadores" onclick="nav(this)"><span class="nav-icon">👥</span>Publicadores<span class="nav-badge" id="nb-pub">0</span></div>
-  <div class="nav-item" data-v="grupos" onclick="nav(this)"><span class="nav-icon">🔵</span>Grupos<span class="nav-badge" id="nb-grp">0</span></div>
-  <div class="nav-item" data-v="historial" onclick="nav(this)"><span class="nav-icon">📋</span>Historial</div>
-  <div class="nav-item" data-v="cambios" onclick="nav(this)"><span class="nav-icon">🕐</span>Últimos cambios</div>
-  <div class="nav-item" data-v="solicitudes" onclick="nav(this)"><span class="nav-icon">📥</span>Solicitudes<span class="nav-badge r" id="nb-solic" style="display:none">0</span></div>
-  <div class="nav-item" data-v="campanias" onclick="nav(this)"><span class="nav-icon">🚩</span>Campañas<span class="nav-badge" id="nb-camp" style="display:none">0</span></div>
-  <div class="nav-item" data-v="lotes" onclick="nav(this)"><span class="nav-icon">📌</span>Asignar por lotes</div>
-  <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon">📄</span>Exportar S-13</div>
-  <div class="nav-sect">SISTEMA</div>
-  <div class="nav-item" data-v="backup" onclick="nav(this)"><span class="nav-icon">☁️</span>Copias de seguridad</div>
-  <div class="nav-sect">Estado rápido</div>
-  <div class="nav-item" data-filter="disponible" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--green)">●</span>Disponibles<span class="nav-badge g" id="nb-disp">0</span></div>
-  <div class="nav-item" data-filter="asignado" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--blue)">●</span>Asignados<span class="nav-badge a" id="nb-asig">0</span></div>
-  <div class="nav-item" data-filter="vencido" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--red)">●</span>Vencidos<span class="nav-badge r" id="nb-venc">0</span></div>
-  <div class="nav-item" data-filter="proximo" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--amber)">●</span>Próx. vencer<span class="nav-badge am" id="nb-prox">0</span></div>
-  <div class="nav-item" data-filter="grupo" onclick="quickFilter(this)"><span class="nav-icon" style="color:var(--purple)">●</span>De grupo<span class="nav-badge pu" id="nb-grup">0</span></div>
-  <div style="padding:12px 10px 8px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);line-height:1.5;margin-top:8px">
+  <div class="nav-item on" data-v="dashboard" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-home"/></svg></span>Inicio</div>
+  <div class="nav-item" data-v="territorios" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-grid"/></svg></span>Territorios<span class="nav-badge a" id="nb-tot">0</span></div>
+  <div class="nav-item" data-v="mapa" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-map"/></svg></span>Mapa<span class="nav-badge" id="nb-map">204</span></div>
+  <div class="nav-item" data-v="prioridad" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-hour"/></svg></span>Sin trabajar<span class="nav-badge am" id="nb-old">0</span></div>
+  <div class="nav-sect">Personas</div>
+  <div class="nav-item" data-v="publicadores" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-users"/></svg></span>Publicadores<span class="nav-badge" id="nb-pub">0</span></div>
+  <div class="nav-item" data-v="grupos" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-group"/></svg></span>Grupos<span class="nav-badge" id="nb-grp">0</span></div>
+  <div class="nav-item" data-v="solicitudes" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-inbox"/></svg></span>Solicitudes<span class="nav-badge r" id="nb-solic" style="display:none">0</span></div>
+  <div class="nav-sect">Trabajo</div>
+  <div class="nav-item" data-v="campanias" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-flag"/></svg></span>Campañas<span class="nav-badge" id="nb-camp" style="display:none">0</span></div>
+  <div class="nav-item" data-v="lotes" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-layers"/></svg></span>Asignar por lotes</div>
+  <div class="nav-sect">Informes</div>
+  <div class="nav-item" data-v="estadisticas" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-chart"/></svg></span>Estadísticas</div>
+  <div class="nav-item" data-v="historial" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-clock"/></svg></span>Historial</div>
+  <div class="nav-item" data-v="cambios" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-refresh"/></svg></span>Últimos cambios</div>
+  <div class="nav-item" data-v="s13" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-doc"/></svg></span>Exportar S-13</div>
+  <div class="nav-sect">Sistema</div>
+  <div class="nav-item" data-v="backup" onclick="nav(this)"><span class="nav-icon"><svg class="ico"><use href="#i-cloud"/></svg></span>Copias de seguridad</div>
+  <div style="padding:14px 10px 8px;border-top:1px solid var(--border);font-size:10px;color:var(--t3);line-height:1.5;margin-top:10px">
     Desarrollada por <span style="color:var(--t2);font-weight:600">Manuel Fernández</span><br>
     para uso exclusivo de la congregación<br>
     <span style="color:var(--t2);font-weight:600">Montequinto</span>
@@ -867,41 +1247,47 @@ body.light{
 
 <!-- VIEW: LOTES -->
 <div id="view-lotes" class="view" style="flex-direction:column">
-    <div class="view-head">
-      <div class="view-title">Asignación por lotes</div>
-      <div class="view-sub">Selecciona territorios disponibles y asígnalos a un publicador</div>
-    </div>
-    <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border)">
-      <div style="flex:1;min-width:200px">
-        <label style="font-size:12px;color:var(--t3);font-weight:600;display:block;margin-bottom:4px">PUBLICADOR</label>
-        <div style="position:relative">
+  <div class="view-head">
+    <div class="view-title">Asignar por lotes</div>
+    <div class="view-sub">Elige a quién y marca los territorios que le entregas</div>
+  </div>
+  <div class="lotes-body">
+    <section class="lstep">
+      <div class="lstep-h"><span class="lnum">1</span>¿A quién se los entregas?</div>
+      <div class="lform">
+        <div class="lf-pub">
           <input class="fi" id="lotes-pub-input" placeholder="Buscar publicador…" autocomplete="off"
-            oninput="lotesAutocomplete(this.value)" onfocus="lotesAutocomplete(this.value)"
-            style="width:100%;box-sizing:border-box">
+            oninput="document.getElementById('lotes-pub-id').value='';_updateLotesCount();lotesAutocomplete(this.value)" onfocus="lotesAutocomplete(this.value)">
           <input type="hidden" id="lotes-pub-id">
-          <div id="lotes-pub-dropdown" style="display:none;position:fixed;left:0;right:0;z-index:2000;background:var(--s2);border:1px solid var(--border2);border-radius:12px;overflow:hidden;max-height:240px;overflow-y:auto;margin:0 16px;box-shadow:0 8px 32px rgba(0,0,0,.4)"></div>
+          <div id="lotes-pub-dropdown" style="display:none;position:fixed;left:0;right:0;z-index:2000;background:var(--s1);border:1px solid var(--border2);border-radius:14px;overflow:hidden;max-height:240px;overflow-y:auto;margin:0 16px;box-shadow:0 8px 32px rgba(0,0,0,.25)"></div>
+        </div>
+        <div class="lf-date">
+          <label class="fl" style="margin-bottom:4px">Fecha de entrega</label>
+          <input class="fi" id="lotes-fecha" type="date">
         </div>
       </div>
-      <div>
-        <label style="font-size:12px;color:var(--t3);font-weight:600;display:block;margin-bottom:4px">FECHA ENTREGA</label>
-        <input class="fi" id="lotes-fecha" type="date" style="width:160px">
+    </section>
+    <section class="lstep lstep-list">
+      <div class="lstep-h"><span class="lnum">2</span>¿Qué territorios?<span class="lcount" id="lotes-count"></span></div>
+      <div class="ltools">
+        <input class="fi" id="lotes-search" type="text" placeholder="Buscar nº o nombre…" oninput="_lotesQ=this.value.toLowerCase();_renderLotesList()">
+        <div class="segc" id="lotesSortSeg">
+          <button class="on" data-ls="antiguo" onclick="setLotesSort('antiguo')">Más sin trabajar</button>
+          <button data-ls="num" onclick="setLotesSort('num')">Por nº</button>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;align-items:flex-end">
-        <button class="btn btn-primary" onclick="ejecutarLotes()" id="lotes-btn" disabled>
-          📌 Asignar seleccionados
-        </button>
-        <button class="btn btn-ghost" onclick="lotesDeselectAll()">Limpiar</button>
-      </div>
-    </div>
-    <div style="padding:8px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);background:var(--s2)">
-      <input type="checkbox" id="lotes-select-all" onchange="lotesToggleAll(this.checked)" style="accent-color:var(--blue);width:16px;height:16px">
-      <label for="lotes-select-all" style="font-size:13px;font-weight:600;cursor:pointer">Seleccionar todos los disponibles</label>
-      <span id="lotes-count" style="font-size:12px;color:var(--blue);font-weight:600;margin-left:auto"></span>
-    </div>
-    <div id="lotes-list" style="flex:1;overflow-y:auto;padding:8px 12px"></div>
+      <div class="pgbar" id="lotes-groups"></div>
+      <label class="lall"><input type="checkbox" id="lotes-select-all" onchange="lotesToggleAll(this.checked)"> Seleccionar todos los que se ven</label>
+      <div id="lotes-list" class="lgrid"></div>
+    </section>
   </div>
+  <div class="lbar">
+    <div class="lbar-info"><b id="lotes-bar-n">0</b> seleccionados<span id="lotes-bar-who"></span></div>
+    <button class="btn btn-ghost" onclick="lotesDeselectAll()">Limpiar</button>
+    <button class="btn btn-primary" onclick="ejecutarLotes()" id="lotes-btn" disabled>📌 Asignar</button>
+  </div>
+</div>
 
-  
 <div id="view-territorios" class="view">
 <div class="view-head" style="padding-bottom:0">
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
@@ -923,6 +1309,7 @@ body.light{
         <option value="">Todos los grupos</option>
       </select>
       <select class="fi" id="fSort" style="width:auto;padding:5px 11px;font-size:13px" onchange="renderTerritorios()">
+        <option value="urg">⚡ Por urgencia</option>
         <option value="num">Por número</option>
         <option value="vence_asc">Vence antes</option>
         <option value="vence_desc">Vence después</option>
@@ -937,7 +1324,7 @@ body.light{
       <div class="tbl-wrap">
         <div class="tbl-head tcols" id="tblHead">
           <span>Nº</span><span>Publicador</span><span>Tipo</span><span>Grupo</span>
-          <span>Asignado</span><span>Vence</span><span>Estado</span>
+          <span>Asignado</span><span>Vence</span><span>Estado</span><span></span>
         </div>
         <div class="tbl-body" id="tbl-body" style="max-height:calc(100dvh - 280px)"></div>
       </div>
@@ -951,7 +1338,7 @@ body.light{
   <div id="mapContainer">
     <div id="leafletMapMain"></div>
     <!-- Draw toolbar -->
-    <div id="mapDrawToolbar" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--s1);border:1px solid var(--border2);border-radius:12px;padding:8px 12px;display:flex;gap:8px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.3)">
+    <div id="mapDrawToolbar" style="display:none;position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:var(--s1);border:1px solid var(--border2);border-radius:14px;padding:8px 12px;gap:8px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:calc(100% - 20px)">
       <span id="mapDrawMsg" style="font-size:13px;color:var(--t2);font-weight:600">Haz clic para añadir vértices · doble clic para cerrar</span>
       <button id="btnRedibujar" class="btn btn-ghost btn-sm" onclick="redibujarPoligono()" style="display:none">↩ Redibujar</button>
       <button class="btn btn-ghost btn-sm" onclick="cancelarDibujo()" style="color:var(--red)">✕ Cancelar</button>
@@ -966,7 +1353,8 @@ body.light{
         </div>
       </div>
     </div>
-    <div class="map-legend">
+    <div class="map-legend open" id="mapLegend">
+      <button class="lg-toggle" onclick="document.getElementById('mapLegend').classList.toggle('open')">Leyenda <span>▾</span></button>
       <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Disponible</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Asignado</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Próx. vencer</div>
@@ -1023,33 +1411,33 @@ body.light{
 <!-- VIEW: ESTADISTICAS -->
 <div id="view-estadisticas" class="view">
   <div class="view-head">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div class="vh-row">
       <div><div class="view-title">Estadísticas</div><div class="view-sub">Actividad y cobertura</div></div>
-      <div style="display:flex;gap:6px">
-        <div class="chip on" data-period="year" onclick="setPeriod(this)">Este año</div>
-        <div class="chip" data-period="6m" onclick="setPeriod(this)">6 meses</div>
-        <div class="chip" data-period="month" onclick="setPeriod(this)">Este mes</div>
-        <div class="chip" data-period="all" onclick="setPeriod(this)">Todo</div>
+      <div class="segc" id="periodSeg">
+        <button class="on" data-period="year" onclick="setPeriod(this)">Este año</button>
+        <button data-period="6m" onclick="setPeriod(this)">6 meses</button>
+        <button data-period="month" onclick="setPeriod(this)">Mes</button>
+        <button data-period="all" onclick="setPeriod(this)">Todo</button>
       </div>
     </div>
   </div>
   <div class="view-scroll">
-    <div class="stats-strip" id="statMain"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Territorios por grupo</div><div class="chart-wrap" id="chartGrupos"></div></div>
-      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Top publicadores <span style="font-weight:400;color:var(--t3);font-size:11px">(periodo seleccionado)</span></div><div class="chart-wrap" id="chartPubs"></div></div>
-      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Asignaciones por mes <span style="font-weight:400;color:var(--t3);font-size:11px">(año en curso)</span></div><div class="chart-wrap" id="chartMeses"></div></div>
-      <div class="tbl-wrap" style="padding:16px"><div style="font-size:14px;font-weight:700;margin-bottom:12px;letter-spacing:-.2px">Más tiempo sin trabajar</div><div class="chart-wrap" id="chartOld"></div></div>
-      <div class="tbl-wrap" style="padding:16px;grid-column:1/-1">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-          <div style="font-size:14px;font-weight:700;letter-spacing:-.2px">Territorios más trabajados</div>
-          <div style="display:flex;gap:6px">
-            <div class="chip on" data-rango="1y" onclick="setRangoTrabajados(this)">Este año</div>
-            <div class="chip" data-rango="2y" onclick="setRangoTrabajados(this)">Últimos 2 años</div>
+    <div class="kpis" id="statMain"></div>
+    <div class="stgrid">
+      <section class="stcard"><h3>Asignaciones por mes <em>año de servicio</em></h3><div id="chartMeses"></div></section>
+      <section class="stcard"><h3>Top publicadores <em id="periodLbl">este año</em></h3><div class="chart-wrap" id="chartPubs"></div></section>
+      <section class="stcard"><h3>Territorios por grupo</h3><div class="chart-wrap" id="chartGrupos"></div></section>
+      <section class="stcard"><h3>Más tiempo sin trabajar</h3><div class="chart-wrap" id="chartOld"></div></section>
+      <section class="stcard wide">
+        <div class="vh-row" style="align-items:center;margin-bottom:12px">
+          <h3 style="margin:0">Territorios más trabajados</h3>
+          <div class="segc">
+            <button class="on" data-rango="1y" onclick="setRangoTrabajados(this)">Este año</button>
+            <button data-rango="2y" onclick="setRangoTrabajados(this)">2 años</button>
           </div>
         </div>
         <div class="chart-wrap" id="chartTopTrabajados"></div>
-      </div>
+      </section>
     </div>
   </div>
 </div>
@@ -1057,22 +1445,18 @@ body.light{
 <!-- VIEW: PUBLICADORES -->
 <div id="view-publicadores" class="view">
   <div class="view-head">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between">
-      <div><div class="view-title">Publicadores</div><div class="view-sub">Todos los publicadores registrados</div></div>
-      <div style="display:flex;gap:6px">
+    <div class="vh-row">
+      <div><div class="view-title">Publicadores</div><div class="view-sub" id="pubSub">Todos los publicadores registrados</div></div>
+      <div class="vh-actions">
         <button class="btn btn-ghost btn-sm" onclick="exportarPublicadores()">⬇ Excel</button>
-        <button class="btn btn-ghost btn-sm" id="toggleArchivadosBtn" onclick="_showArchivados=!_showArchivados;document.getElementById('toggleArchivadosBtn').textContent=_showArchivados?'👤 Activos':'📦 Archivados';renderPublicadores()">📦 Archivados</button>
+        <button class="btn btn-ghost btn-sm" id="toggleArchivadosBtn" onclick="_showArchivados=!_showArchivados;_pubGrupo='todos';renderPublicadores()">📦 Archivados</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('mPub')">＋ Añadir</button>
       </div>
     </div>
+    <div class="pgbar" id="pubGroupBar"></div>
   </div>
   <div class="view-scroll">
-    <div class="tbl-wrap">
-      <div class="tbl-head" id="pubTblHead" style="grid-template-columns:1fr 150px 60px 80px 60px;display:grid;padding:0 10px">
-        <span>Nombre</span><span>Grupo</span><span>Activos</span><span>Completados</span><span></span>
-      </div>
-      <div id="pubTable" class="tbl-body" style="max-height:calc(100vh - 200px)"></div>
-    </div>
+    <div id="pubTable" class="pgrid"></div>
   </div>
 </div>
 
@@ -1090,26 +1474,23 @@ body.light{
 <!-- VIEW: HISTORIAL -->
 <div id="view-historial" class="view">
   <div class="view-head">
-    <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div><div class="view-title">Historial</div><div class="view-sub">Toca un territorio para ver sus asignaciones</div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="exportarHistorial()">⬇ Excel</button>
-        <input class="fi" id="histSearch" type="text" placeholder="Buscar…" style="width:160px;padding:6px 11px;font-size:13px" oninput="renderHistorial()">
+    <div class="vh-row">
+      <div><div class="view-title">Historial</div><div class="view-sub" id="histSub">Toca un registro para ver y editar sus asignaciones</div></div>
+      <div class="vh-actions"><button class="btn btn-ghost btn-sm" onclick="exportarHistorial()">⬇ Excel</button></div>
+    </div>
+    <div class="vh-row" style="margin-top:12px;align-items:center">
+      <div class="segc" id="histModeSeg">
+        <button class="on" data-hm="cron" onclick="setHistMode('cron')">Cronológico</button>
+        <button data-hm="ter" onclick="setHistMode('ter')">Por territorio</button>
       </div>
+      <input class="fi hsearch" id="histSearch" type="text" placeholder="Buscar territorio o publicador…" oninput="renderHistorial()">
     </div>
   </div>
   <div class="view-scroll" id="histScrollArea" style="display:flex;gap:14px;padding-top:14px">
-    <!-- Territory list -->
     <div id="histListCol" style="flex:1;min-width:0">
-      <div class="tbl-wrap">
-        <div class="tbl-head" id="histTblHead" style="grid-template-columns:60px 1fr 90px 60px;display:grid;padding:0 10px">
-          <span>Nº</span><span>Último pub.</span><span>Último</span><span>Nº</span>
-        </div>
-        <div id="histTable" class="tbl-body" style="max-height:calc(100dvh - 230px)"></div>
-      </div>
+      <div id="histTable" class="hlist"></div>
     </div>
-    <!-- Detail panel -->
-    <div id="histDetail" style="width:320px;flex-shrink:0;display:none">
+    <div id="histDetail" style="width:340px;flex-shrink:0;display:none">
       <div class="tbl-wrap" style="padding:16px;position:sticky;top:0">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <div style="font-size:14px;font-weight:700;letter-spacing:-.2px" id="histDetailTitle">Asignaciones</div>
@@ -1694,115 +2075,86 @@ function renderDashboard(){
   if(!el) return;
   const now=new Date();
   const anio=getAnioServicio();
+  const dd=document.getElementById('dashDate');
+  if(dd) dd.textContent='Año de servicio '+anio.label;
 
-  document.getElementById('dashDate').textContent=
-    'Año de servicio '+anio.label+' · '+now.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
-
-  const ters=S.territorios;
-  const total=ters.length;
+  const ters=S.territorios, total=ters.length;
   const disp=ters.filter(t=>t.estado==='disponible').length;
-  const asig=ters.filter(t=>t.estado==='asignado').length;
-  const venc=ters.filter(t=>t.estado==='vencido').length;
   const prox=ters.filter(t=>statusOf(t)==='proximo').length;
+  const venc=ters.filter(t=>t.estado==='vencido').length;
+  const asig=ters.filter(t=>t.estado==='asignado').length-prox;
   const noVisitar=ters.filter(t=>t.no_visitar).length;
 
-  // Año de servicio stats
+  // Año de servicio
   const histAnio=S.historial.filter(h=>h.fecha_dev&&h.fecha_dev>=anio.start&&h.fecha_dev<=anio.end);
-  const asigAnio=S.historial.filter(h=>h.fecha_asig&&h.fecha_asig>=anio.start&&h.fecha_asig<=anio.end);
-  const tersTrabajadosAnio=new Set(histAnio.map(h=>h.territorio_id)).size;
-  const pubsActivosAnio=new Set(histAnio.map(h=>h.pub_id)).size;
-  // Territorios completados = devueltos en el año de servicio
-  const completadosAnio=histAnio.length;
-  // Average days per assignment this year
-  const avgDias=histAnio.length ? Math.round(histAnio.reduce((s,h)=>{
-    if(!h.fecha_asig||!h.fecha_dev) return s;
-    return s+Math.abs(daysBetween(h.fecha_asig,h.fecha_dev));
-  },0)/histAnio.length) : 0;
+  const trab=new Set(histAnio.map(h=>h.territorio_id)).size;
+  const pct=total?Math.round(trab/total*100):0;
+  const pubsAct=new Set(histAnio.map(h=>h.pub_id)).size;
+  const avg=histAnio.length?Math.round(histAnio.reduce((s,h)=>(h.fecha_asig&&h.fecha_dev)?s+Math.abs(daysBetween(h.fecha_asig,h.fecha_dev)):s,0)/histAnio.length):0;
 
-  // Proximos a vencer esta semana
-  const en7=new Date(now.getTime()+7*864e5).toISOString().split('T')[0];
-  const proxSemana=ters.filter(t=>t.fecha_vence&&t.fecha_vence<=en7&&(t.estado==='asignado'||t.estado==='vencido'))
-    .sort((a,b)=>a.fecha_vence.localeCompare(b.fecha_vence)).slice(0,8);
+  // Lo que requiere atención
+  const solic=(S.solicitudes||[]).filter(s=>s.estado==='pendiente');
+  const en7=addDays(today(),7);
+  const prox7=ters.filter(t=>t.estado==='asignado'&&t.fecha_vence&&t.fecha_vence>=today()&&t.fecha_vence<=en7)
+    .sort((a,b)=>a.fecha_vence.localeCompare(b.fecha_vence));
+  const needs=solic.length+venc+prox7.length;
 
-  // Sin trabajar >1 año
-  const hace365=new Date(now.getTime()-365*864e5).toISOString().split('T')[0];
-  const sinTrabajar=ters.filter(t=>t.estado==='disponible'&&(!t.ultimo_trabajado||t.ultimo_trabajado<hace365))
-    .sort((a,b)=>(a.ultimo_trabajado||'').localeCompare(b.ultimo_trabajado||'')).slice(0,6);
+  const hr=now.getHours();
+  const greet=hr<13?'Buenos días':hr<20?'Buenas tardes':'Buenas noches';
+  const fecha=now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  const ic=n=>`<svg class="ico"><use href="#i-${n}"/></svg>`;
 
-  const kpi=(icon,label,val,col,sub)=>`
-    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px">
-      <div style="font-size:20px;margin-bottom:4px">${icon}</div>
-      <div style="font-size:26px;font-weight:800;color:${col};letter-spacing:-.5px;line-height:1">${val}</div>
-      <div style="font-size:11px;font-weight:700;color:var(--t3);margin-top:4px;text-transform:uppercase;letter-spacing:.05em">${label}</div>
-      ${sub?`<div style="font-size:11px;color:var(--t2);margin-top:2px">${sub}</div>`:''}
-    </div>`;
+  // Pulso del año: asignaciones por mes (sep → ago)
+  const ms=['S','O','N','D','E','F','M','A','M','J','J','A'], mi=[8,9,10,11,0,1,2,3,4,5,6,7];
+  const cnt=mi.map(m=>S.historial.filter(h=>h.fecha_asig&&h.fecha_asig>=anio.start&&h.fecha_asig<=anio.end&&new Date(h.fecha_asig+'T00:00:00').getMonth()===m).length);
+  const mx=Math.max(1,...cnt), nowIdx=mi.indexOf(now.getMonth());
+  const bars=cnt.map((v,i)=>`<div class="${i===nowIdx?'now':i>nowIdx?'fut':''}" style="height:${i>nowIdx?14:Math.max(6,v/mx*100)}%" title="${v}"></div>`).join('');
 
-  const section=(title,body)=>`
-    <div style="margin-bottom:18px">
-      <div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)">${title}</div>
-      ${body}
-    </div>`;
+  // Territorios dormidos (disponibles sin trabajar más de un año)
+  const hace365=addDays(today(),-365);
+  const dorm=ters.filter(t=>t.estado==='disponible'&&(!t.ultimo_trabajado||t.ultimo_trabajado<hace365))
+    .sort((a,b)=>(a.ultimo_trabajado||'').localeCompare(b.ultimo_trabajado||'')).slice(0,10);
+  const dormH=dorm.length?dorm.map(t=>{
+    const y=t.ultimo_trabajado?(daysSince(t.ultimo_trabajado)/365).toFixed(1).replace('.',','):null;
+    return`<div class="dx-chip" onclick="openTerDetail(${t.id})"><b>${t.num}</b><span>${y?y+' años':'Nunca'}</span><small>${(t.nombre||'').replace(/ — .*/,'')||'Territorio'}</small></div>`;
+  }).join(''):`<div class="dx-card" style="width:100%;color:var(--t2);font-size:13px">Todos los territorios se han trabajado en el último año ✓</div>`;
 
-  // Progress bar
-  const pct=total?Math.round((disp/total)*100):0;
-  const prog=`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:16px">
-    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-      <span style="font-size:13px;font-weight:600">Disponibles ahora</span>
-      <span style="font-size:14px;font-weight:700;color:var(--green)">${disp} / ${total} (${pct}%)</span>
+  // Lista de atención
+  let att='';
+  if(solic.length) att+=`<div class="dx-item dx-ac"><div class="dx-ico">${ic('inbox')}</div><div class="dx-tx"><b>${solic.length} solicitud${solic.length>1?'es':''} de territorio</b><span>Publicadores esperando respuesta</span></div><button class="dx-go" onclick="goView('solicitudes')">Revisar</button></div>`;
+  if(venc) att+=`<div class="dx-item dx-bad"><div class="dx-ico">${ic('alert')}</div><div class="dx-tx"><b>${venc} territorio${venc>1?'s':''} vencido${venc>1?'s':''}</b><span>Hay que renovarlos o recogerlos</span></div><button class="dx-go" onclick="goFilter('vencido')">Ver</button></div>`;
+  prox7.slice(0,3).forEach(t=>{
+    const d=daysUntil(t.fecha_vence);
+    att+=`<div class="dx-item dx-warn"><div class="dx-ico">${ic('clock')}</div><div class="dx-tx"><b><span class="dx-num">${t.num}</span> · ${pubName(t.pub_id)}</b><span>${d===0?'Vence hoy':'Vence en '+d+' d'}</span></div><button class="dx-go" onclick="openTerDetailTab(${t.id},'asignar')">Renovar</button></div>`;
+  });
+  if(prox7.length>3) att+=`<div style="font-size:12px;color:var(--t2);padding:0 4px;cursor:pointer" onclick="goFilter('proximo')">y ${prox7.length-3} más esta semana · ver todos →</div>`;
+  if(!att) att=`<div class="dx-item dx-ok"><div class="dx-ico">${ic('check')}</div><div class="dx-tx"><b>Nada urgente hoy</b><span>Sin vencidos, sin solicitudes ni vencimientos esta semana</span></div></div>`;
+
+  const hero=`<section class="dx-hero">
+    <div class="dx-hi">${greet} · ${fecha}</div>
+    <h1 class="dx-h1">${needs?`${needs} ${needs>1?'cosas necesitan':'cosa necesita'} tu atención`:'Todo al día. Buen trabajo.'}</h1>
+    <div class="dx-row">
+      <div class="dx-ring" style="--p:${pct}"><div><strong>${pct}%</strong><span>trabajado</span></div></div>
+      <div class="dx-mini">
+        <div onclick="goFilter('disponible')"><b>${disp}</b><span>Disponibles</span></div>
+        <div onclick="goFilter('asignado')"><b>${asig}</b><span>Asignados</span></div>
+        <div class="warn" onclick="goFilter('proximo')"><b>${prox}</b><span>Próx. vencer</span></div>
+        <div class="bad" onclick="goFilter('vencido')"><b>${venc}</b><span>Vencidos</span></div>
+      </div>
     </div>
-    <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
-      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .6s"></div>
-    </div>
-  </div>`;
+    <div class="dx-yr">Año de servicio ${anio.label} · ${trab} de ${total} territorios trabajados</div>
+  </section>`;
+  const attS=`<section class="dx-sec"><h3>Requiere atención ${needs?`<em>${needs}</em>`:''}</h3><div class="dx-att">${att}</div>${noVisitar?`<div class="dx-note">${ic('alert')} ${noVisitar} territorio${noVisitar>1?'s':''} con aviso «No visitar»</div>`:''}</section>`;
+  const qa=`<section class="dx-sec dx-s-qa"><h3>Acciones rápidas</h3><div class="dx-qa">
+    <button onclick="goView('lotes')"><i>${ic('pin')}</i>Asignar</button>
+    <button onclick="openTerModal()"><i>${ic('plus')}</i>Territorio</button>
+    <button onclick="openModal('mPub')"><i>${ic('user')}</i>Publicador</button>
+    <button onclick="goView('s13')"><i>${ic('doc')}</i>S-13</button></div></section>`;
+  const pulse=`<section class="dx-sec dx-s-pulse"><h3>Pulso del año</h3><div class="dx-card"><div class="dx-bars">${bars}</div><div class="dx-lab">${ms.map(m=>`<span>${m}</span>`).join('')}</div>
+    <div class="dx-kp"><div><b>${histAnio.length}</b><span>devueltos</span></div><div><b>${pubsAct}</b><span>publicadores</span></div><div><b>${avg?avg+' d':'—'}</b><span>media por asignación</span></div></div></div></section>`;
+  const dormS=`<section class="dx-sec dx-s-dorm"><h3>Territorios dormidos <em>+1 año</em></h3><div class="dx-rail">${dormH}</div>${dorm.length?`<div style="font-size:12px;color:var(--t2);text-align:right;cursor:pointer" onclick="goView('prioridad')">Ver todos en «Sin trabajar» →</div>`:''}</section>`;
 
-  // Año de servicio grid
-  const anioGrid=`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:8px">
-    ${kpi('✅','Trabajados año',tersTrabajadosAnio,'var(--green)','territorios únicos')}
-    ${kpi('👥','Publicadores',pubsActivosAnio,'var(--blue)','han predicado')}
-    ${kpi('📋','Asignaciones',completadosAnio,'var(--purple)','devueltas este año')}
-    ${kpi('⏱','Media días',avgDias?avgDias+'d':'—','var(--t2)','por asignación')}
-  </div>`;
-
-  // Estado actual grid
-  const estadoGrid=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
-    ${kpi('📌','Asignados',asig,'var(--blue)',Math.round(asig/total*100)+'% del total')}
-    ${kpi('🔴','Vencidos',venc,venc?'var(--red)':'var(--t3)',venc?'Requieren atención':'—')}
-    ${kpi('⏳','Próx. vencer',prox,'var(--amber)','en '+WARN_DAYS+'d')}
-    ${kpi('⚠️','No visitar',noVisitar,noVisitar?'var(--red)':'var(--t3)','avisos activos')}
-    ${kpi('📊','Total',total,'var(--t2)','')}
-    ${kpi('🆓','Disponibles',disp,'var(--green)','')}
-  </div>`;
-
-  // Próximos a vencer
-  const proxHtml=proxSemana.length ? proxSemana.map(t=>{
-    const pub=S.publicadores.find(p=>p.id===t.pub_id);
-    const dv=daysUntil(t.fecha_vence);
-    const col=dv<0?'var(--red)':dv<=3?'var(--red)':'var(--amber)';
-    const txt=dv<0?'Vencido hace '+(-dv)+'d':dv===0?'Hoy':dv+'d';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
-      <span style="font-family:var(--font-mono);font-weight:700;color:${col};min-width:36px">${t.num}</span>
-      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${pub?.nombre||'—'}</span>
-      <span style="font-size:12px;color:${col};font-weight:600;white-space:nowrap">${txt}</span>
-    </div>`;
-  }).join('') : '<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno ✓</div>';
-
-  // Sin trabajar
-  const sinHtml=sinTrabajar.length ? sinTrabajar.map(t=>{
-    const dias=t.ultimo_trabajado?daysSince(t.ultimo_trabajado):99999;
-    const txt=dias>9000?'Nunca':Math.round(dias/365*10)/10+' años';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer" onclick="openTerDetail(${t.id})">
-      <span style="font-family:var(--font-mono);font-weight:700;color:var(--red);min-width:36px">${t.num}</span>
-      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.nombre||t.num}</span>
-      <span style="font-size:12px;color:var(--red);font-weight:600;white-space:nowrap">${txt}</span>
-    </div>`;
-  }).join('')+(sinTrabajar.length>0?`<div style="font-size:11px;color:var(--t3);text-align:right;margin-top:4px">Ver más en Prioridad →</div>`:'')
-  : '<div style="font-size:13px;color:var(--t3);padding:8px">Ninguno ✓</div>';
-
-  el.innerHTML=prog
-    +section('📅 Año de servicio '+anio.label, anioGrid)
-    +section('📊 Estado actual', estadoGrid)
-    +section('⚠️ Vencen esta semana', proxHtml)
-    +section('📦 Sin trabajar más de 1 año', sinHtml);
+  el.innerHTML=`<div class="dx-wrap"><div class="dx-grid">${hero}${attS}</div><div class="dx-g2">${pulse}<div class="dx-col">${qa}${dormS}</div></div></div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1810,64 +2162,78 @@ function renderDashboard(){
 // ══════════════════════════════════════════════════════════════
 let _lotesSelected=new Set();
 
-function renderLotes(){
-  _lotesSelected.clear();
-  document.getElementById('lotes-pub-input').value='';
-  document.getElementById('lotes-pub-id').value='';
-  document.getElementById('lotes-fecha').value=today();
-  document.getElementById('lotes-count').textContent='';
-  document.getElementById('lotes-btn').disabled=true;
-  document.getElementById('lotes-select-all').checked=false;
+let _lotesGrupo='todos',_lotesQ='',_lotesSort='antiguo';
+function setLotesSort(v){
+  _lotesSort=v;
+  document.querySelectorAll('#lotesSortSeg button').forEach(b=>b.classList.toggle('on',b.dataset.ls===v));
   _renderLotesList();
 }
-
+function setLotesGrupo(v){_lotesGrupo=v;_renderLotesList();}
+function renderLotes(){
+  _lotesSelected.clear();
+  _lotesGrupo='todos';_lotesQ='';
+  document.getElementById('lotes-pub-input').value='';
+  document.getElementById('lotes-pub-id').value='';
+  document.getElementById('lotes-search').value='';
+  document.getElementById('lotes-fecha').value=today();
+  document.getElementById('lotes-select-all').checked=false;
+  document.getElementById('lotes-btn').textContent='📌 Asignar';
+  _renderLotesList();
+}
+function _lotesVisible(){
+  let a=S.territorios.filter(t=>t.estado==='disponible');
+  if(_lotesGrupo==='sin') a=a.filter(t=>!t.grupo_id);
+  else if(_lotesGrupo!=='todos') a=a.filter(t=>String(t.grupo_id)===String(_lotesGrupo));
+  if(_lotesQ) a=a.filter(t=>`${t.num} ${t.nombre||''}`.toLowerCase().includes(_lotesQ));
+  const num=(x,y)=>x.num.localeCompare(y.num,undefined,{numeric:true});
+  if(_lotesSort==='antiguo') a.sort((x,y)=>daysSince(y.ultimo_trabajado)-daysSince(x.ultimo_trabajado)||num(x,y));
+  else a.sort(num);
+  return a;
+}
 function _renderLotesList(){
-  const avail=S.territorios.filter(t=>t.estado==='disponible')
-    .sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
+  const all=S.territorios.filter(t=>t.estado==='disponible');
   const el=document.getElementById('lotes-list');
+  // chips de grupo con recuento de disponibles
+  const cnt=g=>all.filter(t=>g==='sin'?!t.grupo_id:t.grupo_id===g).length;
+  const grupos=[...S.grupos].sort((a,b)=>a.num-b.num);
+  document.getElementById('lotes-groups').innerHTML=
+    `<button class="pchip${_lotesGrupo==='todos'?' on':''}" onclick="setLotesGrupo('todos')">Todos <b>${all.length}</b></button>`+
+    grupos.map(g=>`<button class="pchip${String(_lotesGrupo)===String(g.id)?' on':''}" onclick="setLotesGrupo(${g.id})"><i style="background:${grpColor(g)}"></i>G${g.num} <b>${cnt(g.id)}</b></button>`).join('')+
+    (cnt('sin')?`<button class="pchip${_lotesGrupo==='sin'?' on':''}" onclick="setLotesGrupo('sin')">Sin grupo <b>${cnt('sin')}</b></button>`:'');
+  const avail=_lotesVisible();
   if(!avail.length){
-    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3)">No hay territorios disponibles</div>';
-    return;
+    el.innerHTML='<div class="hempty" style="grid-column:1/-1">No hay territorios disponibles con este filtro</div>';
+    _updateLotesCount();return;
   }
   el.innerHTML=avail.map(t=>{
-    const checked=_lotesSelected.has(t.id);
     const g=S.grupos.find(x=>Number(x.id)===Number(t.grupo_id));
     const dias=t.ultimo_trabajado?daysSince(t.ultimo_trabajado):9999;
-    const diasStr=dias===9999?'Nunca trabajado':dias>365?`${Math.round(dias/365)}a sin trabajar`:dias>30?`${Math.round(dias/30)}m sin trabajar`:`${dias}d`;
-    const col=dias>365?'var(--red)':dias>180?'var(--amber)':'var(--t2)';
-    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;${checked?'background:rgba(10,132,255,.08)':''}" onclick="lotesToggle(${t.id},this)">
-      <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();lotesToggle(${t.id},this.closest('div'))" style="accent-color:var(--blue);width:18px;height:18px;flex-shrink:0">
-      <span style="font-family:var(--font-mono);font-weight:700;font-size:14px;min-width:40px">${t.num}</span>
-      <span style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.nombre||t.num}</div>
-        <div style="font-size:11px;color:var(--t3)">${g?`G${g.num} · `:''} ${t.tipo||''}</div>
-      </span>
-      <span style="font-size:12px;color:${col};white-space:nowrap;text-align:right">${diasStr}</span>
+    const diasStr=dias===9999?'Nunca trabajado':dias>=365?`${(dias/365).toFixed(1).replace('.',',')} años`:dias>30?`${Math.round(dias/30)} meses`:`${dias} d`;
+    const col=dias>=365?'var(--red)':dias>180?'var(--amber)':'var(--t2)';
+    const sel=_lotesSelected.has(t.id);
+    return`<div class="ltile${sel?' on':''}" data-id="${t.id}" onclick="lotesToggle(${t.id},this)">
+      <span class="lchk">${sel?'✓':''}</span>
+      <span class="lt-num">${t.num}</span>
+      <span class="lt-name">${(t.nombre||'').replace(/ — .*/,'')||t.tipo||''}</span>
+      <span class="lt-meta"><span style="color:${col};font-weight:700">${diasStr}</span>${g?` · G${g.num}`:''}</span>
     </div>`;
   }).join('');
   _updateLotesCount();
 }
 
 function lotesToggle(id,row){
-  if(_lotesSelected.has(id)){
-    _lotesSelected.delete(id);
-    row.style.background='';
-    row.querySelector('input').checked=false;
-  } else {
-    _lotesSelected.add(id);
-    row.style.background='rgba(10,132,255,.08)';
-    row.querySelector('input').checked=true;
+  if(_lotesSelected.has(id)) _lotesSelected.delete(id); else _lotesSelected.add(id);
+  if(row){
+    const on=_lotesSelected.has(id);
+    row.classList.toggle('on',on);
+    const c=row.querySelector('.lchk'); if(c) c.textContent=on?'✓':'';
   }
   _updateLotesCount();
 }
 
 function lotesToggleAll(checked){
-  const avail=S.territorios.filter(t=>t.estado==='disponible');
-  if(checked){
-    avail.forEach(t=>_lotesSelected.add(t.id));
-  } else {
-    _lotesSelected.clear();
-  }
+  const vis=_lotesVisible();
+  vis.forEach(t=>checked?_lotesSelected.add(t.id):_lotesSelected.delete(t.id));
   _renderLotesList();
 }
 
@@ -1879,8 +2245,12 @@ function lotesDeselectAll(){
 
 function _updateLotesCount(){
   const n=_lotesSelected.size;
-  document.getElementById('lotes-count').textContent=n?`${n} seleccionado${n>1?'s':''}` :'';
   const pubId=document.getElementById('lotes-pub-id').value;
+  const lc=document.getElementById('lotes-count');
+  if(lc) lc.textContent=n?`${n} seleccionado${n>1?'s':''}`:'';
+  const bn=document.getElementById('lotes-bar-n'); if(bn) bn.textContent=n;
+  const who=document.getElementById('lotes-bar-who');
+  if(who) who.textContent=pubId?` · para ${pubName(parseInt(pubId))}`:' · elige publicador';
   document.getElementById('lotes-btn').disabled=!n||!pubId;
 }
 
@@ -2120,7 +2490,21 @@ async function initApp(){
 async function loadGrupos(){S.grupos=await sbGet('grupos',{select:'*',order:'num.asc'});}
 async function loadPublicadores(){S.publicadores=await sbGet('publicadores',{select:'*',order:'nombre.asc'});}
 async function loadTerritorios(){S.territorios=await sbGet('territorios',{select:'*',order:'num.asc'});}
-async function loadHistorial(){S.historial=await sbGet('historial',{select:'*',order:'created_at.desc',limit:2000});}
+// Supabase corta cada petición a 1000 filas aunque se pida más: se pagina hasta traerlo todo.
+async function sbGetAll(table, params={}, pageSize=1000){
+  const all=[];
+  for(let from=0; ; from+=pageSize){
+    const url=new URL(`${SB_URL}/rest/v1/${table}`);
+    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
+    const r=await fetch(url,{headers:{...H,'Range':`${from}-${from+pageSize-1}`}});
+    if(!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+    const rows=await r.json();
+    all.push(...rows);
+    if(rows.length<pageSize) break;
+  }
+  return all;
+}
+async function loadHistorial(){S.historial=await sbGetAll('historial',{select:'*',order:'created_at.desc,id.desc'});}
 async function loadAuditLog(){S.auditLog=await sbGet('audit_log',{select:'*',order:'created_at.desc',limit:200});}
 async function loadSolicitudes(){S.solicitudes=await sbGet('solicitudes',{select:'*',order:'created_at.desc'});}
 async function loadCampanias(){
@@ -2140,9 +2524,20 @@ function nav(el){
 }
 function showView(v){
   currentView=v;
+  // Menú lateral y barra móvil siempre reflejan la vista activa, se llegue por donde se llegue.
+  document.querySelectorAll('.nav-item[data-v]').forEach(n=>n.classList.toggle('on',n.dataset.v===v));
+  document.querySelectorAll('.mtab[data-v]').forEach(t=>t.classList.toggle('on',t.dataset.v===v));
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
   document.getElementById('view-'+v).classList.add('on');
   renderView(v);
+}
+function goView(v){ showView(v); }
+// Abre Territorios ya filtrado (vencido, proximo, disponible…) desde la portada u otros accesos.
+function goFilter(f){ showView('territorios'); setFilter(f); }
+let createOpen=false;
+function toggleCreate(){
+  createOpen=!createOpen;
+  document.getElementById('createSheet').classList.toggle('open',createOpen);
 }
 function quickFilter(el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
@@ -2181,7 +2576,7 @@ function setFilter(elOrStr){
   if(sortSel){
     if(f==='disponible') sortSel.value='ultimo_asc';   // sin trabajar más tiempo primero
     else if(f==='vencido'||f==='proximo'||f==='asignado') sortSel.value='vence_asc'; // vence antes
-    else sortSel.value='num';
+    else sortSel.value='urg';
   }
   renderTerritorios();
 }
@@ -2217,7 +2612,17 @@ function filteredList(){
     const mS=!searchQ||t.num.toLowerCase().includes(searchQ)||t.nombre.toLowerCase().includes(searchQ)||pubName(t.pub_id).toLowerCase().includes(searchQ)||(t.descripcion||'').toLowerCase().includes(searchQ);
     return mF&&mG&&mS;
   });
-  if(sort==='vence_asc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return a.fecha_vence.localeCompare(b.fecha_vence);});
+  if(sort==='urg'){
+    const rank={vencido:0,proximo:1,asignado:2,grupo:3,disponible:3};
+    list.sort((a,b)=>{
+      const ra=rank[statusOf(a)],rb=rank[statusOf(b)];
+      if(ra!==rb) return ra-rb;
+      const fa=a.fecha_vence||'9999',fb=b.fecha_vence||'9999';
+      if(fa!==fb) return fa.localeCompare(fb);
+      return a.num.localeCompare(b.num,undefined,{numeric:true});
+    });
+  }
+  else if(sort==='vence_asc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return a.fecha_vence.localeCompare(b.fecha_vence);});
   else if(sort==='vence_desc') list.sort((a,b)=>{if(!a.fecha_vence) return 1;if(!b.fecha_vence) return -1;return b.fecha_vence.localeCompare(a.fecha_vence);});
   else if(sort==='asig_desc') list.sort((a,b)=>{if(!a.fecha_asig) return 1;if(!b.fecha_asig) return -1;return b.fecha_asig.localeCompare(a.fecha_asig);});
   else if(sort==='ultimo_asc') list.sort((a,b)=>{if(!a.ultimo_trabajado) return -1;if(!b.ultimo_trabajado) return 1;return a.ultimo_trabajado.localeCompare(b.ultimo_trabajado);});
@@ -2232,45 +2637,23 @@ function renderTerritorios(){
   if(viewMode==='list') renderListView(list); else renderCardView(list);
 }
 
-function renderStatsStrip(list){
-  const d=list.filter(t=>t.estado==='disponible').length;
-  const a=list.filter(t=>t.estado==='asignado').length;
-  const v=list.filter(t=>t.estado==='vencido').length;
-  const p=list.filter(t=>statusOf(t)==='proximo').length;
-  const mob=window.innerWidth<=700;
-
-  if(mob){
-    // Compact scrollable pills on mobile
-    document.getElementById('statStrip').innerHTML=`
-      <div class="stat-box" onclick="setFilter('todos')">
-        <div class="stat-ico" style="background:var(--blue-dim)">🗺</div>
-        <div><div class="stat-val">${list.length}</div><div class="stat-lbl">Total</div></div>
-      </div>
-      <div class="stat-box" onclick="setFilter('disponible')">
-        <div class="stat-ico" style="background:var(--green-dim)">✓</div>
-        <div><div class="stat-val" style="color:var(--green)">${d}</div><div class="stat-lbl">Disponibles</div></div>
-      </div>
-      <div class="stat-box" onclick="setFilter('asignado')">
-        <div class="stat-ico" style="background:var(--blue-dim)">📌</div>
-        <div><div class="stat-val" style="color:var(--blue)">${a}</div><div class="stat-lbl">Asignados</div></div>
-      </div>
-      <div class="stat-box" onclick="setFilter('proximo')">
-        <div class="stat-ico" style="background:var(--amber-dim)">⚠</div>
-        <div><div class="stat-val" style="color:var(--amber)">${p}</div><div class="stat-lbl">Próx. vencer</div></div>
-      </div>
-      <div class="stat-box" onclick="setFilter('vencido')">
-        <div class="stat-ico" style="background:var(--red-dim)">🔴</div>
-        <div><div class="stat-val" style="color:var(--red)">${v}</div><div class="stat-lbl">Vencidos</div></div>
-      </div>`;
-    return;
-  }
-
-  document.getElementById('statStrip').innerHTML=`
-    <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">🗺</div><div><div class="stat-val">${list.length}</div><div class="stat-lbl">Filtrados</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--green-dim)">✓</div><div><div class="stat-val" style="color:var(--green)">${d}</div><div class="stat-lbl">Disponibles</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">📌</div><div><div class="stat-val" style="color:var(--blue)">${a}</div><div class="stat-lbl">Asignados</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--amber-dim)">⚠</div><div><div class="stat-val" style="color:var(--amber)">${p}</div><div class="stat-lbl">Próx. vencer</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--red-dim)">🔴</div><div><div class="stat-val" style="color:var(--red)">${v}</div><div class="stat-lbl">Vencidos</div></div></div>`;
+function renderStatsStrip(){
+  const gFil=document.getElementById('fGrupo').value;
+  const base=S.territorios.filter(t=>{
+    const mG=!gFil||String(t.grupo_id)===gFil;
+    const mS=!searchQ||t.num.toLowerCase().includes(searchQ)||t.nombre.toLowerCase().includes(searchQ)||pubName(t.pub_id).toLowerCase().includes(searchQ)||(t.descripcion||'').toLowerCase().includes(searchQ);
+    return mG&&mS;
+  });
+  const cnt={todos:base.length,disponible:0,asignado:0,proximo:0,vencido:0};
+  base.forEach(t=>{
+    if(t.estado==='disponible') cnt.disponible++;
+    if(t.estado==='asignado') cnt.asignado++;
+    if(t.estado==='vencido') cnt.vencido++;
+    if(statusOf(t)==='proximo') cnt.proximo++;
+  });
+  const defs=[['todos','Todos','var(--text)'],['disponible','Disponibles','var(--green)'],['asignado','Asignados','var(--blue)'],['proximo','Próx. vencer','var(--amber)'],['vencido','Vencidos','var(--red)']];
+  document.getElementById('statStrip').innerHTML=defs.map(([k,l,col])=>
+    `<button class="sx${currentFilter===k?' on':''}${(k==='proximo'||k==='vencido')&&cnt[k]?' alert':''}" style="--c:${col}" onclick="setFilter('${k}')"><div class="n">${cnt[k]}</div><div class="l">${l}</div></button>`).join('');
 }
 
 function renderListView(list){
@@ -2278,20 +2661,22 @@ function renderListView(list){
   if(!list.length){body.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
   const mob=window.innerWidth<=700;
 
-  // Status color mapping
-  const stColor={
-    disponible:'var(--green)',
-    asignado:'var(--blue)',
-    vencido:'var(--red)',
-    proximo:'var(--amber)',
-    grupo:'var(--purple)'
+  // El color solo aparece cuando hay que actuar; lo normal va en neutro.
+  const stColor={disponible:'var(--t2)',asignado:'var(--text)',vencido:'var(--red)',proximo:'var(--amber)',grupo:'var(--purple)'};
+  const barOf=t=>{
+    if(!(t.estado==='asignado'||t.estado==='vencido')||!t.fecha_vence) return '';
+    const d=daysUntil(t.fecha_vence);
+    const pct=d<0?100:Math.max(4,Math.min(100,Math.round((1-d/EXPIRY_DAYS)*100)));
+    const c=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t3)';
+    return`<div class="dbar"><i style="width:${pct}%;background:${c}"></i></div>`;
   };
+  const rowCls=st=>st==='vencido'?' r-venc':st==='proximo'?' r-prox':'';
 
   body.innerHTML=list.map(t=>{
     const st=statusOf(t); const g=grupoOf(t);
     const pub=pubName(t.pub_id);
     const col=stColor[st]||'var(--t2)';
-    const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const c=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${c}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
+    const vH=t.fecha_vence?(()=>{const d=daysUntil(t.fecha_vence);const c=d<0?'var(--red)':d<=WARN_DAYS?'var(--amber)':'var(--t2)';return`<span style="color:${c};font-weight:${d<=WARN_DAYS?700:500}">${d<0?`hace ${-d}d`:`en ${d}d`}</span>`;})():`<span style="color:var(--t3)">—</span>`;
 
     if(mob){
       // Línea principal: nombre del publicador (o "Disponible" si no tiene) con color del estado
@@ -2308,11 +2693,12 @@ function renderListView(list){
         subLine=`Último trabajo: ${fmtDate(t.ultimo_trabajado)}`;
       }
 
-      return`<div class="tbl-row" style="grid-template-columns:44px 1fr auto;gap:0;min-height:52px" onclick="openTerDetail(${t.id})">
+      return`<div class="tbl-row${rowCls(st)}" style="grid-template-columns:44px 1fr auto;gap:0;min-height:52px" onclick="openTerDetail(${t.id})">
         <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);padding:14px 4px 0;font-weight:600">${t.num}</span>
         <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;overflow:hidden;min-width:0">
           <span style="font-weight:700;font-size:14px;color:${col};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${mainLine}</span>
           ${subLine?`<span style="font-size:12px;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${subLine}</span>`:''}
+          ${barOf(t)}
           ${t.no_visitar?`<span style="font-size:10px;color:var(--red);font-weight:700">⚠️ No visitar</span>`:''}
           ${S.campaniaTerritorios.some(ct=>ct.territorio_id===t.id)?`<span style="font-size:10px;color:#d97706;font-weight:700">🚩 Campaña</span>`:''}
         </span>
@@ -2321,14 +2707,15 @@ function renderListView(list){
     }
 
     // Desktop
-    return`<div class="tbl-row tcols" onclick="openTerDetail(${t.id})">
-      <span style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text)">${t.num}</span>
+    return`<div class="tbl-row tcols${rowCls(st)}" onclick="openTerDetail(${t.id})">
+      <span style="font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--text)">${t.num}</span>
       <span style="font-weight:600;color:${col}">${t.pub_id?pub:(t.ultimo_trabajado?`Ult: ${fmtDate(t.ultimo_trabajado)}`:'—')}${t.no_visitar?' <span style="font-size:10px;color:var(--red);font-weight:700">⚠️</span>':''}</span>
       <span style="color:var(--t2);font-size:12px">${t.tipo}</span>
       <span style="color:var(--t2);font-size:12px">${g?`G${g.num}`:'—'}</span>
       <span style="color:var(--t2);font-size:12px">${fmtDate(t.fecha_asig)}</span>
-      <span style="font-size:12px">${vH}</span>
+      <span style="font-size:12px">${vH}${barOf(t)}</span>
       <span>${pillHtml(st,isGrupo(t))}</span>
+      <span style="text-align:right"><button class="rq" onclick="event.stopPropagation();openTerDetailTab(${t.id},'asignar')">${t.estado==='disponible'?'Asignar':'Gestionar'}</button></span>
     </div>`;
   }).join('');
 }
@@ -3063,16 +3450,14 @@ function renderPrioridad(){
   if(!list.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">No hay disponibles</div>`;return;}
   el.innerHTML=list.map((t,i)=>{
     const ds=t._ru?daysSince(t._ru):9999;
-    const col=ds===9999?'var(--red)':ds>365?'var(--red)':ds>180?'var(--amber)':ds>90?'var(--text)':'var(--t2)';
-    const lastDate=t._ru?`Último trabajo: ${fmtDate(t._ru)} · ${ds}d`:'Nunca trabajado';
-    return`<div class="prio-item" onclick="openTerDetail(${t.id})">
-      <div class="prio-rank">#${i+1}</div>
-      <div class="prio-info">
-        <div class="prio-name">${t.num} — ${t.nombre}</div>
-        <div class="prio-sub">${t.tipo} · ${grupoLabel(t)} · ${t.num_dirs||0} puertas</div>
-        <div class="prio-last" style="color:${col}">${lastDate}</div>
-      </div>
-      <button class="btn btn-success btn-xs" onclick="event.stopPropagation();openTerDetailTab(${t.id},'asignar')">Asignar</button>
+    const level=ds===9999||ds>365?'bad':ds>180?'warn':'ok';
+    const txt=ds===9999?'Nunca':ds>=365?(ds/365).toFixed(1).replace('.',',')+' años':ds>=60?Math.round(ds/30)+' meses':ds+' d';
+    const g=grupoOf(t);
+    return`<div class="prow" onclick="openTerDetail(${t.id})">
+      <span class="pr-num">${t.num}</span>
+      <span class="pr-main"><b>${(t.nombre||'').replace(/ — .*/,'')||t.tipo}</b><small>${t.tipo}${g?` · G${g.num}`:''}${t.num_dirs?` · ${t.num_dirs} puertas`:''}${t._ru?` · último ${fmtDate(t._ru)}`:''}</small></span>
+      <span class="pr-age ${level}">${txt}</span>
+      <button class="rq on" onclick="event.stopPropagation();openTerDetailTab(${t.id},'asignar')">Asignar</button>
     </div>`;
   }).join('');
 }
@@ -3091,28 +3476,39 @@ function filterByPeriod(h){
 }
 function renderStats(){
   const h=filterByPeriod(S.historial);const t=S.territorios;
+  const anio=getAnioServicio();
   const total=t.length,disp=t.filter(x=>x.estado==='disponible').length,asig=t.filter(x=>x.estado==='asignado').length,venc=t.filter(x=>x.estado==='vencido').length;
-  document.getElementById('statMain').innerHTML=`
-    <div class="stat-box"><div class="stat-ico" style="background:var(--green-dim)">✓</div><div><div class="stat-val" style="color:var(--green)">${h.length}</div><div class="stat-lbl">Completados</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--blue-dim)">🗺</div><div><div class="stat-val">${total}</div><div class="stat-lbl">Total</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--purple-dim)">📌</div><div><div class="stat-val" style="color:var(--blue)">${asig}</div><div class="stat-lbl">En curso</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--red-dim)">🔴</div><div><div class="stat-val" style="color:var(--red)">${venc}</div><div class="stat-lbl">Vencidos</div></div></div>
-    <div class="stat-box"><div class="stat-ico" style="background:var(--amber-dim)">📊</div><div><div class="stat-val" style="color:var(--amber)">${disp}</div><div class="stat-lbl">Disponibles</div></div></div>`;
+  const PL={year:'este año',['6m']:'últimos 6 meses',month:'este mes',all:'todo el historial'};
+  const pl=document.getElementById('periodLbl'); if(pl) pl.textContent=PL[currentPeriod]||'';
+  const kpi=(n,l,c,sub)=>`<div class="kpi" style="--c:${c}"><div class="n">${n}</div><div class="l">${l}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+  document.getElementById('statMain').innerHTML=
+    kpi(h.length,'Completados','var(--green)',PL[currentPeriod])+
+    kpi(asig,'En curso','var(--blue)',Math.round(asig/(total||1)*100)+'% del total')+
+    kpi(venc,'Vencidos',venc?'var(--red)':'var(--t3)',venc?'Requieren atención':'Todo al día')+
+    kpi(disp,'Disponibles','var(--amber)','de '+total+' territorios');
+
+  // Territorios por grupo (color de cada grupo)
   const maxG=Math.max(1,...S.grupos.map(g=>t.filter(x=>x.grupo_id===g.id).length),t.filter(x=>!x.grupo_id).length);
-  const gruposRows=S.grupos.sort((a,b)=>a.num-b.num).map(g=>{const c=t.filter(x=>x.grupo_id===g.id).length;return barRow(`G${g.num}`,c,maxG);});
+  const gruposRows=[...S.grupos].sort((a,b)=>a.num-b.num).map(g=>{const c=t.filter(x=>x.grupo_id===g.id).length;return rankRow(null,`Grupo ${g.num}`,c,maxG,c,grpColor(g));});
   const sinGrupoCount=t.filter(x=>!x.grupo_id).length;
-  if(sinGrupoCount>0) gruposRows.push(barRow('Sin grupo',sinGrupoCount,maxG));
+  if(sinGrupoCount>0) gruposRows.push(rankRow(null,'Sin grupo',sinGrupoCount,maxG,sinGrupoCount,'var(--t3)'));
   document.getElementById('chartGrupos').innerHTML=gruposRows.join('');
-  const pc=S.publicadores.map(p=>{const parts=p.nombre.trim().split(/\s+/);return{name:parts.length>1?parts[0]+' '+parts[parts.length-1]:parts[0],cnt:h.filter(x=>x.pub_id===p.id).length};}).sort((a,b)=>b.cnt-a.cnt).slice(0,10);
+
+  // Top publicadores (periodo seleccionado)
+  const pc=S.publicadores.map(p=>{const parts=p.nombre.trim().split(/\s+/);return{name:parts.length>1?parts[0]+' '+parts[parts.length-1]:parts[0],cnt:h.filter(x=>x.pub_id===p.id).length};}).filter(x=>x.cnt>0).sort((a,b)=>b.cnt-a.cnt).slice(0,10);
   const maxP=Math.max(1,...pc.map(x=>x.cnt));
-  document.getElementById('chartPubs').innerHTML=pc.map(x=>barRow(x.name,x.cnt,maxP)).join('');
-  const meses=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],yr=new Date().getFullYear();
-  const md=meses.map((m,i)=>({m,cnt:S.historial.filter(x=>{const d=new Date(x.fecha_dev||x.fecha_asig);return d.getFullYear()===yr&&d.getMonth()===i;}).length}));
-  const maxM=Math.max(1,...md.map(x=>x.cnt));
-  document.getElementById('chartMeses').innerHTML=md.map(x=>barRow(x.m,x.cnt,maxM)).join('');
-  const old=t.filter(x=>x.estado==='disponible').sort((a,b)=>daysSince(a.ultimo_trabajado)-daysSince(b.ultimo_trabajado)).slice(0,10);
-  const maxO=Math.max(1,...old.map(x=>daysSince(x.ultimo_trabajado)===9999?0:daysSince(x.ultimo_trabajado)));
-  document.getElementById('chartOld').innerHTML=old.map(x=>{const ds=daysSince(x.ultimo_trabajado);return barRow(x.num,ds===9999?0:ds,maxO,'d',ds===9999?'Nunca':null);}).join('');
+  document.getElementById('chartPubs').innerHTML=pc.length?pc.map((x,i)=>rankRow(i+1,x.name,x.cnt,maxP,x.cnt)).join(''):'<div class="st-empty">Sin actividad en este periodo</div>';
+
+  // Asignaciones por mes (año de servicio: sep → ago)
+  const ms=['Sep','Oct','Nov','Dic','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago'],mi=[8,9,10,11,0,1,2,3,4,5,6,7];
+  const cnt=mi.map(m=>S.historial.filter(x=>x.fecha_asig&&x.fecha_asig>=anio.start&&x.fecha_asig<=anio.end&&new Date(x.fecha_asig+'T00:00:00').getMonth()===m).length);
+  const mx=Math.max(1,...cnt),nowIdx=mi.indexOf(new Date().getMonth());
+  document.getElementById('chartMeses').innerHTML=`<div class="mbars">${cnt.map((v,i)=>`<div class="mb${i===nowIdx?' now':i>nowIdx?' fut':''}"><span class="mv">${i>nowIdx?'':v}</span><i style="height:${i>nowIdx?6:Math.max(5,Math.round(v/mx*100))}%"></i><span class="ml">${ms[i]}</span></div>`).join('')}</div><div class="mtot"><b>${cnt.reduce((a,b)=>a+b,0)}</b> asignaciones en el año de servicio ${anio.label}</div>`;
+
+  // Más tiempo sin trabajar (de más antiguo a más reciente)
+  const old=t.filter(x=>x.estado==='disponible').sort((a,b)=>daysSince(b.ultimo_trabajado)-daysSince(a.ultimo_trabajado)).slice(0,10);
+  const maxO=Math.max(1,...old.map(x=>Math.min(daysSince(x.ultimo_trabajado),3650)));
+  document.getElementById('chartOld').innerHTML=old.map((x,i)=>{const ds=daysSince(x.ultimo_trabajado);const txt=ds===9999?'Nunca':ds>=365?(ds/365).toFixed(1).replace('.',',')+' años':ds+' d';return rankRow(i+1,x.num,ds===9999?maxO:Math.min(ds,3650),maxO,txt,ds>=365?'var(--red)':'var(--amber)');}).join('');
   renderTopTrabajados(currentRangoTrabajados);
 }
 let currentRangoTrabajados='1y';
@@ -3132,7 +3528,12 @@ function renderTopTrabajados(rango){
   const top=Object.entries(counts).map(([tid,cnt])=>{const ter=S.territorios.find(x=>String(x.id)===String(tid));return{label:ter?`${ter.num} — ${ter.nombre}`:`#${tid}`,cnt};}).sort((a,b)=>b.cnt-a.cnt).slice(0,10);
   if(!top.length){el.innerHTML=`<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">Sin datos para este rango</div>`;return;}
   const maxT=Math.max(1,...top.map(x=>x.cnt));
-  el.innerHTML=top.map(x=>barRow(x.label,x.cnt,maxT)).join('');
+  el.innerHTML=top.map((x,i)=>rankRow(i+1,x.label,x.cnt,maxT,x.cnt)).join('');
+}
+function rankRow(rank,label,val,max,valText,color){
+  const pct=Math.max(val===0?0:4,Math.round(val/max*100));
+  const r=rank?`<span class="rk r${rank<=3?rank:0}">${rank}</span>`:'';
+  return`<div class="rrow">${r}<div class="rmain"><div class="rtop"><span class="rlab" title="${label}">${label}</span><span class="rval">${valText}</span></div><div class="rtrack"><i style="width:${pct}%;background:${color||'var(--blue)'}"></i></div></div></div>`;
 }
 function barRow(label,val,max,unit='',override=null){
   const pct=Math.max(val===0?0:2,Math.round(val/max*100));const display=override||(val+unit);
@@ -3141,44 +3542,66 @@ function barRow(label,val,max,unit='',override=null){
 
 // ══ PUBLICADORES ══
 let _showArchivados=false;
+let _pubGrupo='todos';
+const GRP_COLORS=['#4f46e5','#0891b2','#16a34a','#d97706','#e11d48','#7c3aed','#0d9488','#db2777'];
+function grpColor(g){return g?GRP_COLORS[(g.num-1+GRP_COLORS.length)%GRP_COLORS.length]:'var(--t3)';}
+function initials(n){const w=(n||'?').trim().split(/\s+/);return((w[0]||'')[0]||'')+((w.length>1?w[1]:'')[0]||'');}
+function setPubGrupo(v){_pubGrupo=v;renderPublicadores();}
 function renderPublicadores(){
   const el=document.getElementById('pubTable');
+  const btn=document.getElementById('toggleArchivadosBtn');
+  if(btn) btn.textContent=_showArchivados?'👤 Activos':'📦 Archivados';
   if(!S.publicadores.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin publicadores</div>`;return;}
-  const mob=window.innerWidth<=700;
   const q=searchQ;
-  // Show active by default; show inactive when toggle is on
-  let pubs=[...S.publicadores].filter(p=>_showArchivados ? p.activo===false : p.activo!==false);
-  if(q) pubs=pubs.filter(p=>{
+  const base=[...S.publicadores].filter(p=>_showArchivados ? p.activo===false : p.activo!==false)
+    .sort((a,b)=>a.nombre.localeCompare(b.nombre,'es'));
+  const matchQ=p=>{
+    if(!q) return true;
     const g=S.grupos.find(x=>x.id===p.grupo_id);
     return p.nombre.toLowerCase().includes(q)||(g?.nombre||'').toLowerCase().includes(q)||(`G${g?.num}`).toLowerCase().includes(q);
-  });
-  if(!pubs.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">Sin resultados</div>`;return;}
+  };
+  const searched=base.filter(matchQ);
+
+  // Chips de grupo con su recuento
+  const cnt=gid=>searched.filter(p=>gid==='sin'?!p.grupo_id:p.grupo_id===gid).length;
+  const grupos=[...S.grupos].sort((a,b)=>a.num-b.num);
+  document.getElementById('pubGroupBar').innerHTML=
+    `<button class="pchip${_pubGrupo==='todos'?' on':''}" onclick="setPubGrupo('todos')">Todos <b>${searched.length}</b></button>`+
+    grupos.map(g=>`<button class="pchip${String(_pubGrupo)===String(g.id)?' on':''}" onclick="setPubGrupo(${g.id})"><i style="background:${grpColor(g)}"></i>G${g.num} <b>${cnt(g.id)}</b></button>`).join('')+
+    (cnt('sin')?`<button class="pchip${_pubGrupo==='sin'?' on':''}" onclick="setPubGrupo('sin')">Sin grupo <b>${cnt('sin')}</b></button>`:'');
+  document.querySelector('#pubGroupBar .pchip.on')?.scrollIntoView({inline:'center',block:'nearest'});
+
+  let pubs=searched;
+  if(_pubGrupo==='sin') pubs=pubs.filter(p=>!p.grupo_id);
+  else if(_pubGrupo!=='todos') pubs=pubs.filter(p=>String(p.grupo_id)===String(_pubGrupo));
+  document.getElementById('pubSub').textContent=`${pubs.length} ${_showArchivados?'archivados':'publicadores'}${q||_pubGrupo!=='todos'?' en esta vista':''}`;
+  if(!pubs.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3);grid-column:1/-1">Sin resultados</div>`;return;}
+
   el.innerHTML=pubs.map(p=>{
     const g=S.grupos.find(x=>x.id===p.grupo_id);
-    const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido')).length;
-    const comp=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length;
-    const grpLabel=g?`G${g.num} — ${g.nombre||'Grupo '+g.num}`:'Sin grupo';
-    if(mob){
-      return`<div class="tbl-row" style="grid-template-columns:1fr auto;min-height:52px;cursor:pointer" onclick="openPubDetail(${p.id})">
-        <span style="display:flex;flex-direction:column;gap:2px;padding:10px 8px;min-width:0;overflow:hidden">
-          <span style="font-weight:700;font-size:14px;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.nombre}</span>
-          <span style="font-size:12px;color:var(--t2)">${grpLabel}</span>
-        </span>
-        <span style="display:flex;align-items:center;gap:6px;padding:0 8px;flex-shrink:0">
-          ${act?`<span class="nav-badge a">${act}</span>`:''}
-          ${comp?`<span class="nav-badge">${comp}✓</span>`:''}
-        </span>
-      </div>`;
-    }
-    return`<div class="tbl-row" style="grid-template-columns:1fr 150px 60px 80px 60px;cursor:pointer" onclick="openPubDetail(${p.id})">
-      <span style="font-weight:600;color:var(--blue)">${p.nombre}</span>
-      <span style="color:var(--t2);font-size:12px">${grpLabel}</span>
-      <span><span class="nav-badge ${act?'a':''}">${act}</span></span>
-      <span><span class="nav-badge">${comp}</span></span>
-      <span>${p.activo===false
-        ? `<button class="btn btn-ghost btn-xs" title="Reactivar" onclick="event.stopPropagation();reactivarPub(${p.id})">↩</button>`
-        : `<button class="btn btn-danger btn-xs" title="Archivar" onclick="event.stopPropagation();archivarPub(${p.id})">📦</button>`
-      }</span>
+    const act=S.territorios.filter(t=>t.pub_id===p.id&&(t.estado==='asignado'||t.estado==='vencido'));
+    const venc=act.some(t=>statusOf(t)==='vencido');
+    const prox=act.some(t=>statusOf(t)==='proximo');
+    const hist=S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev);
+    const last=hist.reduce((m,h)=>h.fecha_dev>m?h.fecha_dev:m,'');
+    const col=grpColor(g);
+    const state=venc?['bad','Vencido']:prox?['warn','Por vencer']:act.length?['ok','Al día']:null;
+    const sub=act.length
+      ? act.slice(0,3).map(t=>t.num).join(' · ')+(act.length>3?` +${act.length-3}`:'')
+      : (last?`Último trabajo ${fmtDate(last)}`:'Sin actividad registrada');
+    return`<div class="pcard" onclick="openPubDetail(${p.id})">
+      <div class="pav" style="background:color-mix(in srgb,${col} 16%,transparent);color:${col}">${initials(p.nombre).toUpperCase()}</div>
+      <div class="pmain">
+        <div class="pname">${p.nombre}</div>
+        <div class="psub">${g?`<span class="gdot" style="background:${col}"></span>G${g.num}`:'Sin grupo'} · ${sub}</div>
+      </div>
+      <div class="pend">
+        ${state?`<span class="pstate ${state[0]}">${act.length>1?act.length+' · ':''}${state[1]}</span>`:''}
+        <span class="pcomp">${hist.length} compl.</span>
+      </div>
+      ${p.activo===false
+        ? `<button class="pbtn" title="Reactivar" onclick="event.stopPropagation();reactivarPub(${p.id})">↩</button>`
+        : `<button class="pbtn" title="Archivar" onclick="event.stopPropagation();archivarPub(${p.id})">📦</button>`}
     </div>`;
   }).join('');
 }
@@ -3192,27 +3615,9 @@ function openPubDetail(id){
   const enlacePub=`https://appcongmontequinto-bit.github.io/visor-montequinto/#p=${p.id}`;
   const grupoOpts=S.grupos.sort((a,b)=>a.num-b.num).map(gr=>`<option value="${gr.id}"${gr.id===p.grupo_id?' selected':''}>${gr.nombre||'Grupo '+gr.num}</option>`).join('');
 
-  document.getElementById('mPubDetTitle').textContent=p.nombre;
+  const _gc=grpColor(g);
+  document.getElementById('mPubDetTitle').innerHTML=`<span class="pav" style="width:38px;height:38px;border-radius:12px;font-size:14px;background:color-mix(in srgb,${_gc} 16%,transparent);color:${_gc}">${initials(p.nombre).toUpperCase()}</span><span class="mt-info"><b>${p.nombre}</b><small>${g?`Grupo ${g.num}`:'Sin grupo'}${p.activo===false?' · archivado':''}</small></span>`;
   document.getElementById('mPubDetBody').innerHTML=`
-    <!-- EDIT FORM -->
-    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Editar datos</div>
-      <div class="frow">
-        <div class="fg"><label class="fl">Nombre</label><input class="fi" id="dpd-nombre" value="${p.nombre}"></div>
-        <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="dpd-tel" value="${p.tel||''}" type="tel"></div>
-      </div>
-      <div class="fg"><label class="fl">Grupo</label>
-        <select class="fs" id="dpd-grupo"><option value="">Sin grupo</option>${grupoOpts}</select>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="guardarPubDesdeDetalle(${p.id})">💾 Guardar cambios</button>
-        ${p.activo===false
-          ? `<button class="btn btn-ghost btn-sm" onclick="reactivarPub(${p.id})">↩ Reactivar</button>`
-          : `<button class="btn btn-ghost btn-sm" onclick="archivarPub(${p.id})">📦 Archivar</button>`
-        }
-      </div>
-    </div>
-
     <!-- STATS -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
       <div style="background:var(--s2);border-radius:var(--r);padding:10px 14px">
@@ -3250,6 +3655,28 @@ function openPubDetail(id){
       <div><div style="font-weight:600;font-size:13px">${t.num}</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${fmtDate(t.fecha_asig)} → ${fmtDate(t.fecha_vence)}</div></div>
       <span>${pillHtml(statusOf(t),isGrupo(t))}</span>
     </div>`).join('')}` : '<div style="font-size:13px;color:var(--t3);margin-bottom:16px">Sin territorios activos.</div>'}
+
+    <!-- EDIT FORM -->
+    <details class="edit-details"><summary>✎ Editar datos del publicador</summary>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Editar datos</div>
+      <div class="frow">
+        <div class="fg"><label class="fl">Nombre</label><input class="fi" id="dpd-nombre" value="${p.nombre}"></div>
+        <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="dpd-tel" value="${p.tel||''}" type="tel"></div>
+      </div>
+      <div class="fg"><label class="fl">Grupo</label>
+        <select class="fs" id="dpd-grupo"><option value="">Sin grupo</option>${grupoOpts}</select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="guardarPubDesdeDetalle(${p.id})">💾 Guardar cambios</button>
+        ${p.activo===false
+          ? `<button class="btn btn-ghost btn-sm" onclick="reactivarPub(${p.id})">↩ Reactivar</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="archivarPub(${p.id})">📦 Archivar</button>`
+        }
+      </div>
+    </div>
+
+        </details>
 
     <!-- HISTORIAL -->
     <div style="font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin:12px 0 8px">HISTORIAL (${hist.length})</div>
@@ -3300,7 +3727,7 @@ function renderGrupos(){
           <div style="font-size:19px;font-weight:700;letter-spacing:-.4px">Grupo ${g.num}</div>
           <div style="font-size:13px;color:var(--t2);margin-top:2px">${g.nombre||''} ${siervo?'· <b>'+siervo.nombre+'</b>':''}</div>
         </div>
-        <span class="nav-badge a" style="font-size:12px;padding:3px 9px">${pubs.length} hermanos</span>
+        <span class="nav-badge a" style="font-size:12px;padding:3px 9px">${pubs.length} publicadores</span>
       </div>
       <div class="grp-stats">
         <div class="grp-stat"><div class="grp-stat-val">${ters.length}</div><div class="grp-stat-lbl">Territorios</div></div>
@@ -3308,44 +3735,79 @@ function renderGrupos(){
         <div class="grp-stat"><div class="grp-stat-val" style="color:var(--blue)">${asig}</div><div class="grp-stat-lbl">Asignados</div></div>
         <div class="grp-stat"><div class="grp-stat-val" style="color:${venc?'var(--red)':'var(--t2)'}">${venc}</div><div class="grp-stat-lbl">Vencidos</div></div>
       </div>
+      ${ters.length?'':'<div style="font-size:12px;color:var(--amber);font-weight:600;margin-top:10px">Aún no tiene territorios asignados al grupo</div>'}
       <div style="font-size:11px;color:var(--t3);margin-top:10px">${pubsConTer.length} de ${pubs.length} publicadores con territorio activo · Toca para ver detalles</div>
     </div>`;
   }).join('');
 }
 
 // ══ HISTORIAL ══
+let _histMode='cron';
+function setHistMode(m){
+  _histMode=m;
+  document.querySelectorAll('#histModeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.hm===m));
+  renderHistorial();
+}
+const MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function renderHistorial(){
   const el=document.getElementById('histTable');
-  // Merge both local histSearch and global searchQ
   const localQ=(document.getElementById('histSearch')?.value||'').toLowerCase();
   const q=localQ||searchQ;
+  const terOf=id=>S.territorios.find(t=>t.id===id);
+  const matches=h=>{
+    if(!q) return true;
+    const t=terOf(h.territorio_id);
+    return (t&&(t.num.toLowerCase().includes(q)||(t.nombre||'').toLowerCase().includes(q)))||pubName(h.pub_id).toLowerCase().includes(q);
+  };
+  const sub=document.getElementById('histSub');
+
+  if(_histMode==='cron'){
+    const all=S.historial.filter(matches).sort((a,b)=>(b.fecha_dev||b.fecha_asig||'').localeCompare(a.fecha_dev||a.fecha_asig||'')||(b.id-a.id));
+    if(!all.length){el.innerHTML=`<div class="hempty">${q?'Sin resultados':'Sin historial'}</div>`;if(sub)sub.textContent='';return;}
+    const LIMIT=400, rows=all.slice(0,LIMIT);
+    if(sub) sub.textContent=`${all.length} registros${all.length>LIMIT?` · mostrando los ${LIMIT} más recientes`:''}`;
+    let html='',lastKey='';
+    rows.forEach(h=>{
+      const d=h.fecha_dev||h.fecha_asig||'';
+      const key=d?d.slice(0,7):'—';
+      if(key!==lastKey){
+        lastKey=key;
+        const [y,m]=key.split('-');
+        html+=`<div class="hmonth">${key==='—'?'Sin fecha':MESES_ES[+m-1]+' '+y}</div>`;
+      }
+      const t=terOf(h.territorio_id);
+      const open=!h.fecha_dev;
+      const dias=open?daysSince(h.fecha_asig):daysBetween(h.fecha_asig,h.fecha_dev);
+      html+=`<div class="hrow" onclick="openHistDetail(${h.territorio_id})">
+        <span class="hdot ${open?'open':'done'}"></span>
+        <span class="hnum">${t?t.num:'?'}</span>
+        <span class="hmain"><b>${pubName(h.pub_id)}</b><small>${open?`En curso desde ${fmtDate(h.fecha_asig)}`:`${fmtDate(h.fecha_asig)} → ${fmtDate(h.fecha_dev)}`}</small></span>
+        <span class="hdur${open?' open':''}">${open?'En curso':dias+' d'}</span>
+      </div>`;
+    });
+    el.innerHTML=html;
+    return;
+  }
+
+  // Por territorio
   let ters=[...S.territorios].sort((a,b)=>a.num.localeCompare(b.num,undefined,{numeric:true}));
   if(q) ters=ters.filter(t=>
     t.num.toLowerCase().includes(q)||
-    t.nombre.toLowerCase().includes(q)||
+    (t.nombre||'').toLowerCase().includes(q)||
     S.historial.some(h=>h.territorio_id===t.id&&pubName(h.pub_id).toLowerCase().includes(q))
   );
   const tersWithHist=ters.filter(t=>S.historial.some(h=>h.territorio_id===t.id));
-  if(!tersWithHist.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--t3)">${q?'Sin resultados':'Sin historial'}</div>`;return;}
+  if(sub) sub.textContent=`${tersWithHist.length} territorios con historial`;
+  if(!tersWithHist.length){el.innerHTML=`<div class="hempty">${q?'Sin resultados':'Sin historial'}</div>`;return;}
   el.innerHTML=tersWithHist.map(t=>{
     const hist=S.historial.filter(h=>h.territorio_id===t.id).sort((a,b)=>(b.fecha_asig||'').localeCompare(a.fecha_asig||''));
     const last=hist[0];
-    const lastPub=last?pubName(last.pub_id):'—';
-    const lastDate=last?fmtDate(last.fecha_dev||last.fecha_asig):'—';
-    const cnt=hist.length;
-    // Single layout that works for both mobile and desktop
-    return`<div onclick="openHistDetail(${t.id})" style="
-        display:grid;grid-template-columns:44px 1fr auto;
-        align-items:center;padding:10px 12px;cursor:pointer;
-        border-bottom:1px solid var(--border);min-height:54px;
-        transition:background .1s;
-      " onmouseenter="this.style.background='var(--s2)'" onmouseleave="this.style.background=''">
-      <span style="font-family:var(--font-mono);font-size:12px;color:var(--t3);font-weight:600">${t.num}</span>
-      <span style="display:flex;flex-direction:column;gap:2px;overflow:hidden">
-        <span style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lastPub}</span>
-        <span style="font-size:12px;color:var(--t2)">${lastDate}</span>
-      </span>
-      <span style="flex-shrink:0;padding-left:10px"><span class="nav-badge">${cnt}</span></span>
+    const open=last&&!last.fecha_dev;
+    return`<div class="hrow" onclick="openHistDetail(${t.id})">
+      <span class="hdot ${open?'open':'done'}"></span>
+      <span class="hnum">${t.num}</span>
+      <span class="hmain"><b>${last?pubName(last.pub_id):'—'}</b><small>${open?`En curso desde ${fmtDate(last.fecha_asig)}`:`Devuelto ${fmtDate(last?.fecha_dev)}`}</small></span>
+      <span class="hdur">${hist.length}×</span>
     </div>`;
   }).join('');
 }
@@ -3408,7 +3870,7 @@ async function eliminarHistEntry(histId,terId){
 // ══ TERRITORY MODAL ══
 function openTerModal(){
   editingTId=null;
-  document.getElementById('mTerTitle').textContent='Nuevo Territorio';
+  document.getElementById('mTerTitle').innerHTML='Nuevo territorio';
   document.getElementById('btnElimTer').style.display='none';
   document.getElementById('btnCancelarAsig').style.display='none';
   ['t-num','t-nombre','t-desc','t-notas','t-dirs','t-no-visitar','t-no-visitar-fecha'].forEach(id=>document.getElementById(id).value='');
@@ -3422,7 +3884,7 @@ function openTerModal(){
   document.getElementById('asigStatus').innerHTML='';
   document.getElementById('terHistorial').innerHTML='<div style="color:var(--t3);font-size:13px;padding:8px">Sin historial previo</div>';
   document.getElementById('fileList').innerHTML='';
-  switchTabByName('mTer','asignar');
+  switchTabByName('mTer','datos');
   openModal('mTer');
 }
 
@@ -3430,7 +3892,7 @@ async function openTerDetail(id){
   editingTId=id;
   const t=S.territorios.find(x=>x.id===id);
   if(!t) return;
-  document.getElementById('mTerTitle').textContent=`Territorio ${t.num}`;
+  setTerHeader(t);
   document.getElementById('btnElimTer').style.display='';
   document.getElementById('btnCancelarAsig').style.display=
     (t.estado==='asignado'||t.estado==='vencido')?'':'none';
@@ -3488,20 +3950,30 @@ async function loadTerImgPreview(t){
   img.src=directUrl;
 }
 
+function setTerHeader(t){
+  const st=statusOf(t);
+  const lbl={disponible:'Disponible',asignado:'Asignado',vencido:'Vencido',proximo:'Por vencer',grupo:'De grupo'}[st]||'';
+  const cls={disponible:'ok',asignado:'ac',vencido:'bad',proximo:'warn',grupo:'pu'}[st]||'ok';
+  const g=grupoOf(t);
+  document.getElementById('mTerTitle').innerHTML=
+    `<span class="mt-num">${t.num}</span><span class="mt-info"><b>${(t.nombre||'').replace(/ — .*/,'')||'Territorio'}</b><small>${t.tipo||''}${g?` · Grupo ${g.num}`:''}${t.num_dirs?` · ${t.num_dirs} puertas`:''}</small></span><span class="mt-pill ${cls}">${lbl}</span>`;
+}
 function renderAsigStatus(t){
   const st=statusOf(t);
-  const cls={disponible:'sl-green',asignado:'sl-blue',vencido:'sl-red',proximo:'sl-amber',grupo:'sl-blue'}[st]||'sl-green';
-  const ico={disponible:'✅',asignado:'📌',vencido:'⚠️',proximo:'⏳',grupo:'👥'}[st];
-  let msg='';
-  if(st==='disponible') msg='Disponible para asignar';
-  else if(st==='grupo') msg='Territorio de grupo — disponible';
-  else if(st==='asignado') msg=`Asignado a ${pubName(t.pub_id)} — ${fmtDate(t.fecha_asig)} · Vence ${fmtDate(t.fecha_vence)}`;
-  else if(st==='proximo') msg=`⚠ Próximo a vencer — ${pubName(t.pub_id)} · Vence en ${daysUntil(t.fecha_vence)} días (${fmtDate(t.fecha_vence)})`;
-  else if(st==='vencido'){
+  const cls={disponible:'ok',asignado:'ac',vencido:'bad',proximo:'warn',grupo:'pu'}[st]||'ok';
+  const ico={disponible:'✓',asignado:'📌',vencido:'!',proximo:'⏳',grupo:'👥'}[st];
+  let title='',sub='',bar='';
+  if(st==='disponible'){title='Disponible para asignar';sub=t.ultimo_trabajado?`Último trabajo: ${fmtDate(t.ultimo_trabajado)}`:'Nunca se ha trabajado';}
+  else if(st==='grupo'){title='Territorio de grupo';sub='Disponible';}
+  else{
     const d=daysUntil(t.fecha_vence);
-    msg=`Venció hace ${d?-d:'?'} días — ${pubName(t.pub_id)} · Asignado el ${fmtDate(t.fecha_asig)}`;
+    title=pubName(t.pub_id);
+    sub=`Entregado ${fmtDate(t.fecha_asig)} · vence ${fmtDate(t.fecha_vence)}`;
+    const pct=d===null?0:d<0?100:Math.max(4,Math.min(100,Math.round((1-d/EXPIRY_DAYS)*100)));
+    const txt=d===null?'':d<0?`Vencido hace ${-d} días`:d===0?'Vence hoy':`Quedan ${d} días`;
+    bar=`<div class="as-bar"><i style="width:${pct}%"></i></div><div class="as-days">${txt}</div>`;
   }
-  document.getElementById('asigStatus').innerHTML=`<div class="status-large ${cls}">${ico} ${msg}</div>`;
+  document.getElementById('asigStatus').innerHTML=`<div class="as-card ${cls}"><span class="as-ico">${ico}</span><div class="as-main"><div class="as-title">${title}</div><div class="as-sub">${sub}</div>${bar}</div></div>`;
 }
 
 function renderTerHistorial(t){
@@ -3845,8 +4317,10 @@ function renderGrupoStats(gId){
   const sinTer = pubAnalysis.filter(x=>!x.tersActivos.length);
 
   // Chart: completados por publicador del grupo
+  // Se cuenta por publicador (todo lo que ha trabajado), no solo por los territorios del grupo:
+  // un grupo nuevo puede tener publicadores con historial pero aún ningún territorio asignado.
   const pubStats = pubs.map(p=>({
-    nombre: p.nombre, cnt: hist.filter(h=>h.pub_id===p.id&&h.fecha_dev).length
+    nombre: p.nombre, cnt: S.historial.filter(h=>h.pub_id===p.id&&h.fecha_dev).length
   })).sort((a,b)=>b.cnt-a.cnt);
   const maxCnt = Math.max(1,...pubStats.map(x=>x.cnt));
 
@@ -3959,6 +4433,7 @@ async function eliminarGrupo(){
 async function exportarS13(){
   showLoader('Generando S-13…');
   try{
+    try{ await refreshS13Data(); }catch(e){ console.warn('S-13 refresh failed, using cached data',e); }
     await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
     const XLSX = window.XLSX;
 
@@ -4339,7 +4814,12 @@ function abrirS13Modal(){
   openModal('mS13');
 }
 
+// El S-13 se genera con datos recién traídos de la base, no con lo que había al abrir la app.
+async function refreshS13Data(){
+  await Promise.all([loadTerritorios(),loadHistorial(),loadPublicadores()]);
+}
 async function verS13Preview(){
+  try{ await refreshS13Data(); }catch(e){ console.warn('S-13 refresh failed, using cached data',e); }
   const {ters,year}=_getS13Ters();
   _s13AllTers=ters; _s13Year=year; _s13Page=0;
   document.getElementById('s13Preview').style.display='';
@@ -4632,6 +5112,7 @@ function switchTab(modalId,el){
   modal.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   modal.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));
   el.classList.add('on');
+  modal.dataset.tab=el.dataset.tp;
   const pane=document.getElementById('tp-'+el.dataset.tp);
   if(pane) pane.classList.add('on');
 }
@@ -4901,117 +5382,89 @@ window.addEventListener('appinstalled', () => {
 function renderCambios(){
   const el=document.getElementById('cambiosList');
   if(!el) return;
-  if(!S.auditLog.length){
-    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3);font-size:14px">Sin cambios registrados aún.<br><span style="font-size:12px">Los cambios aparecen aquí automáticamente.</span></div>';
+  const log=S.auditLog.filter(l=>!String(l.accion).startsWith('push_debug'));
+  if(!log.length){
+    el.innerHTML='<div class="hempty">Sin cambios registrados aún.<br><span style="font-size:12px">Los cambios aparecen aquí automáticamente.</span></div>';
     return;
   }
-
-  const icons={'asignar':'📌','devolver':'✅','cancelar':'↩','crear':'➕','editar':'✏️','eliminar':'🗑','rechazar':'❌','aprobar':'✅'};
-  const cols={'asignar':'var(--blue)','devolver':'var(--green)','cancelar':'var(--amber)','crear':'var(--green)','editar':'var(--t2)','eliminar':'var(--red)','rechazar':'var(--red)','aprobar':'var(--green)'};
-
-  // Group by date
-  let lastDate='';
-  const rows=S.auditLog.map(log=>{
-    const t=S.territorios.find(x=>x.id===log.territorio_id);
-    const p=S.publicadores.find(x=>x.id===log.pub_id);
-    const dt=new Date(log.created_at);
+  const meta={
+    asignar:['📌','blue','Asignado'],devolver:['✓','green','Devuelto'],cancelar:['↩','amber','Cancelado'],
+    crear:['＋','green','Creado'],editar:['✎','t2','Editado'],eliminar:['🗑','red','Eliminado'],
+    rechazar:['✕','red','Rechazada'],aprobar:['✓','green','Aprobada']
+  };
+  let lastDate='',html='';
+  log.forEach(l=>{
+    const t=S.territorios.find(x=>x.id===l.territorio_id);
+    const p=S.publicadores.find(x=>x.id===l.pub_id);
+    const dt=new Date(l.created_at);
     const dateStr=dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
     const timeStr=dt.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
-    const icon=icons[log.accion]||'•';
-    const col=cols[log.accion]||'var(--t2)';
-
-    let dateSep='';
-    if(dateStr!==lastDate){
-      lastDate=dateStr;
-      dateSep=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;padding:14px 0 6px;border-bottom:1px solid var(--border);margin-bottom:8px">${dateStr}</div>`;
-    }
-
-    const numLabel=t?`Terr. <b>${t.num}</b>`:(log.datos?.num?`Terr. <b>${log.datos.num}</b>`:'');
-    const pubLabel=p?p.nombre:'';
-    const desc={
-      'asignar': numLabel+(pubLabel?' → '+pubLabel:''),
-      'devolver': numLabel+(pubLabel?' por '+pubLabel:''),
-      'cancelar': 'Cancelada asignación '+numLabel,
-      'crear': 'Creado '+numLabel+(log.datos?.nombre?' — '+log.datos.nombre:''),
-      'editar': 'Editado '+numLabel,
-      'eliminar': 'Eliminado terr.'+(log.datos?.num?' '+log.datos.num:''),
-      'aprobar': 'Solicitud aprobada '+numLabel,
-      'rechazar': 'Solicitud rechazada'+(pubLabel?' de '+pubLabel:''),
-    }[log.accion]||log.accion;
-
-    // Build detail pills: num, publicador, fecha
-    const pills=[];
-    const terNum=t?.num||log.datos?.num;
-    const fechaAccion=log.datos?.fecha_asig||log.datos?.fecha_dev||'';
-    if(terNum) pills.push(`<span style="font-family:var(--font-mono);font-weight:700;color:var(--text);background:var(--s3);padding:2px 7px;border-radius:6px;font-size:12px">Nº ${terNum}</span>`);
-    if(pubLabel) pills.push(`<span style="font-size:12px;color:var(--t2)">${pubLabel}</span>`);
-    if(fechaAccion) pills.push(`<span style="font-size:12px;color:var(--t3)">${fmtDate(fechaAccion)}</span>`);
-
-    return dateSep+`<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="width:32px;height:32px;border-radius:50%;background:${col}20;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;margin-top:1px">${icon}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-          <span style="font-size:13px;font-weight:700;color:${col}">${log.accion.charAt(0).toUpperCase()+log.accion.slice(1)}</span>
-          ${pills.join('<span style="color:var(--border2);font-size:11px">·</span>')}
-        </div>
-        <div style="font-size:12px;color:var(--t3)">${desc}</div>
-      </div>
-      <div style="font-size:11px;color:var(--t3);white-space:nowrap;padding-top:2px">${timeStr}</div>
+    if(dateStr!==lastDate){lastDate=dateStr;html+=`<div class="hmonth">${dateStr}</div>`;}
+    const [ico,col,lbl]=meta[l.accion]||['•','t2',l.accion];
+    const num=t?.num||l.datos?.num;
+    const who=p?.nombre||'';
+    const line={
+      asignar:`${who||'—'}`,devolver:`${who||'—'}`,cancelar:'Asignación cancelada',
+      crear:l.datos?.nombre||'Nuevo territorio',editar:'Datos modificados',eliminar:'Territorio eliminado',
+      aprobar:`Solicitud de ${who||'publicador'}`,rechazar:`Solicitud de ${who||'publicador'}`
+    }[l.accion]||'';
+    const fecha=l.datos?.fecha_asig||l.datos?.fecha_dev||'';
+    html+=`<div class="hrow" style="cursor:default">
+      <span class="cico ${col}">${ico}</span>
+      <span class="hmain"><b>${lbl}${num?` · Terr. <span class="cnum">${num}</span>`:''}</b><small>${line}${fecha?` · ${fmtDate(fecha)}`:''}</small></span>
+      <span class="ctime">${timeStr}</span>
     </div>`;
-  }).join('');
-
-  el.innerHTML=rows;
+  });
+  el.innerHTML=`<div class="hlist">${html}</div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
 // SOLICITUDES
 // ══════════════════════════════════════════════════════════════
+let _solTab='pend';
+function setSolTab(v){_solTab=v;renderSolicitudes();}
 function renderSolicitudes(){
   const el=document.getElementById('solicitudesList');
   if(!el) return;
-
   const pendientes=S.solicitudes.filter(s=>s.estado==='pendiente');
   const resueltas=S.solicitudes.filter(s=>s.estado!=='pendiente');
-
   if(!S.solicitudes.length){
-    el.innerHTML='<div style="padding:40px;text-align:center;color:var(--t3);font-size:14px">No hay solicitudes.<br><span style="font-size:12px">Aparecerán aquí cuando un publicador solicite un territorio.</span></div>';
+    el.innerHTML='<div class="hempty">No hay solicitudes.<br><span style="font-size:12px">Aparecerán aquí cuando un publicador solicite un territorio.</span></div>';
     return;
   }
-
-  const renderSolic=(s,isPend)=>{
+  if(_solTab==='pend'&&!pendientes.length&&resueltas.length) _solTab='res';
+  const ago=iso=>{
+    const m=Math.round((Date.now()-new Date(iso))/60000);
+    if(m<60) return `hace ${Math.max(m,1)} min`;
+    if(m<1440) return `hace ${Math.round(m/60)} h`;
+    const d=Math.round(m/1440); return d===1?'ayer':`hace ${d} días`;
+  };
+  const card=(s,isPend)=>{
     const pub=S.publicadores.find(p=>p.id===s.pub_id);
     const ter=S.territorios.find(t=>t.id===s.territorio_id);
-    const dt=new Date(s.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-    const stCol=s.estado==='pendiente'?'var(--amber)':s.estado==='aprobada'?'var(--green)':'var(--red)';
-    const stLabel=s.estado==='pendiente'?'⏳ Pendiente':s.estado==='aprobada'?'✅ Aprobada':'❌ Rechazada';
-
-    return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px">
-      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:${isPend?'12px':'4px'}">
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">${pub?.nombre||'Publicador #'+s.pub_id}</div>
-          <div style="font-size:12px;color:var(--t3);margin-top:2px">${dt}</div>
-          ${s.nota?`<div style="font-size:13px;color:var(--t2);margin-top:6px;font-style:italic">"${s.nota}"</div>`:''}
-          ${ter?`<div style="font-size:12px;color:var(--blue);margin-top:4px">Asignado: Terr. ${ter.num}</div>`:''}
-        </div>
-        <span style="font-size:12px;font-weight:600;color:${stCol};white-space:nowrap">${stLabel}</span>
+    const g=pub?S.grupos.find(x=>x.id===pub.grupo_id):null;
+    const act=S.territorios.filter(t=>t.pub_id===s.pub_id&&(t.estado==='asignado'||t.estado==='vencido')).length;
+    const col=grpColor(g);
+    const stl=s.estado==='pendiente'?['warn','Pendiente']:s.estado==='aprobada'?['ok','Aprobada']:['bad','Rechazada'];
+    return`<div class="scard${isPend?' pend':''}">
+      <div class="sc-top">
+        <div class="pav" style="background:color-mix(in srgb,${col} 16%,transparent);color:${col}">${initials(pub?.nombre||'?').toUpperCase()}</div>
+        <div class="pmain"><div class="pname">${pub?.nombre||'Publicador #'+s.pub_id}</div>
+          <div class="psub">${g?`<span class="gdot" style="background:${col}"></span>G${g.num} · `:''}${ago(s.created_at)}${isPend?` · ${act?act+' territorio'+(act>1?'s':'')+' activo'+(act>1?'s':''):'sin territorios activos'}`:''}</div></div>
+        <span class="pstate ${stl[0]}">${stl[1]}</span>
       </div>
-      ${isPend?`<div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-sm" style="background:var(--s3);color:var(--text);border:1px solid var(--border)" onclick="abrirAsignarSolicitud(${s.id},${s.pub_id})">📌 Asignar territorio</button>
-        <button class="btn btn-sm btn-danger" onclick="rechazarSolicitud(${s.id})">❌ Rechazar</button>
-      </div>`:''}
+      ${s.nota?`<div class="sc-note">“${s.nota}”</div>`:''}
+      ${ter&&!isPend?`<div class="sc-ter">Asignado: Terr. <b>${ter.num}</b></div>`:''}
+      ${isPend?`<div class="sc-act">
+        <button class="btn btn-primary btn-sm" onclick="abrirAsignarSolicitud(${s.id},${s.pub_id})">📌 Asignar territorio</button>
+        <button class="btn btn-ghost btn-sm" onclick="rechazarSolicitud(${s.id})">Rechazar</button></div>`:''}
     </div>`;
   };
-
-  let html='';
-  if(pendientes.length){
-    html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Pendientes (${pendientes.length})</div>`;
-    html+=pendientes.map(s=>renderSolic(s,true)).join('');
-  }
-  if(resueltas.length){
-    html+=`<div style="font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.08em;margin:16px 0 10px">Resueltas (${resueltas.length})</div>`;
-    html+=resueltas.slice(0,20).map(s=>renderSolic(s,false)).join('');
-  }
-  el.innerHTML=html;
+  const list=_solTab==='pend'?pendientes:resueltas.slice(0,30);
+  el.innerHTML=`<div class="segc" style="margin-bottom:14px">
+      <button class="${_solTab==='pend'?'on':''}" onclick="setSolTab('pend')">Pendientes <b>${pendientes.length}</b></button>
+      <button class="${_solTab==='res'?'on':''}" onclick="setSolTab('res')">Resueltas <b>${resueltas.length}</b></button></div>
+    <div class="sgrid">${list.length?list.map(s=>card(s,_solTab==='pend')).join(''):'<div class="hempty" style="grid-column:1/-1">No hay solicitudes pendientes 🎉</div>'}</div>`;
 }
 
 async function rechazarSolicitud(id){
@@ -5082,96 +5535,56 @@ function renderCampanias(){
   const mediaPorc=conPorc.length?Math.round(conPorc.reduce((a,x)=>a+x.porcentaje,0)/conPorc.length):null;
   const porcTotal=total?Math.round(conPorc.reduce((a,x)=>a+x.porcentaje,0)/total):null; // includes 0 for unreported
 
-  // Campaign selector pills
+  // Selector de campañas
   const selector=S.campanias.map((camp,i)=>{
     const isRun=camp.activa&&camp.fecha_inicio<=today&&camp.fecha_fin>=today;
-    const col=isRun?'var(--green)':camp.fecha_fin<today?'var(--t3)':'var(--amber)';
-    return`<button onclick="_campSelIdx=${i};renderCampanias()" style="padding:6px 14px;border-radius:99px;border:1px solid ${i===_campSelIdx?col:'var(--border)'};background:${i===_campSelIdx?col+'20':'var(--s2)'};color:${i===_campSelIdx?col:'var(--t3)'};font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:var(--font)">${camp.nombre}</button>`;
+    const dot=isRun?'var(--green)':camp.fecha_fin<today?'var(--t3)':'var(--amber)';
+    return`<button class="pchip${i===_campSelIdx?' on':''}" onclick="_campSelIdx=${i};renderCampanias()"><i style="background:${dot}"></i>${camp.nombre}</button>`;
   }).join('');
 
-  // Progress bar for campaign
   const pct=total?Math.round(conPorc.length/total*100):0;
-  const progBar=total?`<div style="margin:12px 0 4px">
-    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
-      <span style="color:var(--t2);font-weight:600">Progreso de notificación</span>
-      <span style="color:var(--blue);font-weight:700">${conPorc.length}/${total} (${pct}%)</span>
-    </div>
-    <div style="height:8px;background:var(--s3);border-radius:99px;overflow:hidden">
-      <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--blue),var(--green));border-radius:99px;transition:width .5s"></div>
-    </div>
-  </div>`:'';
+  const daysLeft=running?Math.max(0,Math.ceil((new Date(c.fecha_fin+'T00:00:00')-new Date(today+'T00:00:00'))/864e5)):null;
 
-  // Summary KPIs
-  const kpis=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0">
-    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center">
-      <div style="font-size:22px;font-weight:800;color:var(--blue)">${total}</div>
-      <div style="font-size:11px;color:var(--t3);margin-top:2px">TERRITORIOS</div>
-    </div>
-    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center">
-      <div style="font-size:22px;font-weight:800;color:var(--green)">${conPorc.length}</div>
-      <div style="font-size:11px;color:var(--t3);margin-top:2px">NOTIFICADOS</div>
-    </div>
-    <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;text-align:center">
-      <div style="font-size:22px;font-weight:800;color:${mediaPorc!=null?'var(--purple)':'var(--t3)'}">${mediaPorc!=null?mediaPorc+'%':'—'}</div>
-      <div style="font-size:11px;color:var(--t3);margin-top:2px">MEDIA %</div>
-    </div>
-  </div>`;
-
-  // Territory rows — sorted: with % first, then without
+  // Territorios: primero los que ya tienen %, luego los pendientes
   const sorted=[...conPorc.sort((a,b)=>b.porcentaje-a.porcentaje), ...cts.filter(ct=>ct.porcentaje==null)];
   const rows=sorted.map(ct=>{
     const t=S.territorios.find(x=>x.id===ct.territorio_id);
-    // Always use live pub_id from territorios, not the snapshot in campania_territorios
-    const livePubId=t?.pub_id||null;
-    const p=S.publicadores.find(x=>x.id===livePubId);
-    const porcCol=ct.porcentaje==null?'var(--t3)':ct.porcentaje>=80?'var(--green)':ct.porcentaje>=50?'var(--amber)':'var(--red)';
-    return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <span style="font-family:var(--font-mono);font-weight:700;min-width:40px;font-size:13px">${t?.num||'-'}</span>
-      <span style="flex:1;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t?.nombre||'-'}</span>
-      <span style="font-size:12px;color:${p?'var(--t2)':'var(--t3)'};min-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right">${p?.nombre||'Sin asignar'}</span>
-      <span style="font-size:13px;font-weight:700;color:${porcCol};min-width:44px;text-align:right">${ct.porcentaje!=null?ct.porcentaje+'%':'-'}</span>
-      ${running?`<button class="btn btn-ghost btn-xs" onclick="quitarTerritorioCampania(${ct.id})" title="Quitar">✕</button>`:'<span style="width:28px"></span>'}
+    const p=S.publicadores.find(x=>x.id===(t?.pub_id||null));
+    const has=ct.porcentaje!=null;
+    const col=!has?'var(--t3)':ct.porcentaje>=80?'var(--green)':ct.porcentaje>=50?'var(--amber)':'var(--red)';
+    return`<div class="cprow">
+      <span class="pr-num">${t?.num||'-'}</span>
+      <span class="pr-main"><b>${p?.nombre||'Sin asignar'}</b><small>${(t?.nombre||'').replace(/ — .*/,'')||'Territorio'}</small>
+        <span class="cptrack"><i style="width:${has?ct.porcentaje:0}%;background:${col}"></i></span></span>
+      <span class="cpval" style="color:${col}">${has?ct.porcentaje+'%':'—'}</span>
+      ${running?`<button class="pbtn" style="display:inline-block" onclick="quitarTerritorioCampania(${ct.id})" title="Quitar de la campaña">✕</button>`:''}
     </div>`;
   }).join('');
 
   el.innerHTML=`
-    <!-- Campaign selector -->
-    <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:10px;margin-bottom:12px;scrollbar-width:none;border-bottom:1px solid var(--border)">${selector}</div>
-
-    <!-- Campaign header -->
-    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
-      <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span style="font-size:18px;font-weight:800">${c.nombre}</span>
-          <span style="font-size:12px;font-weight:600;color:${stCol};background:${stCol}20;padding:2px 10px;border-radius:99px">${stLabel}</span>
-        </div>
-        <div style="font-size:12px;color:var(--t3);margin-top:4px">${fmtDate(c.fecha_inicio)} → ${fmtDate(c.fecha_fin)}</div>
+    <div class="pgbar" style="padding-top:0">${selector}</div>
+    <section class="camp-hero ${running?'run':ended?'end':'soon'}">
+      <div class="ch-top">
+        <span class="ch-state">${stLabel}</span>
+        ${daysLeft!==null?`<span class="ch-days">${daysLeft===0?'Termina hoy':daysLeft+' días restantes'}</span>`:''}
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${running?`<button class="btn btn-primary btn-sm" onclick="abrirAsignarCampania(${c.id})">＋ Añadir</button>`:''}
-        <button class="btn btn-ghost btn-sm" onclick="editarCampania(${c.id})">✏️ Editar</button>
-        <button class="btn btn-ghost btn-sm" onclick="toggleCampania(${c.id},${!c.activa})">${c.activa?'Desactivar':'Activar'}</button>
-        <button class="btn btn-danger btn-sm" onclick="borrarCampania(${c.id})">🗑</button>
+      <h2 class="ch-name">${c.nombre}</h2>
+      <div class="ch-dates">${fmtDate(c.fecha_inicio)} → ${fmtDate(c.fecha_fin)}</div>
+      <div class="ch-kpis">
+        <div><b>${total}</b><span>territorios</span></div>
+        <div><b>${conPorc.length}</b><span>notificados</span></div>
+        <div><b>${mediaPorc!=null?mediaPorc+'%':'—'}</b><span>media</span></div>
       </div>
+      ${total?`<div class="ch-bar"><i style="width:${pct}%"></i></div><div class="ch-barl">${conPorc.length} de ${total} han notificado su porcentaje (${pct}%)</div>`:''}
+    </section>
+    <div class="camp-actions">
+      ${running?`<button class="btn btn-primary btn-sm" onclick="abrirAsignarCampania(${c.id})">＋ Añadir territorios</button>`:''}
+      <button class="btn btn-ghost btn-sm" onclick="editarCampania(${c.id})">✏️ Editar</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleCampania(${c.id},${!c.activa})">${c.activa?'Desactivar':'Activar'}</button>
+      <button class="btn btn-danger btn-sm" onclick="borrarCampania(${c.id})">🗑</button>
     </div>
-
-    <!-- KPIs + progress -->
-    ${kpis}
-    ${progBar}
-    ${sinPorc>0&&running?`<div style="font-size:12px;color:var(--amber);margin-bottom:10px">⏳ ${sinPorc} territorio${sinPorc>1?'s':''} pendiente${sinPorc>1?'s':''} de notificar porcentaje</div>`:''}
-
-    <!-- Territory list -->
-    ${total?`<div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden">
-      <div style="display:flex;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:8px 0;border-bottom:1px solid var(--border)">
-        <span style="min-width:40px">Nº</span>
-        <span style="flex:1">Nombre</span>
-        <span style="min-width:90px;text-align:right">Publicador</span>
-        <span style="min-width:44px;text-align:right">%</span>
-        ${running?'<span style="width:28px"></span>':''}
-      </div>
-      <div style="padding:0">${rows}</div>
-    </div>`
-    :'<div style="padding:20px;text-align:center;font-size:13px;color:var(--t3)">Sin territorios. Los territorios asignados se añaden automáticamente al crear la campaña.</div>'}
+    ${sinPorc>0&&running?`<div class="camp-warn">⏳ ${sinPorc} territorio${sinPorc>1?'s':''} pendiente${sinPorc>1?'s':''} de notificar su porcentaje</div>`:''}
+    ${total?`<div class="cplist">${rows}</div>`:'<div class="hempty">Sin territorios. Los territorios asignados se añaden automáticamente al crear la campaña.</div>'}
   `;
 }
 
@@ -5871,14 +6284,15 @@ function cvDescargarJSON(){
 // ══ THEME ══
 function toggleTheme(){
   const isLight=document.body.classList.toggle('light');
-  localStorage.setItem('ter_theme',isLight?'light':'dark');
+  localStorage.setItem('ter_theme2',isLight?'light':'dark');
   document.getElementById('themeBtn').textContent=isLight?'☀️':'🌙';
   // Refresh map colors for new theme
   updateMapColors();
 }
+// Con el rediseño el tema claro cálido es el predeterminado (clave nueva: no hereda la preferencia antigua).
 (function initTheme(){
-  const saved=localStorage.getItem('ter_theme');
-  if(saved==='light'){document.body.classList.add('light');const btn=document.getElementById('themeBtn');if(btn)btn.textContent='☀️';}
+  const saved=localStorage.getItem('ter_theme2');
+  if(saved!=='dark'){document.body.classList.add('light');const btn=document.getElementById('themeBtn');if(btn)btn.textContent='☀️';}
 })();
 
 // ══ INIT ══

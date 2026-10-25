@@ -3,7 +3,7 @@
 //  scope: /territorios.html
 // ============================================================
 
-const APP_VERSION = 'v1.4.0';
+const APP_VERSION = 'v1.5.0';
 const CACHE_STATIC = `territorios-static-${APP_VERSION}`;
 const CACHE_DYNAMIC = `territorios-dynamic-${APP_VERSION}`;
 
@@ -70,8 +70,29 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // La propia app (HTML): red primero, para que cada actualización se vea al abrirla.
+  // Sin conexión se usa la última copia guardada.
+  if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+    event.respondWith(htmlNetworkFirst(request));
+    return;
+  }
+
   event.respondWith(staleWhileRevalidate(request));
 });
+
+async function htmlNetworkFirst(request) {
+  try {
+    const response = await fetch(request, { cache: 'no-cache' });
+    if (response.ok) {
+      const cache = await caches.open(CACHE_STATIC);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cache = await caches.open(CACHE_STATIC);
+    return (await cache.match(request)) || offlineResponse(request);
+  }
+}
 
 async function networkFirst(request) {
   try {
